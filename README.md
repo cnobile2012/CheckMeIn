@@ -23,7 +23,7 @@ DO NOT push these renamed files to the origin repository.
 Once you are satisfied that you have the dependencies met, and the unit tests are passing, then to run the
 server, you will execute:
 
-```python3 checkmein.py development.conf```
+```python3 checkMeIn.py development.conf```
 
 You can connect to your server using a local browser at "http://localhost:8089"
 Note: 
