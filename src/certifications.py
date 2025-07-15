@@ -2,8 +2,9 @@ import datetime
 import sqlite3
 import os
 import csv
-import members
-import utils
+
+from . import members
+from . import utils
 
 from enum import IntEnum
 

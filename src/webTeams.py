@@ -1,8 +1,9 @@
 import datetime
-from teams import TeamMemberType
 import cherrypy
-from webBase import WebBase, Cookie
-from accounts import Role
+
+from .teams import TeamMemberType
+from .webBase import WebBase, Cookie
+from .accounts import Role
 
 
 class WebTeams(WebBase):

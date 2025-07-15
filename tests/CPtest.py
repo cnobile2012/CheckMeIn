@@ -4,7 +4,7 @@ import cherrypy
 from cherrypy.test import helper
 from cherrypy.lib.sessions import RamSession
 
-from checkMeIn import CheckMeIn
+from src.checkMeIn import CheckMeIn
 
 
 class CPTest(helper.CPWebCase):

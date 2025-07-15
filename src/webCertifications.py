@@ -1,5 +1,6 @@
 import cherrypy
-from webBase import WebBase
+
+from .webBase import WebBase
 
 
 class WebCertifications(WebBase):

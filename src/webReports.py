@@ -2,9 +2,9 @@ import datetime
 import sqlite3
 import cherrypy
 
-from webBase import WebBase
-from accounts import Role
-from tracing import Tracing
+from .webBase import WebBase
+from .accounts import Role
+from .tracing import Tracing
 
 
 class WebReports(WebBase):

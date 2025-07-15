@@ -1,3 +1,4 @@
+import sys
 import sqlite3
 from passlib.apps import custom_app_context as pwd_context
 from enum import IntEnum
@@ -5,8 +6,8 @@ import time
 import random
 import datetime
 import urllib
-import utils
-import sys
+
+from . import utils
 
 
 class Status(IntEnum):

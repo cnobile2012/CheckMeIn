@@ -8,7 +8,8 @@ BASE_DIR	= $(shell basename $(PREFIX))
 PACKAGE_DIR	= $(BASE_DIR)-$(VERSION)$(TEST_TAG)
 DOCS_DIR	= $(PREFIX)/docs
 TODAY		= $(shell date +"%Y-%m-%dT%H:%M:%S.%N%:z")
-RM_REGEX	= '(^.*.pyc$$)|(^.*.wsgic$$)|(^.*~$$)|(.*\#$$)|(^.*,cover$$)|(__pycache__)'
+RM_REGEX	= '(^.*.pyc$$)|(^.*.wsgic$$)|(^.*~$$)|(.*\#$$)|(^.*,cover$$)| \
+                   (__pycache__)'
 RM_CMD		= find $(PREFIX) -regextype posix-egrep -regex $(RM_REGEX) \
                   -exec rm {} \;
 COVERAGE_FILE	= $(PREFIX)/.coveragerc
@@ -72,7 +73,7 @@ setup	:
 
 .PHONY	: run
 run	: setup
-	python src/checkMeIn.py development.conf
+	python -m src.checkMeIn development.conf
 
 #----------------------------------------------------------------------
 .PHONY	: clean clobber

@@ -4,7 +4,8 @@ import datetime
 import re
 from enum import IntEnum
 from collections import namedtuple
-from members import Members
+
+from .members import Members
 
 # TeamMember = namedtuple('TeamMember', ['name', 'barcode', 'type'])
 

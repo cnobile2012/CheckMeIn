@@ -1,18 +1,18 @@
 import os
 import sqlite3
 
-from members import Members
-from guests import Guests
-from reports import Reports
-from teams import Teams
-from customReports import CustomReports
-from certifications import Certifications
-from visits import Visits
-from accounts import Accounts
-from devices import Devices
-from unlocks import Unlocks
-from logEvents import LogEvents
-from config import Config
+from .members import Members
+from .guests import Guests
+from .reports import Reports
+from .teams import Teams
+from .customReports import CustomReports
+from .certifications import Certifications
+from .visits import Visits
+from .accounts import Accounts
+from .devices import Devices
+from .unlocks import Unlocks
+from .logEvents import LogEvents
+from .config import Config
 
 SCHEMA_VERSION = 16
 

@@ -1,4 +1,4 @@
-import CPtest
+from . import CPtest
 
 
 class GuestTest(CPtest.CPTest):

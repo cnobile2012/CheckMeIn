@@ -1,6 +1,7 @@
-from accounts import Accounts, Role
 import cherrypy
-from webBase import WebBase
+
+from .accounts import Accounts, Role
+from .webBase import WebBase
 
 KEYHOLDER_BARCODE = '999901'
 

@@ -1,6 +1,7 @@
 import cherrypy
-from webBase import WebBase
-import utils
+
+from .webBase import WebBase
+from . import utils
 
 
 class WebGuestStation(WebBase):

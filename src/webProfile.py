@@ -1,7 +1,8 @@
 import datetime
 import cherrypy
-from accounts import Accounts, Role
-from webBase import WebBase, Cookie
+
+from .accounts import Accounts, Role
+from .webBase import WebBase, Cookie
 
 
 class WebProfile(WebBase):

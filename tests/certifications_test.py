@@ -1,4 +1,4 @@
-import CPtest
+from . import CPtest
 
 
 class CertificationsTest(CPtest.CPTest):

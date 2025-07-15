@@ -1,4 +1,4 @@
-import CPtest
+from . import CPtest
 
 
 class ReportsTest(CPtest.CPTest):

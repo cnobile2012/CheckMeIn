@@ -1,8 +1,10 @@
+import os
 import pytest
 import cherrypy
-from checkMeIn import CheckMeIn
-import sampleData
-import os
+
+from src.checkMeIn import CheckMeIn
+
+from . import sampleData
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -20,7 +22,8 @@ def my_own_session_run_at_beginning(request):
     except FileNotFoundError:
         pass
 
-    with open(testConfig['global']['database.path'] + "checkmein.key", "w") as f:
+    with open(testConfig['global']['database.path'] + "checkmein.key", "w"
+              ) as f:
         # Obviously not the actual key
         f.write("MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTI=")
 

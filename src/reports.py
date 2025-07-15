@@ -1,13 +1,16 @@
-from guests import Guest
-import matplotlib.pyplot as plt
 import sqlite3
 import datetime
+
 from io import BytesIO
 from collections import defaultdict
 from collections import namedtuple
+
 import matplotlib
 # The pylint disable is because it doesn't like the use before other imports
 matplotlib.use('Agg')   # pylint: disable=C0413
+import matplotlib.pyplot as plt
+
+from .guests import Guest
 
 
 Transaction = namedtuple('Transaction', ['name', 'time', 'description'])
@@ -108,19 +111,21 @@ class Statistics(object):
         else:
             self.avgTime = self.totalHours / self.uniqueVisitors
 
-            self.sortedList = sorted(
-                list(self.visitors.values()), key=lambda x: x.hours, reverse=True)
+            self.sortedList = sorted(list(self.visitors.values()),
+                                     key=lambda x: x.hours, reverse=True)
 
             half = len(self.sortedList) // 2
             if len(self.sortedList) % 2:
                 self.medianTime = self.sortedList[half].hours
             else:
-                self.medianTime = (
-                    self.sortedList[half - 1].hours + self.sortedList[half].hours) / 2.0
+                sorted_list = self.sortedList[half - 1].hours
+                self.medianTime = ((sorted_list + self.sortedList[half].hours)
+                                   / 2.0)
 
     def getBuildingUsage(self):
         dataPoints = []
-        for day in daterange(self.beginDate, self.endDate + datetime.timedelta(days=1)):
+        for day in daterange(self.beginDate,
+                             self.endDate + datetime.timedelta(days=1)):
             beginTimePeriod = datetime.datetime.combine(
                 day, datetime.datetime.min.time())
             # Care about 8am-10pm
@@ -130,7 +135,8 @@ class Statistics(object):
                 endTimePeriod = beginTimePeriod + \
                     datetime.timedelta(seconds=60*60)
                 dataPoints.append(VisitorsAtTime(
-                    beginTimePeriod, self.buildingUsage.inRange(beginTimePeriod, endTimePeriod)))
+                    beginTimePeriod,
+                    self.buildingUsage.inRange(beginTimePeriod, endTimePeriod)))
         return dataPoints
 
     def getBuildingUsageGraph(self):
@@ -165,18 +171,21 @@ class Reports(object):
     def whoIsHere(self, dbConnection):
         keyholders = self.engine.accounts.getKeyholderBarcodes(dbConnection)
         listPresent = []
-        for row in dbConnection.execute('''SELECT displayName, start, visits.barcode
-           FROM visits
-           INNER JOIN members ON members.barcode = visits.barcode
-           WHERE visits.status=='In'
-           UNION
-           SELECT displayName, start, visits.barcode
-           FROM visits
-           INNER JOIN guests ON guests.guest_id = visits.barcode
-           WHERE visits.status=='In' ORDER BY displayName'''):
+        for row in dbConnection.execute('''
+            SELECT displayName, start, visits.barcode
+            FROM visits
+            INNER JOIN members ON members.barcode = visits.barcode
+            WHERE visits.status=='In'
+            UNION
+            SELECT displayName, start, visits.barcode
+            FROM visits
+            INNER JOIN guests ON guests.guest_id = visits.barcode
+            WHERE visits.status=='In' ORDER BY displayName'''):
             displayName = row[0]
+
             if(row[2] in keyholders):
                 displayName = displayName + "(Keyholder)"
+
             listPresent.append(
                 PersonInBuilding(displayName=displayName,
                                  barcode=row[2], start=row[1]))
@@ -184,22 +193,27 @@ class Reports(object):
 
     def whichTeamMembersHere(self, dbConnection, team_id, startTime, endTime):
         listPresent = []
-        for row in dbConnection.execute('''SELECT displayName
+        for row in dbConnection.execute('''
+           SELECT displayName
            FROM visits
            INNER JOIN members ON members.barcode = visits.barcode
            INNER JOIN team_members ON team_members.barcode = visits.barcode
-           WHERE (visits.start <= ?) AND (visits.leave >= ?) AND team_members.team_id = ?
+           WHERE (visits.start <= ?) AND (visits.leave >= ?)
+                                     AND team_members.team_id = ?
            ORDER BY displayName ASC''', (endTime, startTime, team_id)):
             listPresent.append(row[0])
+
         return listPresent
 
     def guestsInBuilding(self, dbConnection):
         listPresent = []
-        for row in dbConnection.execute('''SELECT displayName, start, guests.guest_id
-           FROM visits
-           INNER JOIN guests ON guests.guest_id = visits.barcode
-           WHERE visits.status=='In' ORDER BY displayName'''):
+        for row in dbConnection.execute('''
+            SELECT displayName, start, guests.guest_id
+            FROM visits
+            INNER JOIN guests ON guests.guest_id = visits.barcode
+            WHERE visits.status=='In' ORDER BY displayName'''):
             listPresent.append(Guest(row[2], row[0]))
+
         return listPresent
 
     def numberPresent(self, dbConnection):
@@ -211,7 +225,8 @@ class Reports(object):
         keyholders = self.engine.accounts.getKeyholderBarcodes(dbConnection)
 
         listTransactions = []
-        for row in dbConnection.execute('''SELECT displayName, start, leave, visits.status, visits.barcode
+        for row in dbConnection.execute('''
+           SELECT displayName, start, leave, visits.status, visits.barcode
            FROM visits
            INNER JOIN members ON members.barcode = visits.barcode
            WHERE (start BETWEEN ? and ?)
@@ -222,10 +237,12 @@ class Reports(object):
            WHERE (start BETWEEN ? and ?)
            ORDER BY start''', (startDate, endDate, startDate, endDate)):
             displayName = row[0]
+
             if(row[4] in keyholders):
                 displayName = displayName + "(Keyholder)"
 
             listTransactions.append(Transaction(displayName, row[1], 'In'))
+
             if row[3] != 'In':
                 listTransactions.append(
                     Transaction(displayName, row[2], row[3]))
@@ -240,9 +257,11 @@ class Reports(object):
         return self.transactions(dbConnection, startDate, endDate)
 
     def uniqueVisitors(self, dbConnection, startDate, endDate):
-        numUniqueVisitors = dbConnection.execute(
-            "SELECT COUNT(DISTINCT barcode) FROM visits WHERE (start BETWEEN ? AND ?)",
+        numUniqueVisitors = dbConnection.execute('''
+            SELECT COUNT(DISTINCT barcode) FROM visits
+            WHERE (start BETWEEN ? AND ?)''',
             (startDate, endDate)).fetchone()[0]
+
         return numUniqueVisitors
 
     def uniqueVisitorsToday(self, dbConnection):
@@ -254,10 +273,12 @@ class Reports(object):
 
     def getStats(self, dbConnection, beginDateStr, endDateStr):
         startDate = datetime.datetime(int(beginDateStr[0:4]),
-                                      int(beginDateStr[5:7]), int(beginDateStr[8:10])).replace(
-            hour=0, minute=0, second=0, microsecond=0)
-        endDate = datetime.datetime(int(endDateStr[0:4]),
-                                    int(endDateStr[5:7]), int(endDateStr[8:10])).replace(
+                                      int(beginDateStr[5:7]),
+                                      int(beginDateStr[8:10])).replace(
+                                          hour=0, minute=0, second=0,
+                                          microsecond=0)
+        endDate = datetime.datetime(int(endDateStr[0:4]), int(endDateStr[5:7]),
+                                    int(endDateStr[8:10])).replace(
             hour=23, minute=59, second=59, microsecond=999999)
 
         return Statistics(dbConnection, startDate, endDate)
@@ -269,10 +290,14 @@ class Reports(object):
 
     def getForgottenDates(self, dbConnection):
         dates = []
-        for row in dbConnection.execute("SELECT start FROM visits WHERE status=='Forgot'"):
+
+        for row in dbConnection.execute("""
+            SELECT start FROM visits WHERE status=='Forgot'"""):
             day = row[0].date()
+
             if day not in dates:
                 dates.append(day)
+
         return dates
 
     def getData(self, dbConnection, dateStr):
@@ -283,7 +308,8 @@ class Reports(object):
         endDate = date.replace(
             hour=23, minute=59, second=59, microsecond=999999)
 
-        for row in dbConnection.execute('''SELECT displayName, start, leave, visits.status, visits.rowid
+        for row in dbConnection.execute('''
+           SELECT displayName, start, leave, visits.status, visits.rowid
            FROM visits
            INNER JOIN members ON members.barcode = visits.barcode
            WHERE (start BETWEEN ? and ?)
@@ -293,6 +319,7 @@ class Reports(object):
            INNER JOIN guests ON guests.guest_id = visits.barcode
            WHERE (start BETWEEN ? and ?)
            ORDER BY start''', (startDate, endDate, startDate, endDate)):
-            data.append(
-                Datum(start=row[1], leave=row[2], name=row[0], status=row[3], rowid=row[4]))
+            data.append(Datum(start=row[1], leave=row[2], name=row[0],
+                              status=row[3], rowid=row[4]))
+
         return data

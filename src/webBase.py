@@ -1,6 +1,7 @@
 import datetime
 import cherrypy
-from accounts import Role
+
+from .accounts import Role
 
 
 class Cookie(object):
@@ -33,7 +34,8 @@ class WebBase(object):
         barcode = self.getBarcodeNoLogin()
         logoLink = f'/links/?barcode={barcode}' if barcode else f'/links/'
 
-        return self.lookup.get_template(name).render(logoLink=logoLink, **kwargs)
+        return self.lookup.get_template(name).render(logoLink=logoLink,
+                                                     **kwargs)
 
     def dbConnect(self):
         return self.engine.dbConnect()

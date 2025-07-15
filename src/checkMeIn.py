@@ -1,21 +1,25 @@
+# -*- coding: utf-8 -*-
+
 import argparse
 import datetime
 from mako.lookup import TemplateLookup
 import cherrypy
 import cherrypy.process.plugins
 
-import engine
-from webBase import WebBase, Cookie
-from webMainStation import WebMainStation
-from webGuestStation import WebGuestStation
-from webCertifications import WebCertifications
-from webTeams import WebTeams
-from webAdminStation import WebAdminStation
-from webReports import WebReports
-from webProfile import WebProfile
-from docs import getDocumentation
-from accounts import Role
-from cherrypy_SSE import Portier
+from .engine import Engine
+
+
+from .webBase import WebBase, Cookie
+from .webMainStation import WebMainStation
+from .webGuestStation import WebGuestStation
+from .webCertifications import WebCertifications
+from .webTeams import WebTeams
+from .webAdminStation import WebAdminStation
+from .webReports import WebReports
+from .webProfile import WebProfile
+from .docs import getDocumentation
+from .accounts import Role
+from .cherrypy_SSE import Portier
 
 
 class CheckMeIn(WebBase):
@@ -24,11 +28,11 @@ class CheckMeIn(WebBase):
         cherrypy.engine.publish(self.updateChannel, fullMessage)
 
     def __init__(self):
-        self.lookup = TemplateLookup(
-            directories=['HTMLTemplates'], default_filters=['h'])
+        self.lookup = TemplateLookup(directories=['HTMLTemplates'],
+                                     default_filters=['h'])
         self.updateChannel = 'updates'
-        self.engine = engine.Engine(
-            cherrypy.config["database.path"], cherrypy.config["database.name"], self.update)
+        self.engine = Engine(cherrypy.config["database.path"],
+                             cherrypy.config["database.name"], self.update)
 
         super().__init__(self.lookup, self.engine)
         self.station = WebMainStation(self.lookup, self.engine)
@@ -53,18 +57,21 @@ class CheckMeIn(WebBase):
         with self.dbConnect() as dbConnection:
             numberPresent = self.engine.reports.numberPresent(
                 dbConnection)
-            return self.template('metrics.mako', number_people_checked_in=numberPresent)
+            return self.template('metrics.mako',
+                                 number_people_checked_in=numberPresent)
 
     @cherrypy.expose
     def whoishere(self):
         with self.dbConnect() as dbConnection:
-            (_, keyholder_name) = self.engine.accounts.getActiveKeyholder(dbConnection)
+            (_, keyholder_name) = self.engine.accounts.getActiveKeyholder(
+                dbConnection)
             return self.template('who_is_here.mako',
                                  now=datetime.datetime.now(),
                                  keyholder=keyholder_name,
                                  whoIsHere=self.engine.reports.whoIsHere(
                                      dbConnection),
-                                 makeForm=self.hasPermissionsNologin(Role.KEYHOLDER))
+                                 makeForm=self.hasPermissionsNologin(
+                                     Role.KEYHOLDER))
 
     @cherrypy.expose
     def checkout_who_is_here(self, **params):
@@ -74,8 +81,8 @@ class CheckMeIn(WebBase):
 
         if self.hasPermissionsNologin(Role.KEYHOLDER):
             with self.dbConnect() as dbConnection:
-                (current_keyholder_bc, _) = self.engine.accounts.getActiveKeyholder(
-                    dbConnection)
+                (current_keyholder_bc, _
+                 ) = self.engine.accounts.getActiveKeyholder(dbConnection)
                 self.engine.checkout(
                     dbConnection, current_keyholder_bc, check_outs)
         return self.whoishere()
@@ -116,8 +123,9 @@ class CheckMeIn(WebBase):
             inBuilding = self.engine.visits.inBuilding(dbConnection, barcode)
 
         return self.template('links.mako', barcode=barcode, role=role,
-                             activeTeamsCoached=activeTeamsCoached, inBuilding=inBuilding,
-                             displayName=displayName, activeMembers=activeMembers)
+                             activeTeamsCoached=activeTeamsCoached,
+                             inBuilding=inBuilding, displayName=displayName,
+                             activeMembers=activeMembers)
 
     @cherrypy.expose
     def updateSSE(self):

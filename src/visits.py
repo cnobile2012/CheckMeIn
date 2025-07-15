@@ -2,12 +2,13 @@ import datetime
 import sqlite3
 import os
 from dateutil import parser
-from members import Members
-from guests import Guests
-from reports import Reports
-from teams import Teams
-from customReports import CustomReports
-from certifications import Certifications
+
+from .members import Members
+from .guests import Guests
+from .reports import Reports
+from .teams import Teams
+from .customReports import CustomReports
+from .certifications import Certifications
 
 
 class Visits(object):
