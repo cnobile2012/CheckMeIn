@@ -1,15 +1,17 @@
 #
 # Development by Carl J. Nobile
 #
+include include.mk
 
 PREFIX		= $(shell pwd)
 BASE_DIR	= $(shell basename $(PREFIX))
 PACKAGE_DIR	= $(BASE_DIR)-$(VERSION)$(TEST_TAG)
 DOCS_DIR	= $(PREFIX)/docs
 TODAY		= $(shell date +"%Y-%m-%dT%H:%M:%S.%N%:z")
-RM_REGEX	= '(^.*.pyc$$)|(^.*.wsgic$$)|(^.*~$$)|(.*\#$$)|(^.*,cover$$)'
+RM_REGEX	= '(^.*.pyc$$)|(^.*.wsgic$$)|(^.*~$$)|(.*\#$$)|(^.*,cover$$)|(__pycache__)'
 RM_CMD		= find $(PREFIX) -regextype posix-egrep -regex $(RM_REGEX) \
                   -exec rm {} \;
+COVERAGE_FILE	= $(PREFIX)/.coveragerc
 TEST_TAG	=
 PIP_ARGS	= # Pass variables for pip install.
 TEST_PATH	= # The path to run tests on.
@@ -26,9 +28,15 @@ help	:
                      base/ {if ($$1 !~ "^[#.]") {print $$1}}' | sort | grep \
                 -E -v -e '^[^[:alnum:]]' -e '^$@$$'
 
+.PHONY	: tar
+tar	: clobber
+	@(cd ..; tar -cJvf $(PACKAGE_DIR).tar.xz --exclude=".git" \
+          --exclude="__pycache__" --exclude=".pytest_cache" $(BASE_DIR))
+
 #----------------------------------------------------------------------
 .PHONY	: tests
 tests	: clobber setup
+	@mkdir -p docs
 	@rm -rf $(DOCS_DIR)/htmlcov
 	@coverage erase --rcfile=$(COVERAGE_FILE)
 	@coverage run --rcfile=$(COVERAGE_FILE) -m pytest --capture=tee-sys \
@@ -49,7 +57,6 @@ flake8	:
 install-dev:
 	@python -m pip install --upgrade pip
 	@pip install $(PIP_ARGS) -r requirements/development.txt
-	make setup
 
 .PHONY	: install-prod
 install-prod:
@@ -62,6 +69,10 @@ setup	:
 	@mkdir -p testData
 	@echo "l1n5Be5G9GHFXTSMi6tb0O6o5AKmTC68OjF2UmaU55A=" > testData/checkmein.key
 	@mkdir -p sessions
+
+.PHONY	: run
+run	: setup
+	python src/checkMeIn.py development.conf
 
 #----------------------------------------------------------------------
 .PHONY	: clean clobber
