@@ -14,5 +14,5 @@ exclude_lines =
     pragma: no cover
 
 [html]
-title = The Forge Initiative
+title = The Forge Initiative Check In & Out
 directory = docs/htmlcov
