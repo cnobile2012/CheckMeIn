@@ -1,0 +1,12 @@
+[flake8]
+exclude =
+    .git,
+    __pycache__,
+    old,
+    build,
+    dist
+    txt
+
+per-file-ignores =
+    src/*: E275
+    tests/*: E275
