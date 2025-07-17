@@ -9,12 +9,12 @@ from . import sampleData
 
 @pytest.fixture(scope="session", autouse=True)
 def my_own_session_run_at_beginning(request):
-    testConfig = {
-        'global': {
-            'database.path': 'testData/',
-            'database.name': 'test.db'
+    testConfig = { 'global': {
+        'database.path': 'testData/',
+        'database.name': 'test.db'
         }
     }
+
     try:
         # Make sure we are starting with a clean database
         os.remove(testConfig['global']['database.path'] +

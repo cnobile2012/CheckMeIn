@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from unittest.mock import patch
 
 import cherrypy
@@ -6,17 +8,19 @@ from cherrypy.lib.sessions import RamSession
 
 from src.checkMeIn import CheckMeIn
 
+# Without setting this to False any call to assertStatus() that fails
+# will lock up the terminal.
+helper.CPWebCase.interactive = False
+
 
 class CPTest(helper.CPWebCase):
     @staticmethod
     def setup_server():
-        testConfig = {
-            'global': {
-                'database.path': 'testData/',
-                'database.name': 'test.db'
+        testConfig = {'global': {
+            'database.path': 'testData/',
+            'database.name': 'test.db'
             }
         }
-
         cherrypy.config.update(testConfig)
         cmi = CheckMeIn()
         cherrypy.tree.mount(cmi, '/', testConfig)
