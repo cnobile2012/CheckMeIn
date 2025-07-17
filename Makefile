@@ -35,6 +35,17 @@ tar	: clobber
           --exclude="__pycache__" --exclude=".pytest_cache" $(BASE_DIR))
 
 #----------------------------------------------------------------------
+# Run all tests
+# $ make tests
+#
+# Run all tests in a specific test file.
+# $ make tests TEST_PATH=tests/test_bases.py
+#
+# Run all tests in a specific class within a test file.
+# $ make tests TEST_PATH=tests/test_bases.py::TestBases
+#
+# Run just one test in a specific class within a test file.
+# $ make tests TEST_PATH=tests/test_bases.py::TestBases::test_version
 .PHONY	: tests
 tests	: clobber setup
 	@mkdir -p docs
@@ -71,6 +82,8 @@ setup	:
 	@echo "l1n5Be5G9GHFXTSMi6tb0O6o5AKmTC68OjF2UmaU55A=" > testData/checkmein.key
 	@mkdir -p sessions
 
+# The following target is for running the server in a development
+# environment only.
 .PHONY	: run
 run	: setup
 	python -m src.checkMeIn development.conf
