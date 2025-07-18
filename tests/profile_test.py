@@ -3,9 +3,6 @@
 import unittest
 from . import CPtest
 
-import tracemalloc
-tracemalloc.start()
-
 
 class ProfileTest(CPtest.CPTest):
     def test_login(self):

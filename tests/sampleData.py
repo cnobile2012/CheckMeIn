@@ -5,8 +5,8 @@ def timeAgo(days=0, hours=0):
     return datetime.datetime.now() - datetime.timedelta(days=days, hours=hours)
 
 
-def testData():
-    return{
+def data_for_testing():
+    return {
         "visits": [
             {
                 "start": timeAgo(days=7, hours=1),

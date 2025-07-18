@@ -1,11 +1,8 @@
-import sqlite3
-import os
-import datetime
-import re
-from enum import IntEnum
-from collections import namedtuple
+# -*- coding: utf-8 -*-
 
-from .members import Members
+import sqlite3
+import datetime
+from enum import IntEnum
 
 # TeamMember = namedtuple('TeamMember', ['name', 'barcode', 'type'])
 
@@ -31,6 +28,7 @@ class TeamMember:
             return "(Mentor)"
         elif self.type == TeamMemberType.other:
             return "(Other)"
+
         return ""
 
     def display(self):
@@ -51,10 +49,12 @@ class TeamInfo(object):
         self.startDate = startDate
 
     def __repr__(self):
-        return f"{self.teamId} {self.programName}{self.programNumber} - {self.name}:{self.startDate}"
+        return (f"{self.teamId} {self.programName}{self.programNumber} "
+                f"- {self.name}:{self.startDate}")
 
     def getProgramId(self):
-        return f'{self.programName}{self.programNumber}' if self.programNumber else self.programName
+        msg = f'{self.programName}{self.programNumber}'
+        return msg if self.programNumber else self.programName
 
 
 class Teams(object):
@@ -96,8 +96,10 @@ class Teams(object):
                                  (datum["team_id"], datum["program_name"],
                                   datum["program_number"], datum["team_name"],
                                   datum["start_date"], datum["active"]))
+
             if "members" in datum:
                 team_id = datum["team_id"]
+
                 for datum in datum["members"]:
                     dbConnection.execute(
                         "INSERT INTO team_members VALUES (?,?,?)",
@@ -120,6 +122,7 @@ class Teams(object):
                                 WHERE (team_id = ?)
                                 ORDER BY program_name, program_number''',
             (team_id, )).fetchone()
+
         if not data:
             return None
 
@@ -140,6 +143,7 @@ class Teams(object):
     def getActiveTeamList(self, dbConnection):
         # TODO: Change to use DISTINCT feature of SQLITE to get rid of python
         dictTeams = {}
+
         for row in dbConnection.execute(
             '''SELECT team_id, program_name, program_number, team_name, start_date
                                     FROM teams
@@ -149,6 +153,7 @@ class Teams(object):
 
             newTeam = TeamInfo(row[0], row[1], row[2], row[3], row[4])
             programId = newTeam.getProgramId()
+
             if programId in dictTeams:
                 if dictTeams[programId].startDate < newTeam.startDate:
                     dictTeams[programId] = newTeam
@@ -159,6 +164,7 @@ class Teams(object):
 
     def getAllSeasons(self, dbConnection, teamInfo):
         teamList = []
+
         for row in dbConnection.execute(
             '''SELECT team_id, program_name, program_number, team_name, start_date
                                     FROM teams
@@ -166,18 +172,22 @@ class Teams(object):
                                     ORDER BY start_date DESC''',
                 (teamInfo.programName, teamInfo.programNumber)):
             teamList.append(TeamInfo(row[0], row[1], row[2], row[3], row[4]))
+
         return teamList
 
     def isCoachOfTeam(self, dbConnection, teamId, coachBarcode):
         data = dbConnection.execute(
             '''SELECT team_id FROM team_members WHERE team_id = ? AND barcode = ? AND type = ?''',
             (teamId, coachBarcode, TeamMemberType.coach)).fetchone()
+
         if not data:
             return False
+
         return True
 
     def getInactiveTeamList(self, dbConnection):
         teamList = []
+
         for row in dbConnection.execute(
             '''SELECT team_id, program_name, program_number, team_name, start_date
                                     FROM teams
@@ -185,6 +195,7 @@ class Teams(object):
                                     ORDER BY program_name, program_number''',
                 (Status.inactive, )):
             teamList.append(TeamInfo(row[0], row[1], row[2], row[3], row[4]))
+
         return teamList
 
     def getTeamFromProgramInfo(self, dbConnection, name, number):
@@ -195,14 +206,17 @@ class Teams(object):
                                     ORDER BY start_date DESC LIMIT 1''',
                 (Status.active, name.upper(), number)):
             return TeamInfo(row[0], row[1], row[2], row[3], row[4])
+
         return None
 
     def teamNameFromId(self, dbConnection, team_id):
         data = dbConnection.execute(
             "SELECT team_name FROM teams WHERE (team_id=?)",
             (team_id, )).fetchone()
+
         if data:
             return data[0]
+
         return ''
 
     def addMember(self, dbConnection, team_id, barcode, type):
@@ -224,6 +238,7 @@ class Teams(object):
 
     def getTeamMembers(self, dbConnection, team_id):
         listMembers = []
+
         for row in dbConnection.execute(
             '''SELECT displayName, type, team_members.barcode,
                         (SELECT visits.status from visits where visits.barcode=team_members.barcode ORDER by visits.start DESC) as status
@@ -234,6 +249,7 @@ class Teams(object):
                 (team_id, )):
             listMembers.append(
                 TeamMember(row[0], row[2], row[1], row[3] == 'In'))
+
         return listMembers
 
     def deactivateTeam(self, dbConnection, team_id):
@@ -249,6 +265,7 @@ class Teams(object):
 
     def getCoaches(self, dbConnection, team_id):
         listCoaches = []
+
         for row in dbConnection.execute(
             '''SELECT displayName, type, team_members.barcode
                                 FROM team_members
@@ -257,19 +274,25 @@ class Teams(object):
                                 ORDER BY displayName''',
                 (team_id, TeamMemberType.coach)):
             listCoaches.append(TeamMember(row[0], row[2], row[1]))
+
         return listCoaches
 
     def getCoachesList(self, dbConnection, teamList):
         coachDict = {}
+
         for team in teamList:
             coachDict[team.teamId] = self.getCoaches(dbConnection, team.teamId)
+
         return coachDict
 
     def getActiveTeamsCoached(self, dbConnection, barcode):
         teamsCoached = []
-        # TODO: Change to use DISTINCT feature of SQLITE and a join to get rid of python
+        # TODO: Change to use DISTINCT feature of SQLITE and a join to get
+        #       rid of python
         teams = self.getActiveTeamList(dbConnection)
+
         for team in teams:
             if self.isCoachOfTeam(dbConnection, team.teamId, barcode):
                 teamsCoached.append(team)
+
         return teamsCoached

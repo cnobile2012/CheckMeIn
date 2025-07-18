@@ -1,5 +1,8 @@
+# -*- coding: utf-8 -*-
+
 import os
 import sqlite3
+import datetime
 
 from .members import Members
 from .guests import Guests
@@ -16,12 +19,25 @@ from .config import Config
 
 SCHEMA_VERSION = 16
 
-# This is the engine for all of the backend
+
+def custom_converter(value):
+    """
+    Converter: from string to datetime
+    Python 3.12 depricated the default timestamp converter so we use this one.
+    """
+    return datetime.datetime.fromisoformat(value.decode())
+
+sqlite3.register_converter('timestamp', custom_converter)
+# Adapter: from datetime to string
+sqlite3.register_adapter(datetime.datetime, lambda dt: dt.isoformat(" "))
 
 
 class Engine(object):
+    """
+    This is the engine for all of the backend.
+    """
     def __init__(self, dbPath, dbName, update):
-        self.database = dbPath + dbName
+        self.db_fullpath = os.path.join(dbPath, dbName)
         self.dataPath = dbPath
         self.update = update
         self.visits = Visits()
@@ -33,24 +49,26 @@ class Engine(object):
         self.unlocks = Unlocks()
         self.config = Config()
         # needs path since it will open read only
-        self.customReports = CustomReports(self.database)
+        self.customReports = CustomReports(self.db_fullpath)
         self.certifications = Certifications()
         self.members = Members()
         self.logEvents = LogEvents()
 
-        if not os.path.exists(self.database):
+        if not os.path.exists(self.db_fullpath):
             if not os.path.exists(dbPath):
                 os.mkdir(dbPath)
+
             with self.dbConnect() as c:
                 self.migrate(c, 0)
         else:
             with self.dbConnect() as c:
                 data = c.execute('PRAGMA schema_version').fetchone()
+
                 if data[0] != SCHEMA_VERSION:
                     self.migrate(c, data[0])
 
     def dbConnect(self):
-        return sqlite3.connect(self.database,
+        return sqlite3.connect(self.db_fullpath,
                                detect_types=sqlite3.PARSE_DECLTYPES)
 
     def migrate(self, dbConnection, db_schema_version):
@@ -70,7 +88,7 @@ class Engine(object):
                                  str(SCHEMA_VERSION))
         elif db_schema_version != SCHEMA_VERSION:  # pragma: no cover
             raise Exception("Unknown DB schema version" +
-                            str(db_schema_version) + ": " + self.database)
+                            str(db_schema_version) + ": " + self.db_fullpath)
 
     def injectData(self, dictValues):
         areas = {
@@ -94,23 +112,21 @@ class Engine(object):
 
     def getGuestLists(self, dbConnection):
         all_guests = self.guests.getList(dbConnection)
-
         building_guests = self.reports.guestsInBuilding(dbConnection)
-
-        guests_not_here = [
-            guest for guest in all_guests if guest not in building_guests
-        ]
-
+        guests_not_here = [guest for guest in all_guests
+                           if guest not in building_guests]
         return (building_guests, guests_not_here)
 
     def checkin(self, dbConnection, check_ins):
-        (current_keyholder_bc, _) = self.accounts.getActiveKeyholder(
+        current_keyholder_bc, _ = self.accounts.getActiveKeyholder(
             dbConnection)
+
         for barcode in check_ins:
-            error = self.visits.checkInMember(dbConnection, barcode)
+            # error = self.visits.checkInMember(dbConnection, barcode)
             if not current_keyholder_bc:
                 if self.accounts.setActiveKeyholder(dbConnection, barcode):
                     current_keyholder_bc = barcode
+
         return current_keyholder_bc
 
     def checkout(self, dbConnection, current_keyholder_bc, check_outs):
@@ -118,11 +134,12 @@ class Engine(object):
         for barcode in check_outs:
             if barcode == current_keyholder_bc:
                 currentKeyholderLeaving = True
-            else:
-                error = self.visits.checkOutMember(
-                    dbConnection, barcode)
+            # else:
+            #     error = self.visits.checkOutMember(dbConnection, barcode)
+
         if currentKeyholderLeaving:
             return current_keyholder_bc
+
         return False
     # This returns whether the current keyholder would be leaving
 

@@ -84,7 +84,7 @@ setup	:
 
 # The following target is for running the server in a development
 # environment only.
-.PHONY	: run
+.PHONY	: clobber run
 run	: setup
 	python -m src.checkMeIn development.conf
 

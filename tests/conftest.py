@@ -28,7 +28,7 @@ def my_own_session_run_at_beginning(request):
         f.write("MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTI=")
 
     cherrypy.config.update(testConfig)
-    cmi = CheckMeIn().engine.injectData(sampleData.testData())
+    cmi = CheckMeIn().engine.injectData(sampleData.data_for_testing())
 
     def my_own_session_run_at_end():
         pass  # nothing for now

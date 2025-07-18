@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import os
 from unittest.mock import patch
 
 import cherrypy
@@ -7,6 +8,9 @@ from cherrypy.test import helper
 from cherrypy.lib.sessions import RamSession
 
 from src.checkMeIn import CheckMeIn
+
+import tracemalloc
+tracemalloc.start()
 
 # Without setting this to False any call to assertStatus() that fails
 # will lock up the terminal.
@@ -23,7 +27,7 @@ class CPTest(helper.CPWebCase):
         }
         cherrypy.config.update(testConfig)
         cmi = CheckMeIn()
-        cherrypy.tree.mount(cmi, '/', testConfig)
+        cherrypy.tree.mount(cmi, os.sep, testConfig)
         return cmi
 
     def patch_session_none(self):
