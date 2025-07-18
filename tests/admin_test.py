@@ -2,6 +2,7 @@ from . import CPtest
 
 
 class AdminTest(CPtest.CPTest):
+
     def test_admin(self):
         with self.patch_session():
             self.getPage("/admin/")
@@ -19,9 +20,9 @@ class AdminTest(CPtest.CPTest):
 
     def test_fixedData(self):
         with self.patch_session():
-            self.getPage(
-                "/admin/fixed?output=3%212018-06-28+2%3A25PM%212018-06-28+3%3A25PM%2C18%212018-06-28+7%3A9PM%212018-06-28+11%3A3PM%2C"
-            )
+            self.getPage("/admin/fixed?output=3%212018-06-28+2%3A25PM%21"
+                         "2018-06-28+3%3A25PM%2C18%212018-06-28+7%3A9PM%21"
+                         "2018-06-28+11%3A3PM%2C")
             self.assertStatus('200 OK')
 
     def test_fixDataNoOutput(self):
@@ -35,12 +36,14 @@ class AdminTest(CPtest.CPTest):
             self.assertStatus('200 OK')
 
     def test_bulkadd(self):
-        filecontents = '''"First Name","Last Name","TFI Barcode for Button","TFI Barcode AUTO","TFI Barcode AUTONUM","TFI Display Name for Button","Membership End Date"\n
-"Sasha","Mellendorf","101337","","101337","Sasha M","6/30/2020"\n
-"Linda","Whipker","100063","","101387","","6/30/2020"\n
-"Random","Joe","100032","","101387","","6/30/2020"\n
-"Test","User","","","101387","",""\n
-'''
+        filecontents = (
+            '"First Name","Last Name","TFI Barcode for Button",'
+            '"TFI Barcode AUTO","TFI Barcode AUTONUM",'
+            '"TFI Display Name for Button","Membership End Date"\n'
+            '"Sasha","Mellendorf","101337","","101337","Sasha M","6/30/2020"\n'
+            '"Linda","Whipker","100063","","101387","","6/30/2020"\n'
+            '"Random","Joe","100032","","101387","","6/30/2020"\n'
+            '"Test","User","","","101387","",""\n')
         filesize = len(filecontents)
         h = [('Content-type', 'multipart/form-data; boundary=x'),
              ('Content-Length', str(108 + filesize))]
@@ -102,16 +105,16 @@ class AdminTest(CPtest.CPTest):
 
     def test_addTeam(self):
         with self.patch_session():
-            self.getPage(
-                "/admin/addTeam?programName=TFI&startDate=2021-07-31&programNumber=123&teamName=&coach1=100091&coach2=100090"
-            )
+            self.getPage("/admin/addTeam?programName=TFI"
+                         "&startDate=2021-07-31&programNumber=123"
+                         "&teamName=&coach1=100091&coach2=100090")
             self.assertStatus("200 OK")
 
     def test_addTeamDuplicate(self):
         with self.patch_session():
-            self.getPage(
-                "/admin/addTeam?programName=TFI&startDate=2021-07-31&programNumber=123&teamName=&coach1=100091&coach2=100090"
-            )
+            self.getPage("/admin/addTeam?programName=TFI&startDate=2021-07-31"
+                         "&programNumber=123&teamName=&coach1=100091"
+                         "&coach2=100090")
             self.assertStatus("200 OK")
 
     def test_activateTeam(self):
@@ -131,9 +134,8 @@ class AdminTest(CPtest.CPTest):
 
     def test_editTeam(self):
         with self.patch_session():
-            self.getPage(
-                "/admin/editTeam?teamId=100&programName=FRC&programNumber=3459&startDate=2021-07-31"
-            )
+            self.getPage("/admin/editTeam?teamId=100&programName=FRC"
+                         "&programNumber=3459&startDate=2021-07-31")
             self.assertStatus("303 See Other")
 
     def test_removeFromWhoIsHere(self):
