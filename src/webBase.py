@@ -1,16 +1,26 @@
+# -*- coding: utf-8 -*-
+
 import datetime
 import cherrypy
 
 from .accounts import Role
 
 
-class Cookie(object):
+class Cookie:
+    """
+    Set and get cookies.
+
+    1. f"/teams?team_id={team_id}"
+    2. f"/certifications/team?team_id={team_id}"
+    """
+
     def __init__(self, name):
         self.name = name
 
     def get(self, default=''):
         result = default
         result = cherrypy.session.get(self.name)
+
         if not result:
             self.set(default)
             result = default
@@ -25,15 +35,15 @@ class Cookie(object):
         cherrypy.session.pop(self.name, None)
 
 
-class WebBase(object):
+class WebBase:
+
     def __init__(self, lookup, engine):
         self.lookup = lookup
         self.engine = engine
 
     def template(self, name, **kwargs):
         barcode = self.getBarcodeNoLogin()
-        logoLink = f'/links/?barcode={barcode}' if barcode else f'/links/'
-
+        logoLink = f'/links/?barcode={barcode}' if barcode else '/links/'
         return self.lookup.get_template(name).render(logoLink=logoLink,
                                                      **kwargs)
 
@@ -47,10 +57,9 @@ class WebBase(object):
         return self.getCookie('username', source)
 
     def checkPermissions(self, roleCheck, source):
-        if self.hasPermissionsNologin(roleCheck):
-            return
-        Cookie('source').set(source)
-        raise cherrypy.HTTPRedirect("/profile/login")
+        if not self.hasPermissionsNologin(roleCheck):
+            Cookie('source').set(source)
+            raise cherrypy.HTTPRedirect("/profile/login")
 
     def hasPermissionsNologin(self, roleCheck):
         role = Role(Cookie('role').get(0))
@@ -61,9 +70,11 @@ class WebBase(object):
 
     def getCookie(self, cookie, source):
         value = Cookie(cookie).get('')
+
         if not value:
             Cookie('source').set(source)
             raise cherrypy.HTTPRedirect("/profile/login")
+
         return value
 
     def getBarcodeNoLogin(self):

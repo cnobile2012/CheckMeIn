@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import sys
 import sqlite3
 from passlib.apps import custom_app_context as pwd_context
@@ -46,6 +48,7 @@ class Role:
     def setValue(self, check, value):
         if type(check) == str:
             check = int(check)
+
         self.value = (self.value | value) if check else (self.value & ~value)
 
     def setKeyholder(self, keyholder):
@@ -68,14 +71,19 @@ class Role:
 
     def __str__(self):
         roleStr = ""
+
         if self.isAdmin():
             roleStr += "Admin "
+
         if self.isKeyholder():
             roleStr += "Keyholder "
+
         if self.isShopCertifier():
             roleStr += "Certifier "
+
         if self.isShopSteward():
             roleStr += "Steward "
+
         if self.isCoach():
             roleStr += "Coach "
 
@@ -85,9 +93,7 @@ class Role:
         return str(self.value)
 
 
-class Accounts(object):
-    def __init__(self):
-        pass
+class Accounts:
 
     def migrate(self, dbConnection, db_schema_version):
         if db_schema_version < 11:
@@ -119,14 +125,18 @@ class Accounts(object):
         data = dbConnection.execute(
             '''SELECT password, barcode, role FROM accounts WHERE user = (?)''',
             (user, )).fetchone()
+
         if data is None:
             return ('', Role(0))
+
         if not pwd_context.verify(password, data[0]):
             return ('', Role(0))
+
         return (data[1], Role(data[2]))
 
     def getMembersWithRole(self, dbConnection, role):
         listUsers = []
+
         for row in dbConnection.execute(
                 '''SELECT displayName, accounts.barcode
             FROM accounts
@@ -134,10 +144,12 @@ class Accounts(object):
             WHERE (role & ? != 0)
             ORDER BY displayName''', (role, )):
             listUsers.append([row[0], row[1]])
+
         return listUsers
 
     def getPresentWithRole(self, dbConnection, role):
         listUsers = []
+
         for row in dbConnection.execute(
                 '''SELECT displayName, accounts.barcode
             FROM accounts
@@ -146,26 +158,31 @@ class Accounts(object):
             WHERE visits.status = "In" AND (role & ? != 0)
             ORDER BY displayName''', (role, )):
             listUsers.append([row[0], row[1]])
+
         return listUsers
 
     def changePassword(self, dbConnection, user, oldPassword, newPassword):
         dbConnection.execute(
             '''UPDATE accounts SET password = ? WHERE (user = ?)''',
             (pwd_context.hash(newPassword), user))
+
         return True
 
     def getEmail(self, dbConnection, username):
         data = dbConnection.execute(
             '''SELECT email from accounts INNER JOIN members ON accounts.barcode = members.barcode WHERE user = ?''',
             (username, )).fetchone()
+
         return data[0]
 
     def getUser(self, dbConnection, email):
         data = dbConnection.execute(
             '''SELECT user from accounts INNER JOIN members ON accounts.barcode = members.barcode WHERE email = ?''',
             (email, )).fetchone()
+
         if data:
             return data[0]
+
         return None
 
     def emailToken(self, dbConnection, username, token):
@@ -189,6 +206,7 @@ class Accounts(object):
         data = dbConnection.execute(
             '''SELECT forgotTime from accounts WHERE user = ?''',
             (username, )).fetchone()
+
         if data == None:
             username = self.getUser(dbConnection, username)
             data = dbConnection.execute(
@@ -198,8 +216,10 @@ class Accounts(object):
             return f'No email sent due to not finding user: {username}'
         if data[0] != None:
             longAgo = datetime.datetime.now() - data[0]
+
             if longAgo.total_seconds() < 60:  # to keep people from spamming others...
                 return 'No email sent due to one sent in last minute'
+
         chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
         forgotID = ''.join(random.SystemRandom().choice(chars)
                            for _ in range(8))
@@ -207,20 +227,24 @@ class Accounts(object):
         dbConnection.execute(
             '''UPDATE accounts SET forgot = ?, forgotTime = ? WHERE user = ?''',
             (pwd_context.hash(forgotID), datetime.datetime.now(), username))
+
         return self.emailToken(dbConnection, username, forgotID)
 
     def verify_forgot(self, dbConnection, username, forgot, newPassword):
         data = dbConnection.execute(
             '''SELECT forgot, forgotTime from accounts WHERE user = ?''',
             (username, )).fetchone()
+
         if not data:
             return False
 
         forgotTime = data[1]
 
         longAgo = datetime.datetime.now() - forgotTime
+
         if (longAgo.total_seconds() > 60 * 60 * 24):  # more than a day ago
             return False
+
         if pwd_context.verify(forgot, data[0]):
             dbConnection.execute(
                 '''UPDATE accounts SET forgot = ?, password = ? WHERE user = ?''',
@@ -235,6 +259,7 @@ class Accounts(object):
         data = dbConnection.execute(
             '''SELECT user FROM accounts WHERE barcode = ?''',
             (barcode, )).fetchone()
+
         if data:
             emailAddress = self.getEmail(dbConnection, data[0])
             utils.sendEmail('TFI Ops', 'tfi-ops@googlegroups.com', 'Role change for user',
@@ -246,6 +271,7 @@ class Accounts(object):
 
     def getUsers(self, dbConnection):
         dictUsers = {}
+
         for row in dbConnection.execute(
                 '''SELECT user, accounts.barcode, role, displayName
             FROM accounts
@@ -256,10 +282,12 @@ class Accounts(object):
                 'role': Role(row[2]),
                 'displayName': row[3]
             }
+
         return dictUsers
 
     def getNonAccounts(self, dbConnection):
         dictUsers = {}
+
         for row in dbConnection.execute(
                 '''SELECT v_current_members.barcode, displayName
             FROM v_current_members
@@ -277,6 +305,7 @@ class Accounts(object):
     def setActiveKeyholder(self, dbConnection, barcode):
         returnValue = False
         # If current barcode is a keyholder
+
         if barcode:
             (keyholderBarcode, _) = self.getActiveKeyholder(dbConnection)
             if barcode != keyholderBarcode:
@@ -284,13 +313,16 @@ class Accounts(object):
                     "UPDATE accounts SET activeKeyholder = ? WHERE (barcode==?) AND (role & ? != 0)",
                     (Status.active, barcode, Role.KEYHOLDER))
                 data = dbConnection.execute('SELECT changes();').fetchone()
+
                 if data and data[0]:   # There were changes from the last update statement
                     returnValue = True
+
                     if keyholderBarcode:
                         dbConnection.execute(
                             '''UPDATE accounts SET activeKeyholder = ? WHERE (barcode==?) AND changes() > 0''',
                             (Status.inactive, keyholderBarcode)
                         )
+
         return returnValue
 
     def getActiveKeyholder(self, dbConnection):
@@ -299,6 +331,7 @@ class Accounts(object):
             '''SELECT accounts.barcode, displayName FROM accounts
                INNER JOIN members ON accounts.barcode = members.barcode
                WHERE activeKeyholder==?''', (Status.active, )).fetchone()
+
         if data is None:
             return ('', '')
         else:
@@ -306,6 +339,7 @@ class Accounts(object):
 
     def getKeyholders(self, dbConnection):
         keyholders = []
+
         for row in dbConnection.execute(
                 '''SELECT user, barcode, password
             FROM accounts
@@ -315,10 +349,12 @@ class Accounts(object):
                 'barcode': row[1],
                 'password': row[2]
             })
+
         return keyholders
 
     def getKeyholderBarcodes(self, dbConnection):
         keyholders = []
+
         for row in dbConnection.execute(
                 '''SELECT barcode
             FROM accounts
