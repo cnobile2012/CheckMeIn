@@ -21,7 +21,7 @@ TEST_PATH	= # The path to run tests on.
 all	: help
 
 #---------------------------------------------------------------------
-.PHONY	: help
+.PHONY	: help tar
 help	:
 	@LC_ALL=C $(MAKE) -pRrq -f $(firstword $(MAKEFILE_LIST)) : \
                 2>/dev/null | awk -v RS= \
@@ -29,7 +29,6 @@ help	:
                      base/ {if ($$1 !~ "^[#.]") {print $$1}}' | sort | grep \
                 -E -v -e '^[^[:alnum:]]' -e '^$@$$'
 
-.PHONY	: tar
 tar	: clobber
 	@(cd ..; tar -cJvf $(PACKAGE_DIR).tar.xz --exclude=".git" \
           --exclude="__pycache__" --exclude=".pytest_cache" $(BASE_DIR))
@@ -46,7 +45,7 @@ tar	: clobber
 #
 # Run just one test in a specific class within a test file.
 # $ make tests TEST_PATH=tests/test_bases.py::TestBases::test_version
-.PHONY	: tests
+.PHONY	: tests flake8
 tests	: clobber setup
 	@mkdir -p docs
 	@rm -rf $(DOCS_DIR)/htmlcov
@@ -57,7 +56,6 @@ tests	: clobber setup
 	@coverage html --rcfile=$(COVERAGE_FILE)
 	@echo $(TODAY)
 
-.PHONY	: flake8
 flake8	:
 	# Error on syntax errors or undefined names.
 	flake8 . --select=E9,F7,F63,F82 --show-source
@@ -65,18 +63,17 @@ flake8	:
 	flake8 . --exit-zero
 
 #----------------------------------------------------------------------
-.PHONY	: install-dev
+.PHONY	: install-dev install-prod
 install-dev:
 	@python -m pip install --upgrade pip
 	@pip install $(PIP_ARGS) -r requirements/development.txt
 
-.PHONY	: install-prod
 install-prod:
 	@python -m pip install --upgrade pip
 	@pip install $(PIP_ARGS) -r requirements/production.txt
 
 #----------------------------------------------------------------------
-.PHONY  : setup
+.PHONY  : setup run
 setup	:
 	@mkdir -p testData
 	@echo "l1n5Be5G9GHFXTSMi6tb0O6o5AKmTC68OjF2UmaU55A=" > testData/checkmein.key
@@ -84,7 +81,6 @@ setup	:
 
 # The following target is for running the server in a development
 # environment only.
-.PHONY	: clobber run
 run	: setup
 	python -m src.checkMeIn development.conf
 
@@ -95,5 +91,5 @@ clean	:
 
 clobber	: clean
 	@rm -rf testData sessions
-#	@(cd $(DOCS_DIR); make clobber)
+	@(cd $(DOCS_DIR); rm -rf htmlcov)
 #	@rm logs/*.log
