@@ -1,0 +1,21 @@
+#
+# pyproject.toml
+#
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+testpaths = [
+        "tests"
+        ]
+
+[project]
+name = "CheckMeIn"
+version = "1.0.0"
+description = "An application for checking people in and out of a building."
+readme = "README.md"
+license = {file = "LICENSE"}
+
+
+[project.urls]
+#url = "https://github.com/"
+#Repository = "https://github.com/"

@@ -1,5 +1,4 @@
 import sqlite3
-import os
 from collections import namedtuple
 import datetime
 from enum import IntEnum
@@ -96,7 +95,7 @@ class Guests(object):
         for row in dbConnection.execute(
             '''SELECT DISTINCT guest_id, displayName FROM guests
                  INNER JOIN visits ON guest_id = visits.barcode
-                 WHERE start > ? 
+                 WHERE start > ?
                  ORDER BY displayName''',
                 (datetime.datetime.now() - datetime.timedelta(numDays), )):
             guestList.append(Guest(row[0], row[1]))

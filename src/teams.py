@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import sqlite3
-import datetime
 from enum import IntEnum
 
 
@@ -40,11 +39,15 @@ class Status(IntEnum):
 
 class TeamInfo:
     def __init__(self, teamId, programName, programNumber, name, startDate):
-        self.teamId = teamId
+        self._teamId = teamId
         self.programName = programName
         self.programNumber = programNumber
         self.name = name
         self.startDate = startDate
+
+    @property
+    def teamId(self):
+        return self._teamId
 
     def __repr__(self):
         return (f"{self.teamId} {self.programName}{self.programNumber} "
@@ -57,50 +60,50 @@ class TeamInfo:
 
 class Teams:
 
-    def migrate(self, dbConnection, db_schema_version):
-        if db_schema_version < 5:
-            query = ("CREATE TABLE teams (team_id INTEGER PRIMARY KEY, "
-                     "name TEXT UNIQUE, active INTEGER DEFAULT 1);")
-            dbConnection.execute(query)
-            query = ("CREATE TABLE team_members (team_id TEXT, barcode TEXT, "
-                     "type INTEGER default 0);")
-            dbConnection.execute(query)
+    # def migrate(self, dbConnection, db_schema_version):
+    #     if db_schema_version < 5:
+    #         query = ("CREATE TABLE teams (team_id INTEGER PRIMARY KEY, "
+    #                  "name TEXT UNIQUE, active INTEGER DEFAULT 1);")
+    #         dbConnection.execute(query)
+    #         query = ("CREATE TABLE team_members (team_id TEXT, barcode TEXT, "
+    #                  "type INTEGER default 0);")
+    #         dbConnection.execute(query)
 
-        if db_schema_version < 12:
-            query = ("CREATE TABLE new_teams (team_id INTEGER PRIMARY KEY, "
-                     "program_name TEXT, program_number INTEGER, "
-                     "team_name TEXT, start_date TIMESTAMP, "
-                     "active BOOLEAN DEFAULT 1, "
-                     "CONSTRAINT unq UNIQUE (program_name, program_number, "
-                     "start_date));")
-            dbConnection.execute(query)
-            query = ("CREATE TABLE new_team_members ("
-                     "team_id INTEGER NOT NULL, barcode TEXT, "
-                     "type BOOLEAN DEFAULT 0, CONSTRAINT unq UNIQUE ("
-                     "team_id, barcode));")
-            dbConnection.execute(query)
-            # So different we are trashing all old information
-            dbConnection.execute("DROP TABLE team_members;")
-            dbConnection.execute(
-                "ALTER TABLE new_team_members RENAME to team_members;")
-            dbConnection.execute('''DROP TABLE teams;''')
-            dbConnection.execute('''ALTER TABLE new_teams RENAME TO teams;''')
+    #     if db_schema_version < 12:
+    #         query = ("CREATE TABLE new_teams (team_id INTEGER PRIMARY KEY, "
+    #                  "program_name TEXT, program_number INTEGER, "
+    #                  "team_name TEXT, start_date TIMESTAMP, "
+    #                  "active BOOLEAN DEFAULT 1, "
+    #                  "CONSTRAINT unq UNIQUE (program_name, program_number, "
+    #                  "start_date));")
+    #         dbConnection.execute(query)
+    #         query = ("CREATE TABLE new_team_members ("
+    #                  "team_id INTEGER NOT NULL, barcode TEXT, "
+    #                  "type BOOLEAN DEFAULT 0, CONSTRAINT unq UNIQUE ("
+    #                  "team_id, barcode));")
+    #         dbConnection.execute(query)
+    #         # So different we are trashing all old information
+    #         dbConnection.execute("DROP TABLE team_members;")
+    #         dbConnection.execute(
+    #             "ALTER TABLE new_team_members RENAME to team_members;")
+    #         dbConnection.execute("DROP TABLE teams;")
+    #         dbConnection.execute("ALTER TABLE new_teams RENAME TO teams;")
 
-    def injectData(self, dbConnection, data):
-        for datum in data:
-            query = "INSERT INTO teams VALUES (?,?,?,?,?,?);"
-            dbConnection.execute(query,
-                                 (datum["team_id"], datum["program_name"],
-                                  datum["program_number"], datum["team_name"],
-                                  datum["start_date"], datum["active"]))
+    # def injectData(self, dbConnection, data):
+    #     for datum in data:
+    #         query = "INSERT INTO teams VALUES (?, ?, ?, ?, ?, ?);"
+    #         dbConnection.execute(query,
+    #                              (datum["team_id"], datum["program_name"],
+    #                               datum["program_number"], datum["team_name"],
+    #                               datum["start_date"], datum["active"]))
 
-            if "members" in datum:
-                team_id = datum["team_id"]
-                query = "INSERT INTO team_members VALUES (?,?,?);"
+    #         if "members" in datum:
+    #             team_id = datum["team_id"]
+    #             query = "INSERT INTO team_members VALUES (?,?,?);"
 
-                for datum in datum["members"]:
-                    dbConnection.execute(query, (team_id, datum["barcode"],
-                                                 datum["type"]))
+    #             for datum in datum["members"]:
+    #                 dbConnection.execute(query, (team_id, datum["barcode"],
+    #                                              datum["type"]))
 
     def createTeam(self, dbConnection, program_name, program_number, team_name,
                    seasonStart):
@@ -215,8 +218,7 @@ class Teams:
             pass
 
     def removeMember(self, dbConnection, team_id, barcode):
-        query = ("DELETE from team_members where (team_id == ?) "
-                 "AND (barcode == ?);")
+        query = "DELETE FROM team_members WHERE team_id = ? AND barcode = ?;"
         dbConnection.execute(query, (team_id, barcode))
 
     def renameTeam(self, dbConnection, team_id, newName):
@@ -229,8 +231,8 @@ class Teams:
                  "FROM team_members tm "
                  "INNER JOIN members m ON m.barcode = tm.barcode "
                  "LEFT JOIN (SELECT barcode, status FROM visits "
-                 "ORDER BY start DESC LIMIT 1) v ON v.barcode = tm.barcode "
-                 "WHERE tm.team_id = ? "
+                 "ORDER BY enter_time DESC LIMIT 1) v "
+                 "ON v.barcode = tm.barcode WHERE tm.team_id = ? "
                  "ORDER BY tm.type DESC, m.displayName ASC;")
 
         for row in dbConnection.execute(query, (team_id,)):

@@ -63,7 +63,7 @@ class WebBase:
 
     def hasPermissionsNologin(self, roleCheck):
         role = Role(Cookie('role').get(0))
-        return role.getValue() & roleCheck
+        return role.cookie_value & roleCheck
 
     def getRole(self, source):
         return Role(self.getCookie('role', source))

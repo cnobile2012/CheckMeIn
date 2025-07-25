@@ -6,4 +6,4 @@ Mako
 matplotlib
 passlib
 python-dateutil
-#aiosqlite
+aiosqlite

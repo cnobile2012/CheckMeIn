@@ -1,6 +1,6 @@
 import threading
 import cherrypy
-from cherrypy.process import plugins
+
 
 class Portier(threading.Thread):
     """
@@ -12,12 +12,12 @@ class Portier(threading.Thread):
     """
     def __init__(self, channel):
         super().__init__()
-        #self.daemon = True
+        # self.daemon = True
         self.channel = channel
         self.e = threading.Event()
         self.name = 'Portier-'+self.name
         cherrypy.engine.subscribe(channel, self._msgs)
-                
+
     @property
     def message(self):
         """contains the last message published to the bus channel"""
@@ -25,7 +25,7 @@ class Portier(threading.Thread):
 
     @message.setter
     def message(self, msg):
-        """Sets the latest message and triggers the 'door' to open"""        
+        """Sets the latest message and triggers the 'door' to open"""
         self.e.set()
         self._message = msg
 
@@ -33,7 +33,7 @@ class Portier(threading.Thread):
         """
         The Doorman's door, yields the messages as they appear on
         the bus channel.
-        """        
+        """
         while True:
             self.e.wait()
             yield self._message
@@ -47,5 +47,5 @@ class Portier(threading.Thread):
         """
         Unsubscribe from the message stream, signals to remove the thread
         from the heartbet stream
-        """     
+        """
         cherrypy.engine.unsubscribe(self.channel, self._msgs)

@@ -1,25 +1,25 @@
-import sqlite3
+# src/base_database.py
+
 import datetime
 
 from io import BytesIO
-from collections import defaultdict
-from collections import namedtuple
+from collections import defaultdict, namedtuple
 
 import matplotlib
-# The pylint disable is because it doesn't like the use before other imports
-matplotlib.use('Agg')   # pylint: disable=C0413
+# The pylint disable is because it doesn't like the use before other imports.
+matplotlib.use('Agg')
+
 import matplotlib.pyplot as plt
 
 from .guests import Guest
 
 
 Transaction = namedtuple('Transaction', ['name', 'time', 'description'])
-Datum = namedtuple('Datum', ['rowid', 'start', 'leave', 'name', 'status'])
-
+Datum = namedtuple('Datum', ['rowid', 'enter_time', 'exit_time', 'name',
+                             'status'])
 VisitorsAtTime = namedtuple('VisitorsAtTime', ['startTime', 'numVisitors'])
-
 PersonInBuilding = namedtuple(
-    'PersonInBuilding', ['displayName', 'barcode', 'start'])
+    'PersonInBuilding', ['displayName', 'barcode', 'enter_time'])
 
 
 def daterange(start_date, end_date):
@@ -27,72 +27,81 @@ def daterange(start_date, end_date):
         yield start_date + datetime.timedelta(n)
 
 
-class Person(object):
-    def __init__(self, name, start, leave):
+class Person:
+
+    def __init__(self, name, enter_time, exit_time):
         self.name = name
         self.hours = 0.0
         self.date = defaultdict(float)
-        self.addVisit(start, leave)
+        self.addVisit(enter_time, exit_time)
 
-    def addVisit(self, start, leave):
-        dTime = leave - start
+    def addVisit(self, enter_time, exit_time):
+        dTime = exit_time - enter_time
         # convert from seconds to hours
         hours = (float)(dTime.seconds / (60.0 * 60.0))
         self.hours += hours
-        self.date[start.date()] += hours
+        self.date[enter_time.date()] += hours
 
 
-class Visit(object):
-    def __init__(self, start, leave):
-        self.start = start
-        self.leave = leave
+class Visit:
 
-    def inRange(self, startTime, endTime):
-        # if start time is in between
-        if(self.start <= endTime) and (self.start >= startTime):
+    def __init__(self, enter_time, exit_time):
+        self.enter_time = enter_time
+        self.exit_time = exit_time
+
+    def inRange(self, enter_time, exit_time):
+        # if enter time is in between
+        if self.enter_time <= exit_time and self.enter_time >= enter_time:
             return True
-        # OR if end time is in between
-        if(self.leave <= endTime) and (self.leave >= startTime):
+
+        # OR if exit time is in between
+        if self.exit_time <= exit_time and self.exit_time >= enter_time:
             return True
-        # OR if start time is before AND end time is after
-        if(self.start <= startTime) and (self.leave >= endTime):
+
+        # OR if enter time is before AND exit time is after
+        if self.enter_time <= enter_time and self.exit_time >= exit_time:
             return True
+
         # else False
         return False
 
 
-class BuildingUsage(object):
+class BuildingUsage:
+
     def __init__(self):
         self.visits = []
 
-    def addVisit(self, start, leave):
-        self.visits.append(Visit(start, leave))
+    def addVisit(self, enter_time, exit_time):
+        self.visits.append(Visit(enter_time, exit_time))
 
-    def inRange(self, start, leave):
+    def inRange(self, enter_time, exit_time):
         numVisitors = 0
         for visit in self.visits:
-            if visit.inRange(start, leave):
+            if visit.inRange(enter_time, exit_time):
                 numVisitors += 1
+
         return numVisitors
 
 
-class Statistics(object):
+class Statistics:
+
     def __init__(self, dbConnection, beginDate, endDate):
         self.beginDate = beginDate.date()
         self.endDate = endDate.date()
         self.visitors = {}
         self.buildingUsage = BuildingUsage()
+        query = ("SELECT v0.enter_time, v0.exit_time, displayName, v0.barcode "
+                 "FROM visits v0 "
+                 "INNER JOIN members m ON m.barcode = v0.barcode "
+                 "WHERE v0.enter_time BETWEEN ? AND ? "
+                 "UNION "
+                 "SELECT v1.enter_time, v1.exit_time, g.displayName, "
+                 "v1.barcode FROM visits v1 "
+                 "INNER JOIN guests g ON gs.guest_id = v1.barcode "
+                 "WHERE v1.enter_time BETWEEN ? AND ?;")
 
-        for row in dbConnection.execute(
-                '''SELECT start, leave, displayName, visits.barcode
-   FROM visits
-   INNER JOIN members ON members.barcode = visits.barcode
-   WHERE (start BETWEEN ? AND ?)
-   UNION
-   SELECT start, leave, displayName, visits.barcode
-   FROM visits
-   INNER JOIN guests ON guests.guest_id = visits.barcode
-   WHERE (start BETWEEN ? AND ?)''', (beginDate, endDate, beginDate, endDate)):
+        for row in dbConnection.execute(query, (beginDate, endDate,
+                                                beginDate, endDate)):
             try:
                 self.visitors[row[3]].addVisit(row[0], row[1])
             except KeyError:
@@ -110,11 +119,10 @@ class Statistics(object):
             self.sortedList = []
         else:
             self.avgTime = self.totalHours / self.uniqueVisitors
-
             self.sortedList = sorted(list(self.visitors.values()),
                                      key=lambda x: x.hours, reverse=True)
-
             half = len(self.sortedList) // 2
+
             if len(self.sortedList) % 2:
                 self.medianTime = self.sortedList[half].hours
             else:
@@ -124,35 +132,40 @@ class Statistics(object):
 
     def getBuildingUsage(self):
         dataPoints = []
+
         for day in daterange(self.beginDate,
                              self.endDate + datetime.timedelta(days=1)):
             beginTimePeriod = datetime.datetime.combine(
                 day, datetime.datetime.min.time())
+
             # Care about 8am-10pm
             for startHour in range(8, 22):
                 beginTimePeriod = beginTimePeriod.replace(
                     hour=startHour, minute=0, second=0, microsecond=0)
-                endTimePeriod = beginTimePeriod + \
-                    datetime.timedelta(seconds=60*60)
+                endTimePeriod = beginTimePeriod + datetime.timedelta(
+                    seconds=60*60)
                 dataPoints.append(VisitorsAtTime(
                     beginTimePeriod,
-                    self.buildingUsage.inRange(beginTimePeriod, endTimePeriod)))
+                    self.buildingUsage.inRange(beginTimePeriod,
+                                               endTimePeriod)))
+
         return dataPoints
 
     def getBuildingUsageGraph(self):
         dates = []
         values = []
         fig = plt.figure()
+
         for point in self.getBuildingUsage():
             dates.append(matplotlib.dates.date2num(point.startTime))
             values.append(point.numVisitors)
 
         fig, ax = plt.subplots()
         plt.plot_date(x=dates, y=values, fmt="r-")
-        title_text = "Building usage\n" + \
-            self.beginDate.strftime("%b %e, %G")
+        title_text = f"Building usage\n{self.beginDate.strftime("%b %e, %G")}"
+
         if self.beginDate != self.endDate:
-            title_text += " - " + self.endDate.strftime("%b %e, %G")
+            title_text += f" - {self.endDate.strftime("%b %e, %G")}"
 
         plt.title(title_text, fontsize=14)
         plt.ylabel("Number of visitors")
@@ -164,82 +177,93 @@ class Statistics(object):
         return figData.getvalue()
 
 
-class Reports(object):
+class Reports:
+
     def __init__(self, engine):
         self.engine = engine
 
     def whoIsHere(self, dbConnection):
         keyholders = self.engine.accounts.getKeyholderBarcodes(dbConnection)
         listPresent = []
-        for row in dbConnection.execute('''
-            SELECT displayName, start, visits.barcode
-            FROM visits
-            INNER JOIN members ON members.barcode = visits.barcode
-            WHERE visits.status=='In'
-            UNION
-            SELECT displayName, start, visits.barcode
-            FROM visits
-            INNER JOIN guests ON guests.guest_id = visits.barcode
-            WHERE visits.status=='In' ORDER BY displayName'''):
+        query = ("SELECT displayName, v0.enter_time, v0.barcode "
+                 "FROM visits v0 "
+                 "INNER JOIN members m ON m.barcode = v0.barcode "
+                 "WHERE v0.status = 'In' "
+                 "UNION "
+                 "SELECT g.displayName, v1.entre_time, v1.barcode "
+                 "FROM visits v1 "
+                 "INNER JOIN guests g ON g.guest_id = v1.barcode "
+                 "WHERE v1.status = 'In' ORDER BY g.displayName;")
+
+        for row in dbConnection.execute(query):
             displayName = row[0]
 
             if(row[2] in keyholders):
-                displayName = displayName + "(Keyholder)"
+                displayName = f"{displayName}(Keyholder)"
 
             listPresent.append(
                 PersonInBuilding(displayName=displayName,
-                                 barcode=row[2], start=row[1]))
+                                 barcode=row[2], enter_time=row[1]))
+
         return listPresent
 
     def whichTeamMembersHere(self, dbConnection, team_id, startTime, endTime):
         listPresent = []
-        for row in dbConnection.execute('''
-           SELECT displayName
-           FROM visits
-           INNER JOIN members ON members.barcode = visits.barcode
-           INNER JOIN team_members ON team_members.barcode = visits.barcode
-           WHERE (visits.start <= ?) AND (visits.leave >= ?)
-                                     AND team_members.team_id = ?
-           ORDER BY displayName ASC''', (endTime, startTime, team_id)):
+        query = ("SELECT m.displayName FROM visits v "
+                 "INNER JOIN members m ON m.barcode = v.barcode "
+                 "INNER JOIN team_members tm ON tm.barcode = v.barcode "
+                 "WHERE v.enter_time <= ? AND v.exit_time >= ? "
+                 "AND tm.team_id = ? ORDER BY m.displayName ASC;")
+
+        for row in dbConnection.execute(query, (endTime, startTime, team_id)):
             listPresent.append(row[0])
 
         return listPresent
 
     def guestsInBuilding(self, dbConnection):
         listPresent = []
-        for row in dbConnection.execute('''
-            SELECT displayName, start, guests.guest_id
-            FROM visits
-            INNER JOIN guests ON guests.guest_id = visits.barcode
-            WHERE visits.status=='In' ORDER BY displayName'''):
+        query = ("SELECT g.displayName, v.enter_time, g.guest_id "
+                 "FROM visits v "
+                 "INNER JOIN guests g ON g.guest_id = v.barcode "
+                 "WHERE v.status = 'In' ORDER BY g.displayName;")
+
+        for row in dbConnection.execute(query):
             listPresent.append(Guest(row[2], row[0]))
 
         return listPresent
 
     def numberPresent(self, dbConnection):
-        (numPeople, ) = dbConnection.execute(
-            "SELECT count(*) FROM visits WHERE status == 'In'").fetchone()
+        query = "SELECT count(*) FROM visits WHERE status = 'In';"
+        numPeople = dbConnection.execute().fetchone(query)
         return numPeople
+
+    def transactionsToday(self, dbConnection):
+        now = datetime.datetime.now()
+        startDate = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        endDate = now.replace(hour=23, minute=59,
+                              second=59, microsecond=999999)
+        return self.transactions(dbConnection, startDate, endDate)
 
     def transactions(self, dbConnection, startDate, endDate):
         keyholders = self.engine.accounts.getKeyholderBarcodes(dbConnection)
-
         listTransactions = []
-        for row in dbConnection.execute('''
-           SELECT displayName, start, leave, visits.status, visits.barcode
-           FROM visits
-           INNER JOIN members ON members.barcode = visits.barcode
-           WHERE (start BETWEEN ? and ?)
-           UNION
-           SELECT displayName, start, leave, visits.status, visits.barcode
-           FROM visits
-           INNER JOIN guests ON guests.guest_id = visits.barcode
-           WHERE (start BETWEEN ? and ?)
-           ORDER BY start''', (startDate, endDate, startDate, endDate)):
+        query = ("SELECT displayName, v0.enter_time, v0.exit_time, "
+                 "v0.status, v0.barcode FROM visits v0 "
+                 "INNER JOIN members m ON m.barcode = v0.barcode "
+                 "WHERE (v0.enter_time BETWEEN ? and ?) "
+                 "UNION "
+                 "SELECT displayName, v1.enter_time, v1.exit_time, v1.status, "
+                 "v1.barcode FROM visits v1 "
+                 "INNER JOIN guests g ON g.guest_id = v1.barcode "
+                 "WHERE (v1.enter_time BETWEEN ? and ?) "
+                 "ORDER BY v1.enter_time;")
+
+        for row in dbConnection.execute(query, (startDate, endDate,
+                                                startDate, endDate)):
             displayName = row[0]
 
-            if(row[4] in keyholders):
-                displayName = displayName + "(Keyholder)"
+            if row[4] in keyholders:
+                displayName = f"{displayName}(Keyholder)"
 
             listTransactions.append(Transaction(displayName, row[1], 'In'))
 
@@ -249,18 +273,11 @@ class Reports(object):
 
         return sorted(listTransactions, key=lambda x: x[1], reverse=True)
 
-    def transactionsToday(self, dbConnection):
-        now = datetime.datetime.now()
-        startDate = now.replace(hour=0, minute=0, second=0, microsecond=0)
-        endDate = now.replace(hour=23, minute=59,
-                              second=59, microsecond=999999)
-        return self.transactions(dbConnection, startDate, endDate)
-
     def uniqueVisitors(self, dbConnection, startDate, endDate):
-        numUniqueVisitors = dbConnection.execute('''
-            SELECT COUNT(DISTINCT barcode) FROM visits
-            WHERE (start BETWEEN ? AND ?)''',
-            (startDate, endDate)).fetchone()[0]
+        query = ("SELECT COUNT (DISTINCT barcode) FROM visits "
+                 "WHERE enter_time BETWEEN ? AND ?;")
+        numUniqueVisitors = dbConnection.execute(
+            query, (startDate, endDate)).fetchone()[0]
 
         return numUniqueVisitors
 
@@ -284,15 +301,16 @@ class Reports(object):
         return Statistics(dbConnection, startDate, endDate)
 
     def getEarliestDate(self, dbConnection):
-        data = dbConnection.execute(
-            "SELECT start FROM visits ORDER BY start ASC LIMIT 1").fetchone()
+        query = ("SELECT enter_time FROM visits "
+                 "ORDER BY enter_time ASC LIMIT 1;")
+        data = dbConnection.execute(query).fetchone()
         return data[0]
 
     def getForgottenDates(self, dbConnection):
         dates = []
+        query = "SELECT enter_time FROM visits WHERE status = 'Forgot';"
 
-        for row in dbConnection.execute("""
-            SELECT start FROM visits WHERE status=='Forgot'"""):
+        for row in dbConnection.execute(query):
             day = row[0].date()
 
             if day not in dates:
@@ -302,24 +320,24 @@ class Reports(object):
 
     def getData(self, dbConnection, dateStr):
         data = []
-        date = datetime.datetime(int(dateStr[0:4]), int(
-            dateStr[5:7]), int(dateStr[8:10]))
+        date = datetime.datetime(int(dateStr[0:4]), int(dateStr[5:7]),
+                                 int(dateStr[8:10]))
         startDate = date.replace(hour=0, minute=0, second=0, microsecond=0)
-        endDate = date.replace(
-            hour=23, minute=59, second=59, microsecond=999999)
+        endDate = date.replace(hour=23, minute=59, second=59,
+                               microsecond=999999)
+        query = ("SELECT displayName, v0.enter_time, v0.exit_time, v0.status, "
+                 "v0.rowid FROM visits v0 "
+                 "INNER JOIN members m ON m.barcode = v0.barcode "
+                 "WHERE v0.enter_time BETWEEN ? and ? "
+                 "UNION "
+                 "SELECT g.displayName, v1.enter_time, v1.exit_time, "
+                 "v1.status, visits.rowid FROM visits v1 "
+                 "INNER JOIN guests g ON g.guest_id = v1.barcode "
+                 "WHERE v1.enter_time BETWEEN ? and ? ORDER BY v1.enter_time;")
 
-        for row in dbConnection.execute('''
-           SELECT displayName, start, leave, visits.status, visits.rowid
-           FROM visits
-           INNER JOIN members ON members.barcode = visits.barcode
-           WHERE (start BETWEEN ? and ?)
-           UNION
-           SELECT displayName, start, leave, visits.status, visits.rowid
-           FROM visits
-           INNER JOIN guests ON guests.guest_id = visits.barcode
-           WHERE (start BETWEEN ? and ?)
-           ORDER BY start''', (startDate, endDate, startDate, endDate)):
-            data.append(Datum(start=row[1], leave=row[2], name=row[0],
+        for row in dbConnection.execute(query, (startDate, endDate,
+                                                startDate, endDate)):
+            data.append(Datum(enter_time=row[1], exit_time=row[2], name=row[0],
                               status=row[3], rowid=row[4]))
 
         return data

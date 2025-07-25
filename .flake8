@@ -8,5 +8,5 @@ exclude =
     txt
 
 per-file-ignores =
-    src/*: E275
-    tests/*: E275
+    src/*: E252, E275, E402
+    tests/*: E265, E275, F401, E402

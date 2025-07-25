@@ -1,68 +1,81 @@
+# -*- coding: utf-8 -*-
+
 import cherrypy
 
-from .accounts import Accounts, Role
+from .accounts import Role
 from .webBase import WebBase
 
 KEYHOLDER_BARCODE = '999901'
 
 
 class WebMainStation(WebBase):
-    # STATION
+
     @cherrypy.expose
     def index(self, error=''):
         with self.dbConnect() as dbConnection:
-            (_, keyholder_name) = self.engine.accounts.getActiveKeyholder(dbConnection)
-
+            _, keyholder_name = self.engine.accounts.getActiveKeyholder(
+                dbConnection)
+            todaysTrans = self.engine.reports.transactionsToday(dbConnection)
+            numberPresent = self.engine.reports.numberPresent(dbConnection)
+            unqVisitTdy = self.engine.reports.uniqueVisitorsToday(dbConnection)
+            stewards = self.engine.accounts.getPresentWithRole(
+                dbConnection, Role.SHOP_STEWARD)
             return self.template('station.mako',
-                                 todaysTransactions=self.engine.reports.transactionsToday(
-                                     dbConnection),
-                                 numberPresent=self.engine.reports.numberPresent(
-                                     dbConnection),
-                                 uniqueVisitorsToday=self.engine.reports.uniqueVisitorsToday(
-                                     dbConnection),
+                                 todaysTransactions=todaysTrans,
+                                 numberPresent=numberPresent,
+                                 uniqueVisitorsToday=unqVisitTdy,
                                  keyholder_name=keyholder_name,
-                                 stewards=self.engine.accounts.getPresentWithRole(
-                                     dbConnection, Role.SHOP_STEWARD),
-                                 error=error)
+                                 stewards=stewards, error=error)
 
     @cherrypy.expose
     # later change this to be more ajaxy, but for now...
     def scanned(self, barcode):
         error = ''
-# strip whitespace before or after barcode digits (occasionally a space comes before or after)
+        # strip whitespace before or after barcode digits (occasionally a
+        # space comes before or after)
         barcodes = barcode.split()
+
         with self.dbConnect() as dbConnection:
-            (current_keyholder_bc, _) = self.engine.accounts.getActiveKeyholder(
+            current_keyholder_bc, _ = self.engine.accounts.getActiveKeyholder(
                 dbConnection)
+
             for bc in barcodes:
-                if (bc == KEYHOLDER_BARCODE) or (bc == current_keyholder_bc):
+                if bc == KEYHOLDER_BARCODE or bc == current_keyholder_bc:
                     whoIsHere = self.engine.reports.whoIsHere(dbConnection)
-                    if (bc == current_keyholder_bc) and len(whoIsHere) == 1:
+
+                    if bc == current_keyholder_bc and len(whoIsHere) == 1:
                         self.checkout(bc, called=True)
                     else:
-                        return self.template('keyholder.mako', whoIsHere=whoIsHere)
+                        return self.template('keyholder.mako',
+                                             whoIsHere=whoIsHere)
                 else:
                     error = self.engine.visits.scannedMember(dbConnection, bc)
+
                     if not current_keyholder_bc:
                         self.engine.accounts.setActiveKeyholder(
                             dbConnection, bc)
+
                     if error:
                         cherrypy.log(error)
+
         raise cherrypy.HTTPRedirect("/station")
 
     @cherrypy.expose
     def checkin(self, barcode, called=False):
         inBarcodeList = barcode.split()
+
         with self.dbConnect() as dbConnection:
             self.engine.checkin(dbConnection, inBarcodeList)
+
         if not called:
             raise cherrypy.HTTPRedirect(f"/links?barcode={inBarcodeList[0]}")
 
     @cherrypy.expose
     def checkout(self, barcode, called=False):
         outBarcodeList = barcode.split()
+
         with self.dbConnect() as dbConnection:
-            (current_keyholder_bc, _) = self.engine.accounts.getActiveKeyholder(
+            current_keyholder_bc, _ = self.engine.accounts.getActiveKeyholder(
                 dbConnection)
             leaving_keyholder_bc = self.engine.checkout(
                 dbConnection, current_keyholder_bc, outBarcodeList)
@@ -72,6 +85,7 @@ class WebMainStation(WebBase):
                 self.engine.visits.emptyBuilding(
                     dbConnection, leaving_keyholder_bc)
                 self.engine.accounts.removeKeyholder(dbConnection)
+
         if not called:
             raise cherrypy.HTTPRedirect(f"/links?barcode={outBarcodeList[0]}")
 
@@ -83,29 +97,31 @@ class WebMainStation(WebBase):
 
     @cherrypy.expose
     def makeKeyholder(self, barcode):
-        error = ''
         bc = barcode.strip()
+
         with self.dbConnect() as dbConnection:
-            self.engine.visits.checkInMember(
-                dbConnection, barcode)  # make sure checked in
-            result = self.engine.accounts.setActiveKeyholder(
-                dbConnection, barcode)
+            # make sure checked in
+            self.engine.visits.checkInMember(dbConnection, barcode)
+            result = self.engine.accounts.setActiveKeyholder(dbConnection,
+                                                             barcode)
             whoIsHere = self.engine.reports.whoIsHere(dbConnection)
 
-            if result == False:
+            if not result:
                 return self.template('keyholder.mako', whoIsHere=whoIsHere)
+
         raise cherrypy.HTTPRedirect(f"/links?barcode={bc}")
 
     @cherrypy.expose
     def keyholder(self, barcode):
-        error = ''
         bc = barcode.strip()
+
         with self.dbConnect() as dbConnection:
-            (current_keyholder_bc, _) = self.engine.accounts.getActiveKeyholder(
+            current_keyholder_bc, _ = self.engine.accounts.getActiveKeyholder(
                 dbConnection)
-            if (bc == KEYHOLDER_BARCODE) or (bc == current_keyholder_bc):
-                self.engine.visits.emptyBuilding(
-                    dbConnection, current_keyholder_bc)
+
+            if bc == KEYHOLDER_BARCODE or bc == current_keyholder_bc:
+                self.engine.visits.emptyBuilding(dbConnection,
+                                                 current_keyholder_bc)
                 self.engine.accounts.removeKeyholder(dbConnection)
             else:
                 return self.makeKeyholder(barcode)

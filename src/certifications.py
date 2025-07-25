@@ -81,7 +81,7 @@ class Certifications:
         dbConnection.execute('INSERT INTO tools VALUES(?,?,?,?,?)',
                              (tool_id, grouping, name, restriction, comments))
 
-    def addTools(self, dbConnection):  # pragma: no cover
+    def addTools(self, dbConnection):
         tools = [[1, 1, "Sheet Metal Brake"], [2, 1, "Blind Rivet Gun"],
                  [3, 1, "Stretcher Shrinker"], [4, 1, "3D printers"],
                  [5, 2, "Power Hand Drill"], [6, 2, "Solder Iron"],
@@ -99,35 +99,36 @@ class Certifications:
             else:
                 self.addTool(dbConnection, tool[0], tool[1], tool[2])
 
-    def migrate(self, dbConnection, db_schema_version):
-        if db_schema_version < 8:
-            query = ("CREATE TABLE restrictions (id INTEGER PRIMARY KEY, "
-                     "descr TEXT);")
-            dbConnection.execute(query)
-            query = "INSERT INTO restrictions VALUES(1, 'Over 18 Only');"
-            dbConnection.execute(query)
-            query = ("CREATE TABLE tools (id INTEGER PRIMARY KEY, "
-                     "grouping TEXT, name TEXT, "
-                     "restriction INTEGER DEFAULT 0, comments TEXT);")
-            dbConnection.execute(query)
-            query = ("CREATE TABLE certifications (user_id TEXT, "
-                     "tool_id INTEGER, certifier_id TEXT, date TIMESTAMP, "
-                     "level INTEGER default 0);")
-            dbConnection.execute(query)
-            self.addTools(dbConnection)
+    # def migrate(self, dbConnection, db_schema_version):
+    #     if db_schema_version < 8:
+    #         query = ("CREATE TABLE restrictions (id INTEGER PRIMARY KEY, "
+    #                  "descr TEXT);")
+    #         dbConnection.execute(query)
+    #         query = "INSERT INTO restrictions VALUES(1, 'Over 18 Only');"
+    #         dbConnection.execute(query)
+    #         query = ("CREATE TABLE tools (id INTEGER PRIMARY KEY, "
+    #                  "grouping TEXT, name TEXT, "
+    #                  "restriction INTEGER DEFAULT 0, comments TEXT);")
+    #         dbConnection.execute(query)
+    #         query = ("CREATE TABLE certifications user_id TEXT, "
+    #                  "tool_id INTEGER, certifier_id TEXT, date TIMESTAMP, "
+    #                  "level INTEGER default 0;")
+    #         dbConnection.execute(query)
+    #         self.addTools(dbConnection)
 
-        if db_schema_version < 16:
-            self.addTool(dbConnection, 19, 3, "Grinder")
-            query = "UPDATE tools SET name='Sander' WHERE id=10;"
-            dbConnection.execute(query)
-            query = ("SELECT user_id, tool_id, date, level, certifier_id "
-                     "FROM certifications WHERE tool_id = 10;")
+    #     if db_schema_version < 16:
+    #         self.addTool(dbConnection, 19, 3, "Grinder")
+    #         query = "UPDATE tools SET name='Sander' WHERE id=10;"
+    #         dbConnection.execute(query)
+    #         query = ("SELECT user_id, tool_id, date, level, certifier_id "
+    #                  "FROM certifications WHERE tool_id = 10;")
 
-            for row in dbConnection.execute(query):
-                self.addCertification(dbConnection, row[0], 19, row[3], row[2],
-                                      row[4])
+    #         for row in dbConnection.execute(query):
+    #             self.addCertification(dbConnection, row[0], 19, row[3], row[2],
+    #                                   row[4])
 
     def injectData(self, dbConnection, data):
+        # Only used in testing
         for datum in data:
             self.addCertification(dbConnection, datum["barcode"],
                                   datum["tool_id"], datum["level"],
@@ -149,9 +150,9 @@ class Certifications:
     def getAllUserList(self, dbConnection):
         users = {}
         query = ("SELECT crt.user_id, crt.tool_id, crt.date, crt.level, "
-                 "vcm.displayName FROM certifications AS crt "
-                 "INNER JOIN v_current_members AS vcm "
-                 "ON vcm.barcode = crt.user_id ORDER BY vcm.displayName;")
+                 "cm.displayName FROM certifications AS crt "
+                 "INNER JOIN current_members AS cm "
+                 "ON cm.barcode = crt.user_id ORDER BY cm.displayName;")
 
         for row in dbConnection.execute(query):
             try:
@@ -188,7 +189,7 @@ class Certifications:
                  "WHERE tm.team_id = ? "
                  "ORDER BY tm.type DESC, m.displayName ASC;")
 
-        for row in dbConnection.execute(query , (team_id,)):
+        for row in dbConnection.execute(query, (team_id,)):
             users[row[0]] = ToolUser(row[1], row[0])
 
         query = ("SELECT c.user_id, c.tool_id, c.date, c.level, m.displayName "
@@ -248,9 +249,9 @@ class Certifications:
         query = ("SELECT c.tool_id, t.name FROM certifications c "
                  "INNER JOIN tools t ON c.tool_id = t.id "
                  "WHERE c.user_id = ? AND c.level >= ? ORDER BY t.name ASC;")
+        certifier = CertificationLevels.CERTIFIER
 
-        for row in dbConnection.execute(
-            query, (user_id, CertificationLevels.CERTIFIER)):
+        for row in dbConnection.execute(query, (user_id, certifier)):
             tools.append([row[0], row[1]])
 
         return tools

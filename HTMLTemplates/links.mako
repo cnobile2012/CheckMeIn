@@ -28,7 +28,7 @@ ${self.logo()}<br/>
       <LI><A HREF="/station/checkin?barcode=${barcode}">Check into the LOFT</A>
    % endif
    <LI><A HREF="/certifications/user?barcode=${barcode}">My Shop Certifications</A>
-   % if role.value != 0:
+   % if role.cookie_value != 0:
       <LI><A HREF="/profile/">Change Password</A>
       <LI><A HREF="/profile/logout">Logout</A>
    % else:

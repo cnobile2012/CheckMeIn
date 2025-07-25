@@ -1,15 +1,13 @@
 # -*- coding: utf-8 -*-
 
-import sys
-import sqlite3
 from passlib.apps import custom_app_context as pwd_context
 from enum import IntEnum
-import time
 import random
 import datetime
 import urllib
 
-from . import utils
+from .base_database import BaseDatabase
+from .utils import sendEmail
 
 
 class Status(IntEnum):
@@ -25,10 +23,10 @@ class Role:
     SHOP_STEWARD = 0x40
 
     def __init__(self, value=0):
-        self.value = value
+        self._value = value
 
     def isRole(self, role):
-        return self.value & role
+        return self._value & role > 0
 
     def isKeyholder(self):
         return self.isRole(self.KEYHOLDER)
@@ -45,29 +43,35 @@ class Role:
     def isShopSteward(self):
         return self.isRole(self.SHOP_STEWARD)
 
-    def setValue(self, check, value):
-        if type(check) == str:
+    @property
+    def cookie_value(self) -> int:
+        return self._value
+
+    @cookie_value.setter
+    def cookie_value(self, keyholder: tuple) -> None:
+        # We do this because property setters can only take one value.
+        check, value = keyholder
+
+        if isinstance(check, str):
             check = int(check)
 
-        self.value = (self.value | value) if check else (self.value & ~value)
+        self._value = ((self._value | value) if check
+                       else (self._value & ~value))
 
     def setKeyholder(self, keyholder):
-        self.setValue(keyholder, self.KEYHOLDER)
+        self.cookie_value = (keyholder, self.KEYHOLDER)
 
     def setAdmin(self, admin):
-        self.setValue(admin, self.ADMIN)
+        self.cookie_value = (admin, self.ADMIN)
 
     def setShopCertifier(self, admin):
-        self.setValue(admin, self.SHOP_CERTIFIER)
+        self.cookie_value = (admin, self.SHOP_CERTIFIER)
 
     def setCoach(self, coach):
-        self.setValue(coach, self.COACH)
+        self.cookie_value = (coach, self.COACH)
 
     def setShopSteward(self, steward):
-        self.setValue(steward, self.SHOP_STEWARD)
-
-    def getValue(self):
-        return self.value
+        self.cookie_value = (steward, self.SHOP_STEWARD)
 
     def __str__(self):
         roleStr = ""
@@ -87,278 +91,271 @@ class Role:
         if self.isCoach():
             roleStr += "Coach "
 
-        return roleStr
+        return roleStr.strip()
 
     def __repr__(self):
-        return str(self.value)
+        return str(self.cookie_value)
 
 
 class Accounts:
+    BD = BaseDatabase()
 
-    def migrate(self, dbConnection, db_schema_version):
-        if db_schema_version < 11:
-            dbConnection.execute('''CREATE TABLE accounts
-                                 (user TEXT PRIMARY KEY collate nocase,
-                                  password TEXT,
-                                  forgot TEXT,
-                                  forgotTime TIMESTAMP,
-                                  barcode TEXT UNIQUE,
-                                  activeKeyholder INTEGER default 0,
-                                  role INTEGER default 0)''')
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-    def injectData(self, dbConnection, data):
-        for datum in data:
-            self.addUser(dbConnection, datum["user"], datum["password"],
-                         datum["barcode"], Role(datum["role"]))
+    async def add_users(self, data: list) -> None:
+        """
+        Add one or more users.
 
-    def addUser(self, dbConnection, user, password, barcode, role):
-        hashedPassword = pwd_context.hash(password)
-        dbConnection.execute(
-            '''INSERT INTO accounts(user, password, barcode, role) VALUES(?,?,?,?)''',
-            (user, hashedPassword, barcode, role.getValue()))
-        emailAddress = self.getEmail(dbConnection, user)
+        :param list data: The data to insert in the DB in the form of:
+                          [{'user': <user>, 'password': <password>,
+                            'barcode': <barcode>, 'role': <role>}, {...}, ...]
+        """
+        query = ("INSERT INTO accounts (user, password, barcode, role) "
+                 "VALUES (?, ?, ?, ?);")
+        params = []
 
-        utils.sendEmail('TFI Ops', 'tfi-ops@googlegroups.com', 'New User',
-                        f'User {user} <{emailAddress}> added with roles : {role}')
+        for items in data:
+            user = items['user']
+            password = pwd_context.hash(items['password'])
+            barcode = items['barcode']
+            role = Role(items['role'])
+            items = (user, password, barcode, role.cookie_value)
+            params.append(items)
+            email_address = await self.get_email(user)
+            sendEmail('TFI Ops', 'tfi-ops@googlegroups.com', 'New User',
+                      f"User {user} <{email_address}> added with roles "
+                      f": {role}")
 
-    def getBarcode(self, dbConnection, user, password):
-        data = dbConnection.execute(
-            '''SELECT password, barcode, role FROM accounts WHERE user = (?)''',
-            (user, )).fetchone()
+        await self.BD._do_insert_query(query, params)
+
+    async def get_email(self, username):
+        query = ("SELECT m.email from accounts a "
+                 "INNER JOIN members m ON a.barcode = m.barcode "
+                 "WHERE a.user = ?;")
+        return await self.BD._do_select_one_query(query, (username,))
+
+    # def migrate(self, dbConnection, db_schema_version):
+    #     if db_schema_version < 11:
+    #         query = ("CREATE TABLE accounts ("
+    #                  "user TEXT PRIMARY KEY COLLATE NOCASE, password TEXT, "
+    #                  "forgot TEXT, forgotTime TIMESTAMP, barcode TEXT UNIQUE, "
+    #                  "activeKeyholder INTEGER default 0, "
+    #                  "role INTEGER default 0);")
+    #         dbConnection.execute(query)
+
+    # def injectData(self, dbConnection, data):
+    #     # Only used for testing
+    #     for datum in data:
+    #         self.addUser(dbConnection, datum["user"], datum["password"],
+    #                      datum["barcode"], Role(datum["role"]))
+
+    def getBarcode(self, conn, user, password):
+        query = ("SELECT password, barcode, role FROM accounts "
+                 "WHERE user = ?;")
+        data = conn.execute(query, (user, )).fetchone()
 
         if data is None:
-            return ('', Role(0))
+            ret = ('', Role(0))
+        elif not pwd_context.verify(password, data[0]):
+            ret = ('', Role(0))
+        else:
+            ret = (data[1], Role(data[2]))
 
-        if not pwd_context.verify(password, data[0]):
-            return ('', Role(0))
+        return ret
 
-        return (data[1], Role(data[2]))
+    def getMembersWithRole(self, conn, role):
+        query = ("SELECT cm.displayName, a.barcode FROM accounts a "
+                 "INNER JOIN current_members cm "
+                 "ON (cm.barcode = a.barcode) "
+                 "WHERE a.role & ? != 0 ORDER BY cm.displayName;")
+        return [(row[0], row[1])
+                for row in conn.execute(query, (role,))]
 
-    def getMembersWithRole(self, dbConnection, role):
-        listUsers = []
+    def getPresentWithRole(self, conn, role):
+        query = ("SELECT cm.displayName, a.barcode FROM accounts a "
+                 "INNER JOIN current_members cm "
+                 "ON (cm.barcode = a.barcode) "
+                 "INNER JOIN visits v ON (v.barcode = a.barcode) "
+                 "WHERE v.status = 'In' AND role & ? != 0 "
+                 "ORDER BY cm.displayName;")
+        return [(row[0], row[1])
+                for row in conn.execute(query, (role,))]
 
-        for row in dbConnection.execute(
-                '''SELECT displayName, accounts.barcode
-            FROM accounts
-            INNER JOIN v_current_members ON (v_current_members.barcode = accounts.barcode)
-            WHERE (role & ? != 0)
-            ORDER BY displayName''', (role, )):
-            listUsers.append([row[0], row[1]])
-
-        return listUsers
-
-    def getPresentWithRole(self, dbConnection, role):
-        listUsers = []
-
-        for row in dbConnection.execute(
-                '''SELECT displayName, accounts.barcode
-            FROM accounts
-            INNER JOIN v_current_members ON (v_current_members.barcode = accounts.barcode)
-            INNER JOIN visits ON (visits.barcode = accounts.barcode)
-            WHERE visits.status = "In" AND (role & ? != 0)
-            ORDER BY displayName''', (role, )):
-            listUsers.append([row[0], row[1]])
-
-        return listUsers
-
-    def changePassword(self, dbConnection, user, oldPassword, newPassword):
-        dbConnection.execute(
-            '''UPDATE accounts SET password = ? WHERE (user = ?)''',
-            (pwd_context.hash(newPassword), user))
-
+    def changePassword(self, conn, user, oldPassword, newPassword):
+        query = "UPDATE accounts SET password = ? WHERE user = ?;"
+        conn.execute(query, (pwd_context.hash(newPassword), user))
         return True
 
-    def getEmail(self, dbConnection, username):
-        data = dbConnection.execute(
-            '''SELECT email from accounts INNER JOIN members ON accounts.barcode = members.barcode WHERE user = ?''',
-            (username, )).fetchone()
-
-        return data[0]
-
-    def getUser(self, dbConnection, email):
-        data = dbConnection.execute(
-            '''SELECT user from accounts INNER JOIN members ON accounts.barcode = members.barcode WHERE email = ?''',
-            (email, )).fetchone()
+    def getUser(self, conn, email):
+        query = ("SELECT user from accounts AS a"
+                 "INNER JOIN members AS m ON a.barcode = m.barcode "
+                 "WHERE email = ?;")
+        data = conn.execute(query, (email, )).fetchone()
 
         if data:
             return data[0]
 
         return None
 
-    def emailToken(self, dbConnection, username, token):
-        emailAddress = self.getEmail(dbConnection, username)
-
+    def emailToken(self, conn, username, token):
+        emailAddress = self.getEmail(conn, username)
         safe_username = urllib.parse.quote_plus(username)
-        print(safe_username, token)
+        # print(safe_username, token)
 
-        msg = "Please go to http://tfi.checkmein.site/profile/resetPasswordToken?user=" + \
-            safe_username + "&token=" + token + " to reset your password.  If you" + \
-            " did not request that you had forgotten " + \
-            "your password, then you can safely ignore this e-mail." + \
-            "Your username is " + safe_username + "." + \
-            " This expires in 24 hours.\n\nThank you,\nTFI"
-
+        msg = ("Please go to http://tfi.checkmein.site/profile/"
+               f"resetPasswordToken?user={safe_username}&token={token} "
+               "to reset your password. If you did not request that you want "
+               "to reset your password, then you can safely ignore this "
+               f"e-mail. Your username is {safe_username}. "
+               "This expires in 24 hours.\n\nThank you,\nTFI")
         utils.sendEmail(username, emailAddress, 'Forgotten Password', msg)
-
         return emailAddress
 
-    def forgotPassword(self, dbConnection, username):
-        data = dbConnection.execute(
-            '''SELECT forgotTime from accounts WHERE user = ?''',
-            (username, )).fetchone()
+    def forgotPassword(self, conn, username):
+        query = "SELECT forgotTime from accounts WHERE user = ?;"
+        data = conn.execute(query, (username, )).fetchone()
 
-        if data == None:
-            username = self.getUser(dbConnection, username)
-            data = dbConnection.execute(
-                '''SELECT forgotTime from accounts WHERE user = ?''',
-                (username, )).fetchone()
-        if data == None:
-            return f'No email sent due to not finding user: {username}'
-        if data[0] != None:
+        if data is None:
+            username = self.getUser(conn, username)
+            query = "SELECT forgotTime from accounts WHERE user = ?;"
+            data = conn.execute(query, (username, )).fetchone()
+
+        if data is None:
+            return f"No email sent due to not finding user: {username}."
+
+        if data[0] is not None:
             longAgo = datetime.datetime.now() - data[0]
 
-            if longAgo.total_seconds() < 60:  # to keep people from spamming others...
-                return 'No email sent due to one sent in last minute'
+            # to keep people from spamming others...
+            if longAgo.total_seconds() < 60:
+                return "No email sent due to one sent in last minute"
 
         chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
         forgotID = ''.join(random.SystemRandom().choice(chars)
                            for _ in range(8))
+        query = ("UPDATE accounts SET forgot = ?, forgotTime = ? "
+                 "WHERE user = ?;")
 
-        dbConnection.execute(
-            '''UPDATE accounts SET forgot = ?, forgotTime = ? WHERE user = ?''',
-            (pwd_context.hash(forgotID), datetime.datetime.now(), username))
+        conn.execute(query, (pwd_context.hash(forgotID),
+                             datetime.datetime.now(), username))
+        return self.emailToken(conn, username, forgotID)
 
-        return self.emailToken(dbConnection, username, forgotID)
-
-    def verify_forgot(self, dbConnection, username, forgot, newPassword):
-        data = dbConnection.execute(
-            '''SELECT forgot, forgotTime from accounts WHERE user = ?''',
-            (username, )).fetchone()
+    def verify_forgot(self, conn, username, forgot, newPassword):
+        query = "SELECT forgot, forgotTime from accounts WHERE user = ?;"
+        data = conn.execute(query, (username, )).fetchone()
 
         if not data:
             return False
 
         forgotTime = data[1]
-
         longAgo = datetime.datetime.now() - forgotTime
 
-        if (longAgo.total_seconds() > 60 * 60 * 24):  # more than a day ago
+        if longAgo.total_seconds() > (60 * 60 * 24):  # more than a day ago
             return False
 
         if pwd_context.verify(forgot, data[0]):
-            dbConnection.execute(
-                '''UPDATE accounts SET forgot = ?, password = ? WHERE user = ?''',
-                ('', pwd_context.hash(newPassword), username))
+            query = ("UPDATE accounts SET forgot = ?, password = ? "
+                     "WHERE user = ?;")
+            conn.execute(query, ('', pwd_context.hash(newPassword), username))
             return True
+
         return False
 
-    def changeRole(self, dbConnection, barcode, newRole):
-        dbConnection.execute(
-            '''UPDATE accounts SET role = ? WHERE (barcode = ?)''',
-            (newRole.getValue(), barcode))
-        data = dbConnection.execute(
-            '''SELECT user FROM accounts WHERE barcode = ?''',
-            (barcode, )).fetchone()
+    def changeRole(self, conn, barcode, newRole):
+        query = "UPDATE accounts SET role = ? WHERE barcode = ?;"
+        conn.execute(query, (newRole.cookie_value, barcode))
+        query = "SELECT user FROM accounts WHERE barcode = ?;"
+        data = conn.execute(query, (barcode, )).fetchone()
 
         if data:
-            emailAddress = self.getEmail(dbConnection, data[0])
-            utils.sendEmail('TFI Ops', 'tfi-ops@googlegroups.com', 'Role change for user',
-                            f'User {data[0]} <{emailAddress}> roles changed to : {newRole}')
+            emailAddress = self.getEmail(conn, data[0])
+            utils.sendEmail("TFI Ops", "tfi-ops@googlegroups.com",
+                            "Role change for user",
+                            f"User {data[0]} <{emailAddress}> roles changed "
+                            f"to : {newRole}")
 
-    def removeUser(self, dbConnection, barcode):
-        dbConnection.execute('''DELETE from accounts WHERE barcode= ?''',
-                             (barcode, ))
+    def removeUser(self, conn, barcode):
+        query = "DELETE from accounts WHERE barcode= ?;"
+        conn.execute(query, (barcode, ))
 
-    def getUsers(self, dbConnection):
+    def getUsers(self, conn):
         dictUsers = {}
+        query = ("SELECT a.user, a.barcode, a.role, m.displayName "
+                 "FROM accounts a "
+                 "INNER JOIN members m ON m.barcode = a.barcode "
+                 "ORDER BY a.user;")
 
-        for row in dbConnection.execute(
-                '''SELECT user, accounts.barcode, role, displayName
-            FROM accounts
-            INNER JOIN members ON members.barcode = accounts.barcode
-            ORDER BY user'''):
+        for row in conn.execute(query):
             dictUsers[row[0]] = {
                 'barcode': row[1],
                 'role': Role(row[2]),
                 'displayName': row[3]
-            }
+                }
 
         return dictUsers
 
-    def getNonAccounts(self, dbConnection):
+    def getNonAccounts(self, conn):
         dictUsers = {}
+        query = ("SELECT cm.barcode, cm.displayName "
+                 "FROM current_members cm "
+                 "LEFT JOIN accounts a USING (barcode) "
+                 "WHERE a.user is NULL ORDER BY cm.displayName;")
 
-        for row in dbConnection.execute(
-                '''SELECT v_current_members.barcode, displayName
-            FROM v_current_members
-            LEFT JOIN accounts USING (barcode)
-            WHERE (user is NULL) 
-            ORDER BY displayName'''):
+        for row in conn.execute(query):
             dictUsers[row[0]] = row[1]
+
         return dictUsers
 
-    def removeKeyholder(self, dbConnection):
-        dbConnection.execute(
-            "UPDATE accounts SET activeKeyholder = ? WHERE (activeKeyholder==?)",
-            (Status.inactive, Status.active))
+    def removeKeyholder(self, conn):
+        query = ("UPDATE accounts SET activeKeyholder = ? "
+                 "WHERE activeKeyholder = ?;")
+        conn.execute(query, (Status.inactive, Status.active))
 
-    def setActiveKeyholder(self, dbConnection, barcode):
+    def setActiveKeyholder(self, conn, barcode):
         returnValue = False
         # If current barcode is a keyholder
 
         if barcode:
-            (keyholderBarcode, _) = self.getActiveKeyholder(dbConnection)
-            if barcode != keyholderBarcode:
-                dbConnection.execute(
-                    "UPDATE accounts SET activeKeyholder = ? WHERE (barcode==?) AND (role & ? != 0)",
-                    (Status.active, barcode, Role.KEYHOLDER))
-                data = dbConnection.execute('SELECT changes();').fetchone()
+            keyholderBarcode, _ = self.getActiveKeyholder(conn)
 
-                if data and data[0]:   # There were changes from the last update statement
+            if barcode != keyholderBarcode:
+                query = ("UPDATE accounts SET activeKeyholder = ? "
+                         "WHERE barcode = ? AND role & ? != 0;")
+                conn.execute(query, (Status.active, barcode, Role.KEYHOLDER))
+                # *** TODO *** The query below does not use changes()
+                # correctly.
+                data = conn.execute('SELECT changes();').fetchone()
+
+                # There were changes from the last update statement
+                if data and data[0]:
                     returnValue = True
 
                     if keyholderBarcode:
-                        dbConnection.execute(
-                            '''UPDATE accounts SET activeKeyholder = ? WHERE (barcode==?) AND changes() > 0''',
-                            (Status.inactive, keyholderBarcode)
-                        )
+                        # *** TODO *** The query below does not use changes()
+                        # correctly.
+                        query = ("UPDATE accounts SET activeKeyholder = ? "
+                                 "WHERE barcode = ? AND changes() > 0;")
+                        conn.execute(query, (Status.inactive,
+                                             keyholderBarcode))
 
         return returnValue
 
-    def getActiveKeyholder(self, dbConnection):
+    def getActiveKeyholder(self, conn):
         """Returns the (barcode, name) of the active keyholder"""
-        data = dbConnection.execute(
-            '''SELECT accounts.barcode, displayName FROM accounts
-               INNER JOIN members ON accounts.barcode = members.barcode
-               WHERE activeKeyholder==?''', (Status.active, )).fetchone()
+        query = ("SELECT a.barcode, m.displayName FROM accounts a "
+                 "INNER JOIN members m ON a.barcode = m.barcode "
+                 "WHERE a.activeKeyholder = ?")
+        data = conn.execute(query, (Status.active, )).fetchone()
+        return ('', '') if data is None else (data[0], data[1])
 
-        if data is None:
-            return ('', '')
-        else:
-            return (data[0], data[1])
+    def getKeyholders(self, conn):
+        query = ("SELECT user, barcode, password FROM accounts "
+                 "WHERE role & ? != 0;")
+        return [{'user': row[0], 'barcode': row[1], 'password': row[2]}
+                for row in conn.execute(query, (Role.KEYHOLDER,))]
 
-    def getKeyholders(self, dbConnection):
-        keyholders = []
-
-        for row in dbConnection.execute(
-                '''SELECT user, barcode, password
-            FROM accounts
-            WHERE (role & ? != 0)''', (Role.KEYHOLDER, )):
-            keyholders.append({
-                'user': row[0],
-                'barcode': row[1],
-                'password': row[2]
-            })
-
-        return keyholders
-
-    def getKeyholderBarcodes(self, dbConnection):
-        keyholders = []
-
-        for row in dbConnection.execute(
-                '''SELECT barcode
-            FROM accounts
-            WHERE (role & ? != 0)''', (Role.KEYHOLDER, )):
-            keyholders.append(row[0])
-
-        return keyholders
+    def getKeyholderBarcodes(self, conn):
+        query = "SELECT barcode FROM accounts WHERE role & ? != 0;"
+        return [row[0] for row in conn.execute(
+            query, (Role.KEYHOLDER,))]

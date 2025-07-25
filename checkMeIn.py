@@ -6,33 +6,32 @@ from mako.lookup import TemplateLookup
 import cherrypy
 import cherrypy.process.plugins
 
-from .engine import Engine
-
-
-from .webBase import WebBase, Cookie
-from .webMainStation import WebMainStation
-from .webGuestStation import WebGuestStation
-from .webCertifications import WebCertifications
-from .webTeams import WebTeams
-from .webAdminStation import WebAdminStation
-from .webReports import WebReports
-from .webProfile import WebProfile
-from .docs import getDocumentation
-from .accounts import Role
-from .cherrypy_SSE import Portier
+from src.engine import Engine
+from src.webBase import WebBase, Cookie
+from src.webMainStation import WebMainStation
+from src.webGuestStation import WebGuestStation
+from src.webCertifications import WebCertifications
+from src.webTeams import WebTeams
+from src.webAdminStation import WebAdminStation
+from src.webReports import WebReports
+from src.webProfile import WebProfile
+from src.docs import getDocumentation
+from src.accounts import Role
+from src.cherrypy_SSE import Portier
 
 
 class CheckMeIn(WebBase):
-    def update(self, msg):
-        fullMessage = f"event: update\ndata: {msg}\n\n"
-        cherrypy.engine.publish(self.updateChannel, fullMessage)
+
+    # def update(self, msg):
+    #     fullMessage = f"event: update\ndata: {msg}\n\n"
+    #     cherrypy.engine.publish(self.updateChannel, fullMessage)
 
     def __init__(self):
         self.lookup = TemplateLookup(directories=['HTMLTemplates'],
                                      default_filters=['h'])
         self.updateChannel = 'updates'
         self.engine = Engine(cherrypy.config["database.path"],
-                             cherrypy.config["database.name"], self.update)
+                             cherrypy.config["database.name"])
 
         super().__init__(self.lookup, self.engine)
         self.station = WebMainStation(self.lookup, self.engine)
@@ -55,15 +54,14 @@ class CheckMeIn(WebBase):
     @cherrypy.expose
     def metrics(self):
         with self.dbConnect() as dbConnection:
-            numberPresent = self.engine.reports.numberPresent(
-                dbConnection)
+            numberPresent = self.engine.reports.numberPresent(dbConnection)
             return self.template('metrics.mako',
                                  number_people_checked_in=numberPresent)
 
     @cherrypy.expose
     def whoishere(self):
         with self.dbConnect() as dbConnection:
-            (_, keyholder_name) = self.engine.accounts.getActiveKeyholder(
+            _, keyholder_name = self.engine.accounts.getActiveKeyholder(
                 dbConnection)
             return self.template('who_is_here.mako',
                                  now=datetime.datetime.now(),
@@ -83,8 +81,9 @@ class CheckMeIn(WebBase):
             with self.dbConnect() as dbConnection:
                 (current_keyholder_bc, _
                  ) = self.engine.accounts.getActiveKeyholder(dbConnection)
-                self.engine.checkout(
-                    dbConnection, current_keyholder_bc, check_outs)
+                self.engine.checkout(dbConnection, current_keyholder_bc,
+                                     check_outs)
+
         return self.whoishere()
 
     @cherrypy.expose
@@ -96,6 +95,7 @@ class CheckMeIn(WebBase):
         # For now there is only one location
         with self.dbConnect() as dbConnection:
             self.engine.unlocks.addEntry(dbConnection, location, barcode)
+
         self.station.checkin(barcode)
 
     @cherrypy.expose
@@ -103,6 +103,7 @@ class CheckMeIn(WebBase):
         activeTeamsCoached = None
         role = Role(0)
         loggedInBarcode = Cookie('barcode').get(None)
+
         if not barcode:
             barcode = loggedInBarcode
 
@@ -111,15 +112,18 @@ class CheckMeIn(WebBase):
                 if barcode == loggedInBarcode:
                     role = Role(Cookie('role').get(0))
 
-                (_, displayName) = self.engine.members.getName(
-                    dbConnection, barcode)
+                _, displayName = self.engine.members.getName(dbConnection,
+                                                             barcode)
                 activeMembers = {}
+
                 if role.isCoach():
-                    activeTeamsCoached = self.engine.teams.getActiveTeamsCoached(
-                        dbConnection, barcode)
+                    activeTeamsCoached = (self.engine.teams.
+                                          getActiveTeamsCoached(dbConnection,
+                                                                barcode))
             else:
                 displayName = ""
                 activeMembers = self.engine.members.getActive(dbConnection)
+
             inBuilding = self.engine.visits.inBuilding(dbConnection, barcode)
 
         return self.template('links.mako', barcode=barcode, role=role,
@@ -130,9 +134,9 @@ class CheckMeIn(WebBase):
     @cherrypy.expose
     def updateSSE(self):
         """
-        publishes data from the subscribed channel..
+        Publishes data from the subscribed channel.
         """
-        print("Entering SSE")
+        # print("Entering SSE")
         doorman = Portier(self.updateChannel)
 
         cherrypy.response.headers["Content-Type"] = "text/event-stream"
@@ -140,26 +144,28 @@ class CheckMeIn(WebBase):
         def pub():
             for message in doorman.messages():
                 try:
-                    print(f"Sending Message: {message}")
+                    # print(f"Sending Message: {message}")
                     yield message
                 except GeneratorExit:
                     # cherrypy shuts down the generator when the client
                     # disconnects. Catch disconnect and unsubscribe to clean up
                     doorman.unsubscribe()
                     return
+
         return pub()
+
     updateSSE._cp_config = {'response.stream': True}
 
 
 if __name__ == '__main__':  # pragma: no cover
     parser = argparse.ArgumentParser(
-        description="CheckMeIn - building check in and out system")
+        description="CheckMeIn - building the check in and out system.")
     parser.add_argument('conf')
-    args = parser.parse_args()
+    options = parser.parse_args()
 
-    cherrypy.config.update(args.conf)  # So I can access in __init__
+    cherrypy.config.update(options.conf)  # So I can access in __init__
 
     # wd = cherrypy.process.plugins.BackgroundTask(15, func)
     # wd.start()
 
-    cherrypy.quickstart(CheckMeIn(), '', args.conf)
+    cherrypy.quickstart(CheckMeIn(), '', options.conf)

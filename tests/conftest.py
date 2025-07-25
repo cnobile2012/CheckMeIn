@@ -1,15 +1,17 @@
+# -*- coding: utf-8 -*-
+
 import os
 import pytest
 import cherrypy
 
-from src.checkMeIn import CheckMeIn
+#from checkMeIn import CheckMeIn
 
-from . import sampleData
+from .sample_data import TEST_DATA
 
 
-@pytest.fixture(scope="session", autouse=True)
+#@pytest.fixture(scope="session", autouse=True)
 def my_own_session_run_at_beginning(request):
-    testConfig = { 'global': {
+    testConfig = {'global': {
         'database.path': 'testData/',
         'database.name': 'test.db'
         }
@@ -22,13 +24,14 @@ def my_own_session_run_at_beginning(request):
     except FileNotFoundError:
         pass
 
-    with open(testConfig['global']['database.path'] + "checkmein.key", "w"
-              ) as f:
+    fullpath = f"{testConfig['global']['database.path']}checkmein.key"
+
+    with open(fullpath, "w") as f:
         # Obviously not the actual key
         f.write("MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTI=")
 
     cherrypy.config.update(testConfig)
-    cmi = CheckMeIn().engine.injectData(sampleData.data_for_testing())
+    #cmi = CheckMeIn().engine.injectData(TEST_DATA)
 
     def my_own_session_run_at_end():
         pass  # nothing for now

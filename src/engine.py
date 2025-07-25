@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 
-import os
 import sqlite3
+import asyncio
 import datetime
+
+from src.base_database import BaseDatabase
 
 from .members import Members
 from .guests import Guests
@@ -20,26 +22,42 @@ from .config import Config
 SCHEMA_VERSION = 16
 
 
+def adapt_datetime(dt):
+    """
+    Adapter: datetime → ISO string
+    """
+    return dt.isoformat()
+
+
 def custom_converter(value):
     """
-    Converter: from string to datetime
-    Python 3.12 depricated the default timestamp converter so we use this one.
+    Converter: ISO string → datetime
     """
-    return datetime.datetime.fromisoformat(value.decode())
-
-sqlite3.register_converter('timestamp', custom_converter)
-# Adapter: from datetime to string
-sqlite3.register_adapter(datetime.datetime, lambda dt: dt.isoformat(" "))
+    return datetime.datetime.fromisoformat(value.decode("utf-8"))
 
 
-class Engine(object):
+sqlite3.register_adapter(datetime.datetime, adapt_datetime)
+sqlite3.register_converter('TIMESTAMP', custom_converter)
+
+
+class Engine(BaseDatabase):
     """
     This is the engine for all of the backend.
     """
-    def __init__(self, dbPath, dbName, update):
-        self.db_fullpath = os.path.join(dbPath, dbName)
-        self.dataPath = dbPath
-        self.update = update
+    def __init__(self, db_path: str, db_name: str, *args, **kwargs): #, update):
+        """
+        Constructor
+
+        :param str db_path: The path to the sqlite3 database file.
+        :param str db_name: The name of the sqlite3 database file.
+        """
+        super().__init__(*args, **kwargs)
+        # We use path and the the db name and True means we are in prod.
+        # See BaseDatabase.
+        self.db_fullpath = (db_path, db_name, True)  # called from BaseDatabase
+        asyncio.run(self.create_schema())
+        self._data_path = db_path
+
         self.visits = Visits()
         self.guests = Guests()
         self.reports = Reports(self)
@@ -52,63 +70,70 @@ class Engine(object):
         self.customReports = CustomReports(self.db_fullpath)
         self.certifications = Certifications()
         self.members = Members()
-        self.logEvents = LogEvents()
+        self.log_events = LogEvents()
 
-        if not os.path.exists(self.db_fullpath):
-            if not os.path.exists(dbPath):
-                os.mkdir(dbPath)
+        # if not os.path.exists(self.db_fullpath):
+        #     if not os.path.exists(dbPath):
+        #         os.mkdir(dbPath)
 
-            with self.dbConnect() as c:
-                self.migrate(c, 0)
-        else:
-            with self.dbConnect() as c:
-                data = c.execute('PRAGMA schema_version').fetchone()
+        #     with self.dbConnect() as c:
+        #         self.migrate(c, 0)
+        # else:
+        #     with self.dbConnect() as c:
+        #         data = c.execute('PRAGMA schema_version').fetchone()
 
-                if data[0] != SCHEMA_VERSION:
-                    self.migrate(c, data[0])
+        #         if data[0] != SCHEMA_VERSION:
+        #             self.migrate(c, data[0])
+
+    @property
+    def data_path(self):
+        return self._data_path
 
     def dbConnect(self):
         return sqlite3.connect(self.db_fullpath,
                                detect_types=sqlite3.PARSE_DECLTYPES)
 
-    def migrate(self, dbConnection, db_schema_version):
-        if db_schema_version < SCHEMA_VERSION:
-            self.config.migrate(dbConnection, db_schema_version)
-            self.visits.migrate(dbConnection, db_schema_version)
-            self.members.migrate(dbConnection, db_schema_version)
-            self.guests.migrate(dbConnection, db_schema_version)
-            self.teams.migrate(dbConnection, db_schema_version)
-            self.customReports.migrate(dbConnection, db_schema_version)
-            self.certifications.migrate(dbConnection, db_schema_version)
-            self.accounts.migrate(dbConnection, db_schema_version)
-            self.devices.migrate(dbConnection, db_schema_version)
-            self.unlocks.migrate(dbConnection, db_schema_version)
-            self.logEvents.migrate(dbConnection, db_schema_version)
-            dbConnection.execute('PRAGMA schema_version = ' +
-                                 str(SCHEMA_VERSION))
-        elif db_schema_version != SCHEMA_VERSION:  # pragma: no cover
-            raise Exception("Unknown DB schema version" +
-                            str(db_schema_version) + ": " + self.db_fullpath)
+    # def migrate(self, dbConnection, db_schema_version):
+    #     if db_schema_version < SCHEMA_VERSION:
+    #         self.config.migrate(dbConnection, db_schema_version)
+    #         self.visits.migrate(dbConnection, db_schema_version)
+    #         self.members.migrate(dbConnection, db_schema_version)
+    #         self.guests.migrate(dbConnection, db_schema_version)
+    #         self.teams.migrate(dbConnection, db_schema_version)
+    #         self.customReports.migrate(dbConnection, db_schema_version)
+    #         self.certifications.migrate(dbConnection, db_schema_version)
+    #         self.accounts.migrate(dbConnection, db_schema_version)
+    #         self.devices.migrate(dbConnection, db_schema_version)
+    #         self.unlocks.migrate(dbConnection, db_schema_version)
+    #         self.log_events.migrate(dbConnection, db_schema_version)
+    #         dbConnection.execute('PRAGMA schema_version = ' +
+    #                              str(SCHEMA_VERSION))
+    #     elif db_schema_version != SCHEMA_VERSION:  # pragma: no cover
+    #         raise Exception("Unknown DB schema version" +
+    #                         str(db_schema_version) + ": " + self.db_fullpath)
 
-    def injectData(self, dictValues):
-        areas = {
-            "visits": self.visits,
-            "members": self.members,
-            "guests": self.guests,
-            "teams": self.teams,
-            "customReports": self.customReports,
-            "certifications": self.certifications,
-            "accounts": self.accounts,
-            "devices": self.devices,
-            "unlocks": self.unlocks,
-            "logEvents": self.logEvents,
-            "config": self.config
-        }
+    # def injectData(self, dictValues):
+    #     """
+    #     Only used for testing.
+    #     """
+    #     areas = {
+    #         "visits": self.visits,
+    #         "members": self.members,
+    #         "guests": self.guests,
+    #         "teams": self.teams,
+    #         "customReports": self.customReports,
+    #         "certifications": self.certifications,
+    #         "accounts": self.accounts,
+    #         "devices": self.devices,
+    #         "unlocks": self.unlocks,
+    #         "logEvents": self.log_events,
+    #         "config": self.config
+    #         }
 
-        for (key, member) in areas.items():
-            if key in dictValues:
-                with self.dbConnect() as dbConnection:
-                    member.injectData(dbConnection, dictValues[key])
+    #     for key, member in areas.items():
+    #         if key in dictValues:
+    #             with self.dbConnect() as dbConnection:
+    #                 member.injectData(dbConnection, dictValues[key])
 
     def getGuestLists(self, dbConnection):
         all_guests = self.guests.getList(dbConnection)
@@ -122,7 +147,6 @@ class Engine(object):
             dbConnection)
 
         for barcode in check_ins:
-            # error = self.visits.checkInMember(dbConnection, barcode)
             if not current_keyholder_bc:
                 if self.accounts.setActiveKeyholder(dbConnection, barcode):
                     current_keyholder_bc = barcode
@@ -134,8 +158,6 @@ class Engine(object):
         for barcode in check_outs:
             if barcode == current_keyholder_bc:
                 currentKeyholderLeaving = True
-            # else:
-            #     error = self.visits.checkOutMember(dbConnection, barcode)
 
         if currentKeyholderLeaving:
             return current_keyholder_bc

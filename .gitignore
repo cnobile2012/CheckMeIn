@@ -107,10 +107,6 @@ venv.bak/
 # mypy
 .mypy_cache/
 
-# user data
-data/
-testData/
-
 # process files
 nohup.out
 
@@ -121,4 +117,6 @@ nohup.out
 .vscode
 
 #web sessions
-sessions/
+data/tests/*
+data/*.db
+*~

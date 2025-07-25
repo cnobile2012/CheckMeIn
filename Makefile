@@ -7,6 +7,7 @@ PREFIX		= $(shell pwd)
 BASE_DIR	= $(shell basename $(PREFIX))
 PACKAGE_DIR	= $(BASE_DIR)-$(VERSION)$(TEST_TAG)
 DOCS_DIR	= $(PREFIX)/docs
+LOGS_DIR	= $(PREFIX)/logs
 TODAY		= $(shell date +"%Y-%m-%dT%H:%M:%S.%N%:z")
 RM_REGEX	= '(^.*.pyc$$)|(^.*.wsgic$$)|(^.*~$$)|(.*\#$$)|(^.*,cover$$)| \
                    (__pycache__)'
@@ -47,8 +48,8 @@ tar	: clobber
 # $ make tests TEST_PATH=tests/test_bases.py::TestBases::test_version
 .PHONY	: tests flake8
 tests	: clobber setup
-	@mkdir -p docs
 	@rm -rf $(DOCS_DIR)/htmlcov
+	@mkdir -p $(LOGS_DIR)
 	@coverage erase --rcfile=$(COVERAGE_FILE)
 	@coverage run --rcfile=$(COVERAGE_FILE) -m pytest --capture=tee-sys \
          $(TEST_PATH)
@@ -82,7 +83,7 @@ setup	:
 # The following target is for running the server in a development
 # environment only.
 run	: setup
-	python -m src.checkMeIn development.conf
+	python checkMeIn.py development.conf
 
 #----------------------------------------------------------------------
 .PHONY	: clean clobber
@@ -92,4 +93,5 @@ clean	:
 clobber	: clean
 	@rm -rf testData sessions
 	@(cd $(DOCS_DIR); rm -rf htmlcov)
+	@rm -rf data/tests
 #	@rm logs/*.log

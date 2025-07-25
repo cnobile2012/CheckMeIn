@@ -16,10 +16,10 @@ class WebTeams(WebBase):
         source = f"/teams?team_id={team_id}"
         role = self.getRole(source)
 
-        if role.getValue() & Role.ADMIN:
+        if role.cookie_value & Role.ADMIN:
             return
 
-        if not role.getValue() & Role.COACH:
+        if not role.cookie_value & Role.COACH:
             Cookie('source').set(source)
             raise cherrypy.HTTPRedirect("/profile/login")
 
@@ -73,7 +73,6 @@ class WebTeams(WebBase):
             teamInfo = self.engine.teams.fromTeamId(dbConnection, team_id)
             firstDate = teamInfo.startDate
             todayDate = datetime.date.today().isoformat()
-
             members = self.engine.teams.getTeamMembers(dbConnection, team_id)
             activeMembers = self.engine.members.getActive(dbConnection)
             seasons = self.engine.teams.getAllSeasons(dbConnection, teamInfo)
@@ -89,9 +88,10 @@ class WebTeams(WebBase):
     def addMember(self, team_id, type, member=None):
         if member:
             self.checkPermissions(team_id)
+
             with self.dbConnect() as dbConnection:
-                self.engine.teams.addMember(
-                    dbConnection, team_id, member, type)
+                self.engine.teams.addMember(dbConnection, team_id,
+                                            member, type)
 
         raise cherrypy.HTTPRedirect(f"/teams?team_id={team_id}")
 
@@ -146,8 +146,8 @@ class WebTeams(WebBase):
                 checkOut.append(param)
 
         with self.dbConnect() as dbConnection:
-            leaving_keyholder_bc = self.engine.bulkUpdate(
-                dbConnection, checkIn, checkOut)
+            leaving_keyholder_bc = self.engine.bulkUpdate(dbConnection,
+                                                          checkIn, checkOut)
 
         with self.dbConnect() as dbConnection:
             if leaving_keyholder_bc:
@@ -159,7 +159,7 @@ class WebTeams(WebBase):
                                          whoIsHere=whoIsHere)
 
                 self.engine.accounts.removeKeyholder(dbConnection)
-                error = self.engine.visits.checkOutMember(
-                    dbConnection, leaving_keyholder_bc)
+                self.engine.visits.checkOutMember(dbConnection,
+                                                  leaving_keyholder_bc)
 
         raise cherrypy.HTTPRedirect(f"/teams?team_id={team_id}")
