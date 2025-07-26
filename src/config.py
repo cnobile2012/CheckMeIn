@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 
+import os
+
+from . import Logger
 from .base_database import BaseDatabase
 
 
@@ -8,18 +11,6 @@ class Config:
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-    # def migrate(self, dbConnection, db_schema_version):
-    #     if db_schema_version < 14:
-    #         dbConnection.execute('''CREATE TABLE config
-    #                              (key TEXT PRIMARY KEY,
-    #                               value TEXT)''')
-    #         dbConnection.execute(
-    #             '''INSERT INTO config(key,value) VALUES('grace_period', '90')''')
-
-    # def injectData(self, dbConnection, data):
-    #     for datum in data:
-    #         self.update(dbConnection, datum["key"], datum["value"])
 
     async def add_config(self, data: list) -> None:
         """

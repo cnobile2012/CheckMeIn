@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from src import Logger
 from email.mime.text import MIMEText
 import email.utils
 import smtplib

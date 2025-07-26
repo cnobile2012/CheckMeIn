@@ -129,31 +129,16 @@ class Accounts:
 
         await self.BD._do_insert_query(query, params)
 
-    async def get_email(self, username):
+    async def get_email(self, user):
         query = ("SELECT m.email from accounts a "
                  "INNER JOIN members m ON a.barcode = m.barcode "
                  "WHERE a.user = ?;")
-        return await self.BD._do_select_one_query(query, (username,))
+        return await self.BD._do_select_one_query(query, (user,))
 
-    # def migrate(self, dbConnection, db_schema_version):
-    #     if db_schema_version < 11:
-    #         query = ("CREATE TABLE accounts ("
-    #                  "user TEXT PRIMARY KEY COLLATE NOCASE, password TEXT, "
-    #                  "forgot TEXT, forgotTime TIMESTAMP, barcode TEXT UNIQUE, "
-    #                  "activeKeyholder INTEGER default 0, "
-    #                  "role INTEGER default 0);")
-    #         dbConnection.execute(query)
-
-    # def injectData(self, dbConnection, data):
-    #     # Only used for testing
-    #     for datum in data:
-    #         self.addUser(dbConnection, datum["user"], datum["password"],
-    #                      datum["barcode"], Role(datum["role"]))
-
-    def getBarcode(self, conn, user, password):
+    async def get_barcode(self, user, password):
         query = ("SELECT password, barcode, role FROM accounts "
                  "WHERE user = ?;")
-        data = conn.execute(query, (user, )).fetchone()
+        data = await self.BD._do_select_one_query(query, (user,))
 
         if data is None:
             ret = ('', Role(0))

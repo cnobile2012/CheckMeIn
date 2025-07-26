@@ -22,7 +22,7 @@ class WebProfile(WebBase):
     @cherrypy.expose
     def loginAttempt(self, username, password):
         with self.dbConnect() as dbConnection:
-            (barcode, role) = self.engine.accounts.getBarcode(
+            barcode, role = self.engine.accounts.get_barcode(
                 dbConnection, username, password)
 
             if not barcode:
@@ -90,8 +90,8 @@ class WebProfile(WebBase):
             error = "New Passwords must match"
         else:
             with self.dbConnect() as dbConnection:
-                barcode = self.engine.accounts.getBarcode(dbConnection, user,
-                                                          oldPass)
+                barcode = self.engine.accounts.get_barcode(dbConnection, user,
+                                                           oldPass)
 
                 if barcode:
                     self.engine.accounts.changePassword(

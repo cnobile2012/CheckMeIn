@@ -8,10 +8,8 @@ import datetime
 import shutil
 import aiosqlite
 
+from . import BASE_DIR
 from .utils import Borg
-
-PWD = os.path.dirname(os.path.abspath(__file__))
-BASE_DIR = os.path.dirname(PWD)
 
 
 def adapt_datetime(dt):

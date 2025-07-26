@@ -14,8 +14,10 @@ from src.accounts import Role, Accounts
 from src.members import Members
 from src.config import Config
 
-from .base_tests import BaseAsyncTests
+from .base_tests import start_logging, BaseAsyncTests
 from .sample_data import TEST_DATA
+
+log = start_logging()
 
 
 class TestAccountRole(unittest.TestCase):
@@ -234,17 +236,31 @@ class TestAccounts(BaseAsyncTests):
         """
         Test that the addUser method creates the accounts table.
         """
-        pass
-        # db_schema_version = 10
-        # table = 'accounts'
-        # msg = "Expected {} for table {}, found {}."
-        # self._accounts.migrate(self._cursor, db_schema_version)
-        # result = self.does_table_exist(self._cursor, table)
-        # self.assertTrue(result, msg.format(True, table, result))
+        new_users = [{'user': 'Someone', 'password': 'poop',
+                      'barcode': '200000', 'role': 0x20},
+                     {'user': 'SomeoneElse', 'password': 'things',
+                      'barcode': '200001', 'role': 0x40}]
+
+        msg = "Expected {} for table 'accounts', found {}."
+        await self._accounts.add_users(new_users)
+
+        for user_profile in new_users:
+            user = user_profile['user']
+            password = user_profile['password']
+            barcode = user_profile['barcode']
+            role = user_profile['role']
+            expected = (barcode, Role(role))
+            result = await self._accounts.get_barcode(user, password)
+            self.assertEqual(expected[0], result[0], msg.format(
+                expected[0], result[0]))
+            # The Role() objects will never be equal so we need to test
+            # the cookie_value.
+            self.assertEqual(expected[1].cookie_value, result[1].cookie_value,
+                             msg.format(expected[1], result[1]))
 
     @unittest.skip("Temporarily skipped")
-    async def test_getBarcode(self):
+    async def test_get_barcode(self):
         """
-        Test that the getBarcode method returns the barcode of specified user.
+        Test that the get_barcode method returns the barcode of specified user.
         """
         pass

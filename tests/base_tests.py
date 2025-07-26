@@ -3,8 +3,17 @@
 # tests/base_tests.py
 #
 
+import logging
 import unittest
 import aiosqlite
+
+from src import Logger, AppConfig
+
+def start_logging():
+    ac = AppConfig(testing=True)
+    return logging.getLogger(ac.logger_name)
+
+__all__ = ('start_logging', 'BaseAsyncTests')
 
 
 class BaseAsyncTests(unittest.IsolatedAsyncioTestCase):

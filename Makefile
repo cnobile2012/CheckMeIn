@@ -94,4 +94,4 @@ clobber	: clean
 	@rm -rf testData sessions
 	@(cd $(DOCS_DIR); rm -rf htmlcov)
 	@rm -rf data/tests
-#	@rm logs/*.log
+	@rm -rf logs
