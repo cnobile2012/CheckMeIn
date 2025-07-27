@@ -194,7 +194,7 @@ class Accounts:
                "to reset your password, then you can safely ignore this "
                f"e-mail. Your username is {safe_username}. "
                "This expires in 24 hours.\n\nThank you,\nTFI")
-        utils.sendEmail(username, emailAddress, 'Forgotten Password', msg)
+        sendEmail(username, emailAddress, 'Forgotten Password', msg)
         return emailAddress
 
     def forgotPassword(self, conn, username):
@@ -255,10 +255,10 @@ class Accounts:
 
         if data:
             emailAddress = self.getEmail(conn, data[0])
-            utils.sendEmail("TFI Ops", "tfi-ops@googlegroups.com",
-                            "Role change for user",
-                            f"User {data[0]} <{emailAddress}> roles changed "
-                            f"to : {newRole}")
+            sendEmail("TFI Ops", "tfi-ops@googlegroups.com",
+                      "Role change for user",
+                      f"User {data[0]} <{emailAddress}> roles changed "
+                      f"to : {newRole}")
 
     def removeUser(self, conn, barcode):
         query = "DELETE from accounts WHERE barcode= ?;"

@@ -5,10 +5,11 @@
 
 import os
 import datetime
+import logging
 import shutil
 import aiosqlite
 
-from . import BASE_DIR
+from . import BASE_DIR, AppConfig
 from .utils import Borg
 
 
@@ -150,6 +151,7 @@ class BaseDatabase(Borg):
                         if var.startswith('_T_')]
         self._VIEWS = [getattr(self, var) for var in dir(self)
                        if var.startswith('_V_')]
+        self._log = logging.getLogger(AppConfig().logger_name)
 
     @property
     def db_fullpath(self) -> str:
@@ -216,11 +218,9 @@ class BaseDatabase(Borg):
         check = table_names == tables_views
 
         if not check:
-            # *** TODO *** Create a logger.
             msg = ("Database table count or names are wrong it should be "
                    f"{table_names} found {tables_views}")
-            print(msg)
-            # self._log.error(msg)
+            self._log.error(msg)
 
         return check
 
@@ -247,8 +247,7 @@ class BaseDatabase(Borg):
                     query = f"CREATE TABLE IF NOT EXISTS {table} ({fields})"
                     extra = self._SCHEMA_EXTRA.get(table)
                     query += f' {extra};' if extra else ';'
-                    # *** TODO *** log query
-                    # print(query)
+                    self._log.info("Created table: %s", query)
                     await db.execute(query)
                     await db.commit()
 
@@ -257,8 +256,7 @@ class BaseDatabase(Borg):
                     query = f"CREATE VIEW IF NOT EXISTS {view} ({fields})"
                     extra = self._SCHEMA_EXTRA.get(view)
                     query += f' {extra};' if extra else ';'
-                    # print(query)
-                    # *** TODO *** log query
+                    self._log.info("Created view: %s", query)
                     await db.execute(query)
                     await db.commit()
 
@@ -301,9 +299,7 @@ class BaseDatabase(Borg):
             try:
                 await db.executemany(query, data)
             except Exception as e:
-                print(query, str(e))
-                # *** TODO *** log query
-                #self._log.error(str(e), exc_info=True)
+                self._log.error(str(e), exc_info=True)
             else:
                 await db.commit()
 
@@ -318,9 +314,7 @@ class BaseDatabase(Borg):
             try:
                 await db.executemany(query, data)
             except Exception as e:
-                print(query, str(e))
-                # *** TODO *** log query
-                #self._log.error(str(e), exc_info=True)
+                self._log.error(str(e), exc_info=True)
             else:
                 await db.commit()
 

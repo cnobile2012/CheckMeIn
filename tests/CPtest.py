@@ -7,10 +7,7 @@ import cherrypy
 from cherrypy.test import helper
 from cherrypy.lib.sessions import RamSession
 
-from src.checkMeIn import CheckMeIn
-
-import tracemalloc
-tracemalloc.start()
+from checkMeIn import CheckMeIn
 
 # Without setting this to False any call to assertStatus() that fails
 # will lock up the terminal.
@@ -18,16 +15,20 @@ helper.CPWebCase.interactive = False
 
 
 class CPTest(helper.CPWebCase):
+
     @staticmethod
     def setup_server():
-        testConfig = {'global': {
-            'database.path': 'testData/',
-            'database.name': 'test.db'
+        # *** TODO *** Much of this is duplicated from conftest.py
+        path = 'data'
+        db_file = 'testing.db'
+        test_config = {'global': {
+            'database.path': path,
+            'database.name': db_file
             }
         }
-        cherrypy.config.update(testConfig)
+        cherrypy.config.update(test_config)
         cmi = CheckMeIn()
-        cherrypy.tree.mount(cmi, os.sep, testConfig)
+        cherrypy.tree.mount(cmi, os.sep, test_config)
         return cmi
 
     def patch_session_none(self):

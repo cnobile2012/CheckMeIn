@@ -1,37 +1,61 @@
 # -*- coding: utf-8 -*-
+#
+# tests/conftest.py
+#
+# Used by pytest to set fixtures and other setup code to be available
+# for all tests.
+#
 
 import os
+import logging
 import pytest
 import cherrypy
 
-#from checkMeIn import CheckMeIn
+import tracemalloc
+tracemalloc.start()
 
-from .sample_data import TEST_DATA
+from src import AppConfig
 
 
-#@pytest.fixture(scope="session", autouse=True)
+def reset_logging():
+    for handler in logging.root.handlers[:]:
+        logging.root.removeHandler(handler)
+
+    AppConfig(testing=True)
+
+
+reset_logging()
+
+
+@pytest.fixture(scope="session", autouse=True)
 def my_own_session_run_at_beginning(request):
-    testConfig = {'global': {
-        'database.path': 'testData/',
-        'database.name': 'test.db'
+    path = 'data'
+    db_file = 'testing.db'
+    test_config = {'global': {
+        'database.path': path,
+        'database.name': db_file
         }
     }
+    dbpath = os.path.join(path, db_file)
 
     try:
         # Make sure we are starting with a clean database
-        os.remove(testConfig['global']['database.path'] +
-                  testConfig['global']['database.name'])
+        os.remove(dbpath)
     except FileNotFoundError:
         pass
 
-    fullpath = f"{testConfig['global']['database.path']}checkmein.key"
+    keypath = os.path.join(path, 'tests')
 
-    with open(fullpath, "w") as f:
+    if not os.path.exists(keypath):
+        os.mkdir(keypath)
+
+    keypath = os.path.join(keypath, 'checkmein.key')
+
+    with open(keypath, "w") as f:
         # Obviously not the actual key
         f.write("MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTI=")
 
-    cherrypy.config.update(testConfig)
-    #cmi = CheckMeIn().engine.injectData(TEST_DATA)
+    cherrypy.config.update(test_config)
 
     def my_own_session_run_at_end():
         pass  # nothing for now

@@ -47,7 +47,7 @@ tar	: clobber
 # Run just one test in a specific class within a test file.
 # $ make tests TEST_PATH=tests/test_bases.py::TestBases::test_version
 .PHONY	: tests flake8
-tests	: clobber setup
+tests	: clobber
 	@rm -rf $(DOCS_DIR)/htmlcov
 	@mkdir -p $(LOGS_DIR)
 	@coverage erase --rcfile=$(COVERAGE_FILE)
@@ -76,8 +76,7 @@ install-prod:
 #----------------------------------------------------------------------
 .PHONY  : setup run
 setup	:
-	@mkdir -p testData
-	@echo "l1n5Be5G9GHFXTSMi6tb0O6o5AKmTC68OjF2UmaU55A=" > testData/checkmein.key
+	@echo "l1n5Be5G9GHFXTSMi6tb0O6o5AKmTC68OjF2UmaU55A=" > data/checkmein.key
 	@mkdir -p sessions
 
 # The following target is for running the server in a development

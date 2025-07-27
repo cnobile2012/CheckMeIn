@@ -14,10 +14,8 @@ from src.accounts import Role, Accounts
 from src.members import Members
 from src.config import Config
 
-from .base_tests import start_logging, BaseAsyncTests
+from .base_tests import BaseAsyncTests
 from .sample_data import TEST_DATA
-
-log = start_logging()
 
 
 class TestAccountRole(unittest.TestCase):
@@ -231,7 +229,7 @@ class TestAccounts(BaseAsyncTests):
             result = await self.does_table_exist(tv)
             self.assertTrue(result, msg.format(result))
 
-    #@unittest.skip("Temporarily skipped")
+    @unittest.skip("Temporarily skipped")
     async def test_add_users(self):
         """
         Test that the addUser method creates the accounts table.

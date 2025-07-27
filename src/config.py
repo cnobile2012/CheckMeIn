@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import os
-
-from . import Logger
 from .base_database import BaseDatabase
 
 

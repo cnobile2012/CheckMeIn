@@ -2,13 +2,12 @@
 
 import argparse
 import datetime
-import logging
 
 from mako.lookup import TemplateLookup
 import cherrypy
 import cherrypy.process.plugins
 
-from src import Logger, AppConfig
+from src import AppConfig
 from src.engine import Engine
 from src.webBase import WebBase, Cookie
 from src.webMainStation import WebMainStation

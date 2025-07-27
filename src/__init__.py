@@ -8,10 +8,12 @@ import os
 import sys
 import logging
 
+from .utils import Borg
+
 PWD = os.path.dirname(os.path.abspath(__file__))
 BASE_DIR = os.path.dirname(PWD)
 
-__all__ = ('Logger', 'BASE_DIR', 'app_config')
+__all__ = ('BASE_DIR', 'Logger', 'AppConfig')
 
 
 class Logger:
@@ -85,15 +87,19 @@ class Logger:
         self.logger.setLevel(level)
 
 
-class AppConfig:
+class AppConfig(Borg):
     _LOGGER_PATH = os.path.join(BASE_DIR, 'logs', )
-    _LOG_FILENAME = 'check_me_in.log'
-    _LOGGER_NAME = 'check_me_in'
+    _LOG_FILENAME = 'checkmein.log'
+    _LOGGER_NAME = 'checkmein'
     _TEST_LOG_FILENAME = 'testing.log'
     _TEST_LOGGER_NAME = 'testing'
 
     def __init__(self, *args, testing=False, **kwargs):
         super().__init__(*args, **kwargs)
+        root_logger = logging.getLogger()
+
+        for handler in root_logger.handlers[:]:
+            root_logger.removeHandler(handler)
 
         if testing:
             self._fullpath = os.path.join(self._LOGGER_PATH,
@@ -105,7 +111,12 @@ class AppConfig:
             self._logger = self._LOGGER_NAME
 
         Logger().config(logger_name=self.logger_name,
-                        file_path=self.full_log_path)
+                        file_path=self.full_log_path, initial_msg=False)
+        log = logging.getLogger(self._logger)
+        environment = 'testing' if testing else 'production'
+        path, filename = os.path.split(self._fullpath)
+        log.info("Logger configured as '%s' with file '%s'.",
+                 environment, filename)
 
     @property
     def logger_name(self):

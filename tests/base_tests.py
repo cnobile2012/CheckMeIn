@@ -3,17 +3,11 @@
 # tests/base_tests.py
 #
 
-import logging
 import unittest
 import aiosqlite
 
-from src import Logger, AppConfig
 
-def start_logging():
-    ac = AppConfig(testing=True)
-    return logging.getLogger(ac.logger_name)
-
-__all__ = ('start_logging', 'BaseAsyncTests')
+__all__ = ('BaseAsyncTests',)
 
 
 class BaseAsyncTests(unittest.IsolatedAsyncioTestCase):
@@ -44,7 +38,8 @@ class BaseAsyncTests(unittest.IsolatedAsyncioTestCase):
                 for table in tables:
                     params = self.bd._SCHEMA[table]
                     fields = ', '.join([field for field in params])
-                    query = f"CREATE {type_tv} IF NOT EXISTS {table} ({fields})"
+                    query = (f"CREATE {type_tv} IF NOT EXISTS {table} "
+                             f"({fields})")
                     extra_params = self.bd._SCHEMA_EXTRA.get(table)
                     query += f' {extra_params};' if extra_params else ';'
                     await db.execute(query)
