@@ -117,7 +117,7 @@ TEST_DATA = {
                    "date": timeAgo(hours=1)}
                   ],
     "unlocks": [{"time": timeAgo(hours=1),
-                 "location": "LOFT",
+                 "location": "TFI",
                  "barcode": "100091"}
                 ],
     "guests": [{"guest_id": "202107310001",

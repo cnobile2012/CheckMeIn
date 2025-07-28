@@ -33,7 +33,7 @@ def getDocumentation():
                    "based off their role",
                    "If barcode is left off, it is a list of links for display "
                    "stations"]),
-        Doc("Unlock", "/unlock?location=LOFT&barcode=<barcode>",
+        Doc("Unlock", "/unlock?location=TFI&barcode=<barcode>",
             returns="Returns the station webpage",
             notes=["This records the door was unlocked and checks the person "
                    "that unlocks it in. For use of door app ONLY"]),
