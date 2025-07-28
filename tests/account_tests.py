@@ -9,10 +9,11 @@ import aiosqlite
 import tracemalloc
 tracemalloc.start()
 
-from src.base_database import BaseDatabase
 from src.accounts import Role, Accounts
-from src.members import Members
+from src.base_database import BaseDatabase
 from src.config import Config
+from src.members import Members
+from src.visits import Visits
 
 from .base_tests import BaseAsyncTests
 from .sample_data import TEST_DATA
@@ -195,25 +196,34 @@ class TestAccounts(BaseAsyncTests):
         # Create tables and views.
         self.tables_and_views = {
             'tables': (self.bd._T_ACCOUNTS, self.bd._T_MEMBERS,
-                       self.bd._T_CONFIG),
+                       self.bd._T_CONFIG, self.bd._T_VISITS),
             'views': (self.bd._V_CURRENT_MEMBERS,)
             }
         await self.create_database(self.tables_and_views)
         # Populate tables
         self._accounts = Accounts()
-        self._members = Members()
         self._config = Config()
+        self._members = Members()
+        self._visits = Visits()
         await self._accounts.add_users(TEST_DATA[self.bd._T_ACCOUNTS])
-        await self._members.add_members(TEST_DATA[self.bd._T_MEMBERS])
         await self._config.add_config(TEST_DATA[self.bd._T_CONFIG])
+        await self._members.add_members(TEST_DATA[self.bd._T_MEMBERS])
+        await self._visits.add_visits(TEST_DATA[self.bd._T_VISITS])
 
     async def asyncTearDown(self):
         self._accounts = None
-        self._members = None
         self._config = None
+        self._members = None
+        self._visits = None
         await self.truncate_all_tables()
         # Clear the Borg state.
         self.bd.clear_state()
+
+    async def get_data(self) -> dict:
+        return {'accounts': await self._accounts.get_accounts(),
+                'config': await self._config.get_config(),
+                'members': await self._members.get_members(),
+                'visits': await self._visits.get_visits()}
 
     #@unittest.skip("Temporarily skipped")
     async def test_tables_and_views_exist(self):
@@ -229,7 +239,7 @@ class TestAccounts(BaseAsyncTests):
             result = await self.does_table_exist(tv)
             self.assertTrue(result, msg.format(result))
 
-    @unittest.skip("Temporarily skipped")
+    #@unittest.skip("Temporarily skipped")
     async def test_add_users(self):
         """
         Test that the addUser method creates the accounts table.
@@ -256,9 +266,45 @@ class TestAccounts(BaseAsyncTests):
             self.assertEqual(expected[1].cookie_value, result[1].cookie_value,
                              msg.format(expected[1], result[1]))
 
-    @unittest.skip("Temporarily skipped")
-    async def test_get_barcode(self):
+    #@unittest.skip("Temporarily skipped")
+    async def test_get_members_with_role(self):
         """
-        Test that the get_barcode method returns the barcode of specified user.
+        Test that the get_members_with_role method returns the user and
+        barcode for all users with a specific role.
         """
-        pass
+        data = (
+            (Role.COACH, 1),
+            (Role.SHOP_CERTIFIER, 1),
+            (Role.KEYHOLDER, 1),
+            (Role.ADMIN, 1),
+            (Role.SHOP_STEWARD, 2),
+            )
+        msg = "Expected {} with role {}, found {}."
+
+        for role, expected in data:
+            data = await self._accounts.get_members_with_role(role)
+            result = len(data)
+            self.assertEqual(expected, result, msg.format(
+                expected, role, result))
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_get_present_with_role(self):
+        """
+        Test that the
+        """
+        data = (
+            (Role.COACH, 1),           # Role 0x04
+            (Role.SHOP_CERTIFIER, 1),  # Role 0x08
+            (Role.KEYHOLDER, 1),       # Role 0x10
+            (Role.ADMIN, 2),           # Role 0xFF
+            (Role.SHOP_STEWARD, 2),    # Role 0x40
+            )
+        msg = "Expected {} with role {}, found {}."
+        # print(await self.get_data())
+
+        for role, expected in data:
+            data = await self._accounts.get_present_with_role(role)
+            result = len(data)
+            self.assertEqual(expected, result, msg.format(
+                expected, role, result))
+

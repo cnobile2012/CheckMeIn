@@ -16,10 +16,10 @@ class Status(IntEnum):
 
 
 class Role:
+    ADMIN = 0xFF
     COACH = 0x04
     SHOP_CERTIFIER = 0x08
     KEYHOLDER = 0x10
-    ADMIN = 0x20
     SHOP_STEWARD = 0x40
 
     def __init__(self, value=0):
@@ -32,6 +32,7 @@ class Role:
         return self.isRole(self.KEYHOLDER)
 
     def isAdmin(self):
+        print(self.cookie_value, self.ADMIN)
         return self.isRole(self.ADMIN)
 
     def isShopCertifier(self):
@@ -135,6 +136,10 @@ class Accounts:
                  "WHERE a.user = ?;")
         return await self.BD._do_select_one_query(query, (user,))
 
+    async def get_accounts(self) -> list:
+        query = "SELECT * FROM accounts;"
+        return await self.BD._do_select_all_query(query)
+
     async def get_barcode(self, user, password):
         query = ("SELECT password, barcode, role FROM accounts "
                  "WHERE user = ?;")
@@ -149,23 +154,21 @@ class Accounts:
 
         return ret
 
-    def getMembersWithRole(self, conn, role):
+    async def get_members_with_role(self, role):
         query = ("SELECT cm.displayName, a.barcode FROM accounts a "
                  "INNER JOIN current_members cm "
                  "ON (cm.barcode = a.barcode) "
                  "WHERE a.role & ? != 0 ORDER BY cm.displayName;")
-        return [(row[0], row[1])
-                for row in conn.execute(query, (role,))]
+        return await self.BD._do_select_all_query(query, (role,))
 
-    def getPresentWithRole(self, conn, role):
+    async def get_present_with_role(self, role):
         query = ("SELECT cm.displayName, a.barcode FROM accounts a "
                  "INNER JOIN current_members cm "
                  "ON (cm.barcode = a.barcode) "
                  "INNER JOIN visits v ON (v.barcode = a.barcode) "
                  "WHERE v.status = 'In' AND role & ? != 0 "
                  "ORDER BY cm.displayName;")
-        return [(row[0], row[1])
-                for row in conn.execute(query, (role,))]
+        return await self.BD._do_select_all_query(query, (role,))
 
     def changePassword(self, conn, user, oldPassword, newPassword):
         query = "UPDATE accounts SET password = ? WHERE user = ?;"

@@ -18,8 +18,8 @@ __all__ = ('BASE_DIR', 'Logger', 'AppConfig')
 
 class Logger:
     """
-    Setup some basic logging. This uses the borg patten, it's kind of like a
-    singlton but has a side affect of assimulation.
+    Setup some basic logging. This uses the borg pattern, it's kind of like a
+    singleton but has a side affect of assimilation.
     """
     _DEFAULT_FORMAT = ("%(asctime)s %(levelname)s %(name)s %(module)s "
                        "%(funcName)s [line:%(lineno)d] %(message)s")
@@ -41,7 +41,7 @@ class Logger:
         :param level: The lowest level to generate logs for. See the
                       Python logger docs.
         :type level: int
-        :param initial_msg: Print the inital log message. The default is True.
+        :param initial_msg: Print the initial log message. The default is True.
         :type initial_msg: bool
         """
         if logger_name and file_path:
@@ -113,6 +113,8 @@ class AppConfig(Borg):
         Logger().config(logger_name=self.logger_name,
                         file_path=self.full_log_path, initial_msg=False)
         log = logging.getLogger(self._logger)
+        # The next line shuts off the annoying asyncio debug messages.
+        logging.getLogger("asyncio").setLevel(logging.CRITICAL)
         environment = 'testing' if testing else 'production'
         path, filename = os.path.split(self._fullpath)
         log.info("Logger configured as '%s' with file '%s'.",

@@ -28,6 +28,10 @@ class Config:
 
         await self.BD._do_insert_query(query, params)
 
+    async def get_config(self) -> list:
+        query = "SELECT * FROM config;"
+        return await self.BD._do_select_all_query(query)
+
     def update(self, dbConnection, key, value):
         query = ("INSERT INTO config (key, value) values (?, ?) "
                  "ON CONFLICT (key) DO UPDATE SET value = ?;")

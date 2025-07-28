@@ -18,8 +18,8 @@ class WebMainStation(WebBase):
             todaysTrans = self.engine.reports.transactionsToday(dbConnection)
             numberPresent = self.engine.reports.numberPresent(dbConnection)
             unqVisitTdy = self.engine.reports.uniqueVisitorsToday(dbConnection)
-            stewards = self.engine.accounts.getPresentWithRole(
-                dbConnection, Role.SHOP_STEWARD)
+            stewards = await self.engine.accounts.get_present_with_role(
+                Role.SHOP_STEWARD)
             return self.template('station.mako',
                                  todaysTransactions=todaysTrans,
                                  numberPresent=numberPresent,

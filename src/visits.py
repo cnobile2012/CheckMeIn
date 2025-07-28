@@ -3,27 +3,35 @@
 import datetime
 from dateutil import parser
 
+from .base_database import BaseDatabase
 
-class Visits(object):
-    # def migrate(self, dbConnection, db_schema_version):
-    #     if db_schema_version == 0:
-    #         query = ("CREATE TABLE visits (start timestamp, leave timestamp, "
-    #                  "barcode text, status text);")
-    #         dbConnection.execute(query)
 
-    # def injectData(self, dbConnection, data):
-    #     """
-    #     Only used in testing.
-    #     """
-    #     for datum in data:
-    #         if "exit_time" in datum:
-    #             dbConnection.execute("INSERT INTO visits VALUES (?, ?, ?, ?);",
-    #                                  (datum["enter_time"], datum["exit_time"],
-    #                                   datum["barcode"], datum["status"]))
-    #         else:
-    #             dbConnection.execute("INSERT INTO visits VALUES (?, ?, ?, ?);",
-    #                                  (datum["enter_time"], datum["exit_time"],
-    #                                   datum["barcode"], datum["status"]))
+class Visits:
+    BD = BaseDatabase()
+
+    async def add_visits(self, data: list) -> None:
+        """
+        Add one or more visits.
+
+        :param list data: The data to insert in the DB in the form of:
+                          [{'enter_time': <enter_time>,
+                            'exit_time': <exit_time>, 'barcode': <barcode>,
+                            'status': <status>}, {...} ...]
+        """
+        pre_query = ("INSERT INTO visits "
+                     "VALUES (:enter_time, :{}, :barcode, :status);")
+
+        for item in data:
+            if 'exit_time' in item:
+                query = pre_query.format('exit_time')
+            else:
+                query = pre_query.format('enter_time')
+
+            await self.BD._do_insert_query(query, (item,))
+
+    async def get_visits(self) -> list:
+        query = "SELECT * FROM visits;"
+        return await self.BD._do_select_all_query(query)
 
     def inBuilding(self, dbConnection, barcode):
         query = "SELECT * FROM visits WHERE barcode = ? and status = 'In';"

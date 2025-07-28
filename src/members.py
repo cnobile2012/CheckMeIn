@@ -14,71 +14,6 @@ class Members(object):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    # def migrate(self, dbConnection, db_schema_version):
-    #     if db_schema_version == 0:
-    #         query = ("")
-    #         dbConnection.execute('''
-    #             CREATE TABLE members (barcode TEXT UNIQUE,
-    #                                   displayName TEXT)
-    #         ''')
-
-    #     if db_schema_version <= 8:
-    #         past = datetime.datetime.now() - datetime.timedelta(-90)
-    #         # default is expires in 90 days
-    #         future = datetime.datetime.now() + datetime.timedelta(90)
-    #         dbConnection.execute('''
-    #             CREATE TABLE new_members (barcode TEXT UNIQUE,
-    #                                       displayName TEXT,
-    #                                       firstName TEXT,
-    #                                       lastName TEXT,
-    #                                       email TEXT,
-    #                                       membershipExpires TIMESTAMP)
-    #             ''')
-
-    #         for row in dbConnection.execute("SELECT * FROM members"):
-    #             dbConnection.execute(
-    #                 '''
-    #             INSERT INTO new_members VALUES (?, ?, '', '', '', ?)''',
-    #                 (row[0], row[1], future if row[2] else past))  # pragma: no cover
-    #         dbConnection.execute('''DROP TABLE members''')
-    #         dbConnection.execute(
-    #             '''ALTER TABLE new_members RENAME TO members''')
-
-    #     if db_schema_version < 14:
-    #         dbConnection.execute('''
-    #             CREATE VIEW v_current_members (
-    #                 barcode,
-    #                 displayName
-    #             )
-    #             AS SELECT barcode, displayName
-    #             FROM members
-    #             WHERE membershipExpires > date() +
-    #             (SELECT value FROM config WHERE key="grace_period");
-    #             ''')
-
-    #     if db_schema_version < 15:
-    #         dbConnection.execute('''DROP VIEW v_current_members''')
-    #         dbConnection.execute('''
-    #             CREATE VIEW v_current_members (
-    #                 barcode,
-    #                 displayName,
-    #                 membershipExpires
-    #             )
-    #             AS SELECT barcode, displayName, membershipExpires
-    #             FROM members
-    #             WHERE membershipExpires > date('now','-' || (SELECT value FROM config WHERE key="grace_period") ||' days' )
-    #         ''')
-
-    # def injectData(self, dbConnection, data):
-    #     """
-    #     Used only for testing.
-    #     """
-    #     for datum in data:
-    #         dbConnection.execute("INSERT INTO members VALUES (?,?,?,?,?,?)",
-    #                              (datum["barcode"], datum["displayName"],
-    #                               datum["firstName"], datum["lastName"],
-    #                               datum["email"], datum["membershipExpires"]))
-
     async def add_members(self, data: list):
         query = ("INSERT INTO members (barcode, displayName, firstName, "
                  "lastName, email, membershipExpires) "
@@ -157,6 +92,10 @@ class Members(object):
             numMembers = numMembers + 1
 
         return f"Imported {numMembers} from {csvFile.filename}"
+
+    async def get_members(self) -> list:
+        query = "SELECT * from members;"
+        return await self.BD._do_select_all_query(query)
 
     def getActive(self, dbConnection):
         listUsers = []

@@ -119,8 +119,8 @@ class WebAdminStation(BaseDatabase, WebBase):
         with self.dbConnect() as dbConnection:
             activeTeams = self.engine.teams.getActiveTeamList(dbConnection)
             inactiveTeams = self.engine.teams.getInactiveTeamList(dbConnection)
-            activeCoaches = self.engine.accounts.getMembersWithRole(
-                dbConnection, Role.COACH)
+            activeCoaches = await self.engine.accounts.get_members_with_role(
+                Role.COACH)
             coaches = self.engine.teams.getCoachesList(
                 dbConnection, activeTeams)
             todayDate = datetime.date.today().isoformat()
