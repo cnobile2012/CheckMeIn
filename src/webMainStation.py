@@ -11,7 +11,7 @@ KEYHOLDER_BARCODE = '999901'
 class WebMainStation(WebBase):
 
     @cherrypy.expose
-    def index(self, error=''):
+    async def index(self, error=''):
         with self.dbConnect() as dbConnection:
             _, keyholder_name = self.engine.accounts.getActiveKeyholder(
                 dbConnection)

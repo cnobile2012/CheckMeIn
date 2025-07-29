@@ -122,14 +122,14 @@ class Accounts:
             role = Role(items['role'])
             items = (user, password, barcode, role.cookie_value)
             params.append(items)
-            email_address = await self.get_email(user)
+            email_address = await self._get_email(user)
             sendEmail('TFI Ops', 'tfi-ops@googlegroups.com', 'New User',
                       f"User {user} <{email_address}> added with roles "
                       f": {role}")
 
         await self.BD._do_insert_query(query, params)
 
-    async def get_email(self, user):
+    async def _get_email(self, user):
         query = ("SELECT m.email from accounts a "
                  "INNER JOIN members m ON a.barcode = m.barcode "
                  "WHERE a.user = ?;")
@@ -153,14 +153,14 @@ class Accounts:
 
         return ret
 
-    async def get_members_with_role(self, role: int):
+    async def get_members_with_role(self, role: int) -> list:
         query = ("SELECT cm.displayName, a.barcode FROM accounts a "
                  "INNER JOIN current_members cm "
                  "ON (cm.barcode = a.barcode) "
                  "WHERE a.role & ? != 0 ORDER BY cm.displayName;")
         return await self.BD._do_select_all_query(query, (role,))
 
-    async def get_present_with_role(self, role: int):
+    async def get_present_with_role(self, role: int) -> list:
         query = ("SELECT cm.displayName, a.barcode FROM accounts a "
                  "INNER JOIN current_members cm "
                  "ON (cm.barcode = a.barcode) "
@@ -169,22 +169,20 @@ class Accounts:
                  "ORDER BY cm.displayName;")
         return await self.BD._do_select_all_query(query, (role,))
 
-    def getUser(self, conn, email):
-        query = ("SELECT user from accounts AS a"
-                 "INNER JOIN members AS m ON a.barcode = m.barcode "
-                 "WHERE email = ?;")
-        data = conn.execute(query, (email, )).fetchone()
-
-        if data:
-            return data[0]
+    async def _get_user(self, email) -> str:
+        query = ("SELECT a.user from accounts a "
+                 "INNER JOIN members m ON a.barcode = m.barcode "
+                 "WHERE m.email = ?;")
+        data = await self.BD._do_select_one_query(query, (email,))
+        return data[0] if data else None
 
     async def change_password(self, user: str, new_password: str) -> None:
         query = "UPDATE accounts SET password = ? WHERE user = ?;"
-        await self.BD._do_update_query(query, [(pwd_context.hash(new_password),
-                                                user)])
+        await self.BD._do_update_query(
+            query, [(pwd_context.hash(new_password), user)])
 
     def emailToken(self, conn, username, token):
-        emailAddress = self.getEmail(conn, username)
+        emailAddress = self._get_email(username)
         safe_username = urllib.parse.quote_plus(username)
         # print(safe_username, token)
 
@@ -202,7 +200,7 @@ class Accounts:
         data = conn.execute(query, (username, )).fetchone()
 
         if data is None:
-            username = self.getUser(conn, username)
+            username = self._get_user(username)
             query = "SELECT forgotTime from accounts WHERE user = ?;"
             data = conn.execute(query, (username, )).fetchone()
 
@@ -254,7 +252,7 @@ class Accounts:
         data = conn.execute(query, (barcode, )).fetchone()
 
         if data:
-            emailAddress = self.getEmail(conn, data[0])
+            emailAddress = self.get_email(data[0])
             sendEmail("TFI Ops", "tfi-ops@googlegroups.com",
                       "Role change for user",
                       f"User {data[0]} <{emailAddress}> roles changed "

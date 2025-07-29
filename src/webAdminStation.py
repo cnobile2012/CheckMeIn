@@ -16,9 +16,9 @@ from .teams import TeamMemberType
 
 
 class WebAdminStation(BaseDatabase, WebBase):
+
     def checkPermissions(self, source="/admin"):
         super().checkPermissions(Role.ADMIN, source)
-    # Admin
 
     @cherrypy.expose
     def index(self, error=""):
@@ -113,7 +113,7 @@ class WebAdminStation(BaseDatabase, WebBase):
         return self.index()
 
     @cherrypy.expose
-    def teams(self, error=""):
+    async def teams(self, error=""):
         self.checkPermissions()
 
         with self.dbConnect() as dbConnection:
@@ -193,9 +193,9 @@ class WebAdminStation(BaseDatabase, WebBase):
                 self.engine.accounts.addUser(
                     dbConnection, user, tempPassword, barcode, role)
                 email = self.engine.accounts.forgotPassword(dbConnection, user)
-                self.engine.logEvents.addEvent(
-                    dbConnection, "Forgot password request",
-                    f"{email} for {user}")
+                self.engine.logEvents.addEvent(dbConnection,
+                                               "Forgot password request",
+                                               f"{email} for {user}")
             except sqlite3.IntegrityError:
                 error = "Username already in use"
 

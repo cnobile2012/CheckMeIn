@@ -137,6 +137,49 @@ class TestAccountRole(unittest.TestCase):
                 expected, value, result))
 
     #@unittest.skip("Temporarily skipped")
+    def test_cookie_value_getter(self):
+        """
+        Test that the cookie_value property 
+        """
+        
+
+    #@unittest.skip("Temporarily skipped")
+    def test_cookie_value_setter(self):
+        """
+        Test that the cookie_value property 
+        """
+
+    #@unittest.skip("Temporarily skipped")
+    def test_setKeyholder(self):
+        """
+        Test that the setKeyholder method 
+        """
+
+    #@unittest.skip("Temporarily skipped")
+    def test_setAdmin(self):
+        """
+        Test that the setAdmin method 
+        """
+
+    #@unittest.skip("Temporarily skipped")
+    def test_setShopCertifier(self):
+        """
+        Test that the setShopCertifier method 
+        """
+
+    #@unittest.skip("Temporarily skipped")
+    def test_setCoach(self):
+        """
+        Test that the setCoach method 
+        """
+
+    #@unittest.skip("Temporarily skipped")
+    def test_setShopSteward(self):
+        """
+        Test that the test_setShopSteward method 
+        """
+
+    #@unittest.skip("Temporarily skipped")
     def test___str__(self):
         """
         Test that the __str__ method returns a list of all the roles a user
@@ -324,7 +367,21 @@ class TestAccounts(BaseAsyncTests):
         """
         Test that the get_user method returns the expected user's data.
         """
+        all_data = await self.get_data()
+        members = all_data['members']
+        accounts = all_data['accounts']
+        data = []
 
+        for account in accounts:
+            for member in members:
+                if account[4] == member[0]:
+                    data.append((account[0], member[4]))
+
+        msg = "Expected {}, found {}."
+
+        for user, email in data:
+            result = await self._accounts._get_user(email)
+            self.assertEqual(user, result, msg.format(user, result))
 
     #@unittest.skip("Temporarily skipped")
     async def test_change_password(self):

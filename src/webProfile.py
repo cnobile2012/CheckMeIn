@@ -52,14 +52,13 @@ class WebProfile(WebBase):
     @cherrypy.expose
     def forgotPassword(self, user):
         with self.dbConnect() as dbConnection:
-            email = self.engine.accounts.forgotPassword(
-                dbConnection, user)
-            self.engine.logEvents.addEvent(
-                dbConnection,
-                "Forgot password request", f"{email} for {user}")
+            email = self.engine.accounts.forgotPassword(dbConnection, user)
+            self.engine.logEvents.addEvent(dbConnection,
+                                           "Forgot password request",
+                                           f"{email} for {user}")
 
-        return ("You have been e-mailed a way to reset your password. "
-                "It will only be good for 24 hours.")
+        return ("You have been e-mailed instructions on how to reset your "
+                "password. The link will expire in 24 hours.")
 
     @cherrypy.expose
     def resetPasswordToken(self, user, token):
