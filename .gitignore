@@ -119,4 +119,5 @@ nohup.out
 #web sessions
 data/tests/*
 data/*.db
+data/*.key
 *~

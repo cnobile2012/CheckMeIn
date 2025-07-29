@@ -22,8 +22,8 @@ class WebProfile(WebBase):
     @cherrypy.expose
     def loginAttempt(self, username, password):
         with self.dbConnect() as dbConnection:
-            barcode, role = self.engine.accounts.get_barcode(
-                dbConnection, username, password)
+            barcode, role = self.engine.accounts.get_barcode_and_role(
+                username, password)
 
             if not barcode:
                 return self.template('login.mako',
@@ -86,16 +86,17 @@ class WebProfile(WebBase):
         user = self.getUser('/profile')
 
         if newPass1 != newPass2:
-            error = "New Passwords must match"
+            error = "New Passwords must match."
         else:
             with self.dbConnect() as dbConnection:
-                barcode = self.engine.accounts.get_barcode(user, oldPass)
+                barcode = self.engine.accounts.get_barcode_and_role(
+                    user, oldPass)
 
                 if barcode:
                     self.engine.accounts.change_password(user, newPass1)
                     error = ""
                 else:
-                    error = "Incorrect password"
+                    error = "Incorrect password."
 
         return self.index(error)
 

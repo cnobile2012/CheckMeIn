@@ -2,6 +2,8 @@
 
 import datetime
 
+__all__ = ('timeAgo', 'TEST_DATA')
+
 
 def timeAgo(days=0, hours=0):
     return datetime.datetime.now() - datetime.timedelta(days=days, hours=hours)

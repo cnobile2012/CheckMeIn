@@ -16,7 +16,7 @@ from src.members import Members
 from src.visits import Visits
 
 from .base_tests import BaseAsyncTests
-from .sample_data import TEST_DATA
+from .sample_data import timeAgo, TEST_DATA
 
 
 class TestAccountRole(unittest.TestCase):
@@ -139,45 +139,103 @@ class TestAccountRole(unittest.TestCase):
     #@unittest.skip("Temporarily skipped")
     def test_cookie_value_getter(self):
         """
-        Test that the cookie_value property 
+        Test that the cookie_value property returns the current cookie value.
         """
-        
+        value = 0xff
+        rl = Role(value)
+        result = rl.cookie_value
+        self.assertEqual(value, result)
 
     #@unittest.skip("Temporarily skipped")
     def test_cookie_value_setter(self):
         """
-        Test that the cookie_value property 
+        Test that the cookie_value property sets a cookie value.
         """
+        data = (
+            # value      check expected
+            (Role.COACH, 0x04, 0x04),
+            (Role.COACH, 0x00, 0x00),
+            (Role.SHOP_CERTIFIER, 0x08, 0x08),
+            (Role.SHOP_CERTIFIER, 0x00, 0x00),
+            (Role.KEYHOLDER, 0x10, 0x10),
+            (Role.KEYHOLDER, 0x00, 0x00),
+            (Role.ADMIN, 0x20, 0x20),
+            (Role.ADMIN, 0x00, 0x00),
+            (Role.SHOP_STEWARD, 0x40, 0x40),
+            (Role.SHOP_STEWARD, 0x00, 0x00),
+            (Role.ADMIN, '32', 0x20),
+            )
+        msg = "Expected {} with check {}, and value {}, found {}."
+
+        for value, check, expected in data:
+            cookie_value = check if isinstance(check, int) else int(check)
+            rl = Role(cookie_value)
+            rl.cookie_value = (check, value)
+            result = rl.cookie_value
+            self.assertEqual(expected, result, msg.format(
+                expected, check, value, result))
 
     #@unittest.skip("Temporarily skipped")
     def test_setKeyholder(self):
         """
-        Test that the setKeyholder method 
+        Test that the setKeyholder method correctly sets the KeyHolder value.
         """
+        expected = 0x10
+        rl = Role(0)
+        rl.setKeyholder(expected)
+        result = rl.cookie_value
+        msg = f"Expected {expected}, found {result}."
+        self.assertEqual(expected, result, msg)
 
     #@unittest.skip("Temporarily skipped")
     def test_setAdmin(self):
         """
-        Test that the setAdmin method 
+        Test that the setAdmin method correctly sets the Admin value.
         """
+        expected = 0x20
+        rl = Role(0)
+        rl.setAdmin(expected)
+        result = rl.cookie_value
+        msg = f"Expected {expected}, found {result}."
+        self.assertEqual(expected, result, msg)
 
     #@unittest.skip("Temporarily skipped")
     def test_setShopCertifier(self):
         """
-        Test that the setShopCertifier method 
+        Test that the setShopCertifier method correctly sets the ShopCertifier
+        value.
         """
+        expected = 0x08
+        rl = Role(0)
+        rl.setShopCertifier(expected)
+        result = rl.cookie_value
+        msg = f"Expected {expected}, found {result}."
+        self.assertEqual(expected, result, msg)
 
     #@unittest.skip("Temporarily skipped")
     def test_setCoach(self):
         """
-        Test that the setCoach method 
+        Test that the setCoach method correctly sets the Coach value.
         """
+        expected = 0x04
+        rl = Role(0)
+        rl.setCoach(expected)
+        result = rl.cookie_value
+        msg = f"Expected {expected}, found {result}."
+        self.assertEqual(expected, result, msg)
 
     #@unittest.skip("Temporarily skipped")
     def test_setShopSteward(self):
         """
-        Test that the test_setShopSteward method 
+        Test that the setShopSteward method correctly sets the ShopSteward
+        value.
         """
+        expected = 0x40
+        rl = Role(0)
+        rl.setShopSteward(expected)
+        result = rl.cookie_value
+        msg = f"Expected {expected}, found {result}."
+        self.assertEqual(expected, result, msg)
 
     #@unittest.skip("Temporarily skipped")
     def test___str__(self):
@@ -312,13 +370,69 @@ class TestAccounts(BaseAsyncTests):
             barcode = user_profile['barcode']
             role = user_profile['role']
             expected = (barcode, Role(role))
-            result = await self._accounts.get_barcode(user, password)
+            result = await self._accounts.get_barcode_and_role(user, password)
             self.assertEqual(expected[0], result[0], msg.format(
                 expected[0], result[0]))
             # The Role() objects will never be equal so we need to test
             # the cookie_value.
             self.assertEqual(expected[1].cookie_value, result[1].cookie_value,
                              msg.format(expected[1], result[1]))
+
+    #@unittest.skip("Temporarily skipped")
+    async def test__get_email(self):
+        """
+        Test that the _get_email method returns the email of the user.
+        """
+        params = {'barcode': 100100, 'displayName': 'Jack F',
+                  'firstName': 'Jack', 'lastName': 'Fobi', 'email': '',
+                  'membershipExpires': timeAgo(days=7, hours=2)}
+        await self._members.add_members([params])
+        accounts = await self.get_data('accounts')
+        members = await self.get_data('members')
+        data = [(account[0], member[4]) for account in accounts
+                for member in members if account[4] == member[0]]
+        msg = "Expected {} with user {}, found {}."
+
+        for user, email in data:
+            result = await self._accounts._get_email(user)
+            self.assertEqual(email, result, msg.format(email, user, result))
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_get_accounts(self):
+        """
+        Test that the get_accounts method returns all data from all accounts.
+        """
+        expected = 2  # Two accounts
+        data = await self._accounts.get_accounts()
+        result = len(data)
+        msg = f"Expected {expected}, found {result}."
+        self.assertEqual(expected, result, msg)
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_get_barcode_and_role(self):
+        """
+        Test that the get_barcode_and_role method returns the correct data
+        given the user and password.
+        """
+        params = {'user': 'YuanJi', 'password': 'MyParty',
+                  'barcode': '', 'role': 0x00}
+        new_user = await self._accounts.add_users([params])
+        data = (
+            ('admin', 'password', '100091', Role(0xFF).cookie_value),
+            ('joe', 'password', '100032', Role(0x40).cookie_value),
+            ('Pete', '', '', Role(0x00).cookie_value),
+            ('YuanJi', 'AnotherParty', '', Role(0x00).cookie_value),
+            )
+
+        msg = "Expected {}, with user '{}', found {}."
+
+        for user, password, barcode, role in data:
+            _barcode, _role = await self._accounts.get_barcode_and_role(
+                user, password)
+            self.assertEqual(barcode, _barcode, msg.format(
+                barcode, user, _barcode))
+            self.assertEqual(role, _role.cookie_value, msg.format(
+                role, user, _role.cookie_value))
 
     #@unittest.skip("Temporarily skipped")
     async def test_get_members_with_role(self):
@@ -367,16 +481,10 @@ class TestAccounts(BaseAsyncTests):
         """
         Test that the get_user method returns the expected user's data.
         """
-        all_data = await self.get_data()
-        members = all_data['members']
-        accounts = all_data['accounts']
-        data = []
-
-        for account in accounts:
-            for member in members:
-                if account[4] == member[0]:
-                    data.append((account[0], member[4]))
-
+        accounts = await self.get_data('accounts')
+        members = await self.get_data('members')
+        data = [(account[0], member[4]) for account in accounts
+                for member in members if account[4] == member[0]]
         msg = "Expected {}, found {}."
 
         for user, email in data:

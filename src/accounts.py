@@ -23,6 +23,8 @@ class Role:
     SHOP_STEWARD = 0x40
 
     def __init__(self, value=0):
+        assert isinstance(value, int), (f"Invalid value argument, must be an "
+                                        f"integer, found {type(value)}.")
         self._value = value
 
     def isRole(self, role):
@@ -48,11 +50,15 @@ class Role:
         return self._value
 
     @cookie_value.setter
-    def cookie_value(self, keyholder: tuple) -> None:
-        # We do this because property setters can only take one value.
-        check, value = keyholder
+    def cookie_value(self, check_value: tuple) -> None:
+        """
+        Set the role for the role type.
 
-        if isinstance(check, str):
+        :param tuple check_value: A tuple in the form of (check, value).
+        """
+        check, value = check_value
+
+        if isinstance(check, str) and check.isdigit():
             check = int(check)
 
         self._value = ((self._value | value) if check
@@ -133,13 +139,14 @@ class Accounts:
         query = ("SELECT m.email from accounts a "
                  "INNER JOIN members m ON a.barcode = m.barcode "
                  "WHERE a.user = ?;")
-        return await self.BD._do_select_one_query(query, (user,))
+        data = await self.BD._do_select_one_query(query, (user,))
+        return data[0] if data else 'No email'
 
     async def get_accounts(self) -> list:
         query = "SELECT * FROM accounts;"
         return await self.BD._do_select_all_query(query)
 
-    async def get_barcode(self, user, password):
+    async def get_barcode_and_role(self, user, password):
         query = ("SELECT password, barcode, role FROM accounts "
                  "WHERE user = ?;")
         data = await self.BD._do_select_one_query(query, (user,))
