@@ -16,10 +16,10 @@ class Status(IntEnum):
 
 
 class Role:
-    ADMIN = 0xFF
     COACH = 0x04
     SHOP_CERTIFIER = 0x08
     KEYHOLDER = 0x10
+    ADMIN = 0x20
     SHOP_STEWARD = 0x40
 
     def __init__(self, value=0):
@@ -32,7 +32,6 @@ class Role:
         return self.isRole(self.KEYHOLDER)
 
     def isAdmin(self):
-        print(self.cookie_value, self.ADMIN)
         return self.isRole(self.ADMIN)
 
     def isShopCertifier(self):
@@ -154,14 +153,14 @@ class Accounts:
 
         return ret
 
-    async def get_members_with_role(self, role):
+    async def get_members_with_role(self, role: int):
         query = ("SELECT cm.displayName, a.barcode FROM accounts a "
                  "INNER JOIN current_members cm "
                  "ON (cm.barcode = a.barcode) "
                  "WHERE a.role & ? != 0 ORDER BY cm.displayName;")
         return await self.BD._do_select_all_query(query, (role,))
 
-    async def get_present_with_role(self, role):
+    async def get_present_with_role(self, role: int):
         query = ("SELECT cm.displayName, a.barcode FROM accounts a "
                  "INNER JOIN current_members cm "
                  "ON (cm.barcode = a.barcode) "
@@ -169,11 +168,6 @@ class Accounts:
                  "WHERE v.status = 'In' AND role & ? != 0 "
                  "ORDER BY cm.displayName;")
         return await self.BD._do_select_all_query(query, (role,))
-
-    def changePassword(self, conn, user, oldPassword, newPassword):
-        query = "UPDATE accounts SET password = ? WHERE user = ?;"
-        conn.execute(query, (pwd_context.hash(newPassword), user))
-        return True
 
     def getUser(self, conn, email):
         query = ("SELECT user from accounts AS a"
@@ -184,7 +178,10 @@ class Accounts:
         if data:
             return data[0]
 
-        return None
+    async def change_password(self, user: str, new_password: str) -> None:
+        query = "UPDATE accounts SET password = ? WHERE user = ?;"
+        await self.BD._do_update_query(query, [(pwd_context.hash(new_password),
+                                                user)])
 
     def emailToken(self, conn, username, token):
         emailAddress = self.getEmail(conn, username)

@@ -90,12 +90,10 @@ class WebProfile(WebBase):
             error = "New Passwords must match"
         else:
             with self.dbConnect() as dbConnection:
-                barcode = self.engine.accounts.get_barcode(dbConnection, user,
-                                                           oldPass)
+                barcode = self.engine.accounts.get_barcode(user, oldPass)
 
                 if barcode:
-                    self.engine.accounts.changePassword(
-                        dbConnection, user, oldPass, newPass1)
+                    self.engine.accounts.change_password(user, newPass1)
                     error = ""
                 else:
                     error = "Incorrect password"

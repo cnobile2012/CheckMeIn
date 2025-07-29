@@ -93,4 +93,5 @@ clobber	: clean
 	@rm -rf testData sessions
 	@(cd $(DOCS_DIR); rm -rf htmlcov)
 	@rm -rf data/tests
-	@rm -rf logs
+	@rm -rf .pytest_cache
+	@rm -f logs/testing.log

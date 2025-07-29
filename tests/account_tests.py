@@ -219,11 +219,22 @@ class TestAccounts(BaseAsyncTests):
         # Clear the Borg state.
         self.bd.clear_state()
 
-    async def get_data(self) -> dict:
-        return {'accounts': await self._accounts.get_accounts(),
-                'config': await self._config.get_config(),
-                'members': await self._members.get_members(),
-                'visits': await self._visits.get_visits()}
+    async def get_data(self, module='all'):
+        if module == 'accounts':
+            result = await self._accounts.get_accounts()
+        elif module == 'config':
+            result = await self._config.get_config()
+        elif module == 'members':
+            result = await self._members.get_members()
+        elif module == 'visits':
+            result = await self._visits.get_visits()
+        else:
+            result = {'accounts': await self._accounts.get_accounts(),
+                      'config': await self._config.get_config(),
+                      'members': await self._members.get_members(),
+                      'visits': await self._visits.get_visits()}
+
+        return result
 
     #@unittest.skip("Temporarily skipped")
     async def test_tables_and_views_exist(self):
@@ -290,17 +301,17 @@ class TestAccounts(BaseAsyncTests):
     #@unittest.skip("Temporarily skipped")
     async def test_get_present_with_role(self):
         """
-        Test that the
+        Test that the get_present_with_role method returns the correct
+        number of role objects.
         """
         data = (
             (Role.COACH, 1),           # Role 0x04
             (Role.SHOP_CERTIFIER, 1),  # Role 0x08
             (Role.KEYHOLDER, 1),       # Role 0x10
-            (Role.ADMIN, 2),           # Role 0xFF
+            (Role.ADMIN, 1),           # Role 0x20
             (Role.SHOP_STEWARD, 2),    # Role 0x40
             )
         msg = "Expected {} with role {}, found {}."
-        # print(await self.get_data())
 
         for role, expected in data:
             data = await self._accounts.get_present_with_role(role)
@@ -308,3 +319,27 @@ class TestAccounts(BaseAsyncTests):
             self.assertEqual(expected, result, msg.format(
                 expected, role, result))
 
+    #@unittest.skip("Temporarily skipped")
+    async def test_get_user(self):
+        """
+        Test that the get_user method returns the expected user's data.
+        """
+
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_change_password(self):
+        """
+        Test that the change_password method properly changes the user's
+        password.
+        """
+        data = [item + ('new_password',)
+                for item in await self.get_data('accounts')]
+        msg = "Expected {} with user {}."
+
+        for idx, (user, password, forgot, forgotTime, barcode, activeKeyholder,
+             role, new_pd) in enumerate(data):
+            old_pd = password
+            await self._accounts.change_password(user, new_pd)
+            item = await self.get_data('accounts')
+            new_pd = item[idx][1]
+            self.assertNotEqual(old_pd, new_pd, msg.format(new_pd, user))

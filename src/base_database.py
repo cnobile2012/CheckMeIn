@@ -280,7 +280,7 @@ class BaseDatabase(Borg):
 
         :param str query: The SQL query to execute.
         :returns: One item of data.
-        :rtype: str or int
+        :rtype: tuple
         """
         async with aiosqlite.connect(self.db_fullpath) as db:
             async with db.execute(query, params) as cursor:
