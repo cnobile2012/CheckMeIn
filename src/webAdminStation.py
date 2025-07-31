@@ -169,7 +169,7 @@ class WebAdminStation(BaseDatabase, WebBase):
             users=users, nonAccounts=nonUsers)
 
     @cherrypy.expose
-    def addUser(self, user, barcode, keyholder=0, admin=0, certifier=0,
+    async def addUser(self, user, barcode, keyholder=0, admin=0, certifier=0,
                 coach=0, steward=0):
         error = ""
         self.checkPermissions()
@@ -192,7 +192,7 @@ class WebAdminStation(BaseDatabase, WebBase):
             try:
                 self.engine.accounts.addUser(
                     dbConnection, user, tempPassword, barcode, role)
-                email = self.engine.accounts.forgotPassword(dbConnection, user)
+                email = await self.engine.accounts.forgot_password(user)
                 self.engine.logEvents.addEvent(dbConnection,
                                                "Forgot password request",
                                                f"{email} for {user}")

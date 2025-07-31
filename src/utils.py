@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import logging
 from email.mime.text import MIMEText
 import email.utils
 import smtplib
@@ -24,9 +23,9 @@ def sendEmail(toName, toEmail, subject, message, ccName="", ccEmail=""):
         server.sendmail(FROM_EMAIL, [toEmail], msg.as_string())
         server.quit()
     except IOError:
-        from . import AppConfig
-        log = logging.getLogger(AppConfig().logger_name)
-        log.warning('Email would have been:\n%s', msg)
+        # The import must be here or we get a circular import exception.
+        from . import _log
+        _log.warning('Email would have been:\n%s', msg)
 
 
 class Borg:

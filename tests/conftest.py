@@ -7,24 +7,11 @@
 #
 
 import os
-import logging
 import pytest
 import cherrypy
 
 import tracemalloc
 tracemalloc.start()
-
-from src import AppConfig
-
-
-def reset_logging():
-    for handler in logging.root.handlers[:]:
-        logging.root.removeHandler(handler)
-
-    AppConfig(testing=True)
-
-
-reset_logging()
 
 
 @pytest.fixture(scope="session", autouse=True)

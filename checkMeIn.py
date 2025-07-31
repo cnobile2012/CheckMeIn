@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+#
+# checkMeIn.py
+#
 
 import argparse
 import datetime
@@ -7,7 +10,6 @@ from mako.lookup import TemplateLookup
 import cherrypy
 import cherrypy.process.plugins
 
-from src import AppConfig
 from src.engine import Engine
 from src.webBase import WebBase, Cookie
 from src.webMainStation import WebMainStation
@@ -23,6 +25,7 @@ from src.cherrypy_SSE import Portier
 
 
 class CheckMeIn(WebBase):
+    RUNNING = False
 
     # def update(self, msg):
     #     fullMessage = f"event: update\ndata: {msg}\n\n"
@@ -36,7 +39,7 @@ class CheckMeIn(WebBase):
                              cherrypy.config["database.name"])
 
         super().__init__(self.lookup, self.engine)
-        AppConfig()  # Start logger
+        self.RUNNING = True  # Used to set logging to prod or tests.
         self.station = WebMainStation(self.lookup, self.engine)
         self.guests = WebGuestStation(self.lookup, self.engine)
         self.certifications = WebCertifications(self.lookup, self.engine)

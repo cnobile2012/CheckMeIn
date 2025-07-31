@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+#
+# src/webProfile.py
+#
 
 import cherrypy
 
@@ -50,9 +53,9 @@ class WebProfile(WebBase):
                              devices=devices)
 
     @cherrypy.expose
-    def forgotPassword(self, user):
+    async def forgotPassword(self, user):
         with self.dbConnect() as dbConnection:
-            email = self.engine.accounts.forgotPassword(dbConnection, user)
+            email = await self.engine.accounts.forgot_password(user)
             self.engine.logEvents.addEvent(dbConnection,
                                            "Forgot password request",
                                            f"{email} for {user}")

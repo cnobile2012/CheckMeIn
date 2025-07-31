@@ -11,4 +11,4 @@ VERSION		= ${MAJORVERSION}.${MINORVERSION}.${PATCHLEVEL}
 #   3 - Alpha
 #   4 - Beta
 #   5 - Production/Stable
-STATUS          = "4 - Beta"
+STATUS          = "3 - Alpha"

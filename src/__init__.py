@@ -10,10 +10,11 @@ import logging
 
 from .utils import Borg
 
+__all__ = ('BASE_DIR', 'Logger', 'AppConfig', '_log')
+
+_log = None
 PWD = os.path.dirname(os.path.abspath(__file__))
 BASE_DIR = os.path.dirname(PWD)
-
-__all__ = ('BASE_DIR', 'Logger', 'AppConfig')
 
 
 class Logger:
@@ -87,7 +88,7 @@ class Logger:
         self.logger.setLevel(level)
 
 
-class AppConfig(Borg):
+class AppConfig:
     _LOGGER_PATH = os.path.join(BASE_DIR, 'logs', )
     _LOG_FILENAME = 'checkmein.log'
     _LOGGER_NAME = 'checkmein'
@@ -127,3 +128,17 @@ class AppConfig(Borg):
     @property
     def full_log_path(self):
         return self._fullpath
+
+
+def start_logging():
+    from checkMeIn import CheckMeIn
+    global _log
+
+    if _log is None:
+        if CheckMeIn.RUNNING:
+            _log = logging.getLogger(AppConfig().logger_name)
+        else:
+            _log = logging.getLogger(AppConfig(testing=True).logger_name)
+
+
+start_logging()

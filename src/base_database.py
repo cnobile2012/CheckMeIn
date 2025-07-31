@@ -9,7 +9,7 @@ import logging
 import shutil
 import aiosqlite
 
-from . import BASE_DIR, AppConfig
+from . import BASE_DIR, _log
 from .utils import Borg
 
 
@@ -151,7 +151,7 @@ class BaseDatabase(Borg):
                         if var.startswith('_T_')]
         self._VIEWS = [getattr(self, var) for var in dir(self)
                        if var.startswith('_V_')]
-        self._log = logging.getLogger(AppConfig().logger_name)
+        self._log = _log
 
     @property
     def db_fullpath(self) -> str:
@@ -173,7 +173,7 @@ class BaseDatabase(Borg):
               The path will be ignored if filename is ':memory:'.
            2. The filename element is the name of the sqlite3 database file.
               If filename is ':memory:' the path may be an empty string.
-           3. If 'True' for prod or development and 'False' for testing.
+           3. If 'True' for production or development and 'False' for testing.
 
         :param tuple path_info: Path, filename, and a boolean.
         """
@@ -280,7 +280,7 @@ class BaseDatabase(Borg):
 
         :param str query: The SQL query to execute.
         :returns: One item of data.
-        :rtype: tuple
+        :rtype: tuple or NoneType
         """
         async with aiosqlite.connect(self.db_fullpath) as db:
             async with db.execute(query, params) as cursor:
@@ -319,5 +319,5 @@ class BaseDatabase(Borg):
                 await db.commit()
 
     #
-    # Utilitu methods
+    # Utility methods
     #

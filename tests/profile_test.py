@@ -48,7 +48,7 @@ class ProfileTest(CPtest.CPTest):
             self.getPage("/profile/delDevice?mac=12:34:56:78")
             self.assertStatus("303 See Other")
 
-    def test_forgotPassword(self):
+    def test_forgot_password(self):
         with self.patch_session():
             self.getPage("/profile/forgotPassword?user=admin")
 

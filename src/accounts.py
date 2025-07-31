@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
 
-from passlib.apps import custom_app_context as pwd_context
-from enum import IntEnum
+import string
 import random
 import datetime
 import urllib
 
+from passlib.apps import custom_app_context as pwd_context
+from enum import IntEnum
+
+from . import _log
 from .base_database import BaseDatabase
 from .utils import sendEmail
 
@@ -108,6 +111,7 @@ class Accounts:
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._log = _log
 
     async def add_users(self, data: list) -> None:
         """
@@ -188,48 +192,58 @@ class Accounts:
         await self.BD._do_update_query(
             query, [(pwd_context.hash(new_password), user)])
 
-    def emailToken(self, conn, username, token):
-        emailAddress = self._get_email(username)
+    async def _send_email(self, username, token):
+        email_address = await self._get_email(username)
         safe_username = urllib.parse.quote_plus(username)
-        # print(safe_username, token)
-
         msg = ("Please go to http://tfi.checkmein.site/profile/"
                f"resetPasswordToken?user={safe_username}&token={token} "
-               "to reset your password. If you did not request that you want "
-               "to reset your password, then you can safely ignore this "
-               f"e-mail. Your username is {safe_username}. "
-               "This expires in 24 hours.\n\nThank you,\nTFI")
-        sendEmail(username, emailAddress, 'Forgotten Password', msg)
-        return emailAddress
+               "to reset your password. If you did not request a password "
+               "reset you can safely ignore this e-mail. This link expires "
+               f"in 24 hours. Your username is {safe_username}.\n\n"
+               "Thank you,\nTFI")
+        sendEmail(username, email_address, 'Forgotten Password', msg)
+        return email_address
 
-    def forgotPassword(self, conn, username):
+    def _get_random_id(self):
+        chars = string.ascii_uppercase + string.digits
+        return ''.join(random.SystemRandom().choice(chars) for _ in range(8))
+
+    async def forgot_password(self, username):
+        """
+        Handles forgotton passwords.
+
+        :param str username: The username or email address.
+        :returns: The email address or an error message.
+        :rtype: str
+        """
         query = "SELECT forgotTime from accounts WHERE user = ?;"
-        data = conn.execute(query, (username, )).fetchone()
+        data = await self.BD._do_select_one_query(query, (username,))
+        print('POOP0', data)
 
-        if data is None:
-            username = self._get_user(username)
-            query = "SELECT forgotTime from accounts WHERE user = ?;"
-            data = conn.execute(query, (username, )).fetchone()
+        if data in ((), None):  # If username is an email.
+            username = await self._get_user(username)
+            data = await self.BD._do_select_one_query(query, (username,))
+            print('POOP1', data)
 
-        if data is None:
-            return f"No email sent due to not finding user: {username}."
+        if data not in ((), None) and data[0] is not None:
+            long_ago = datetime.datetime.now() - data[0]
 
-        if data[0] is not None:
-            longAgo = datetime.datetime.now() - data[0]
+            # To keep people from spamming others.
+            if long_ago.total_seconds() < 60:
+                ret = "No email sent due to one sent within last minute."
+            else:
+                forgot_id = self._get_random_id()
+                query = ("UPDATE accounts SET forgot = ?, forgotTime = ? "
+                         "WHERE user = ?;")
+                await self.BD._do_update_query(
+                    query, (pwd_context.hash(forgot_id),
+                            datetime.datetime.now(), username))
+                ret = await self._send_email(username, forgot_id)
+        else:
+            ret = f"No email sent, cannot finding user: {username}."
+            #self._log.warning(ret)
 
-            # to keep people from spamming others...
-            if longAgo.total_seconds() < 60:
-                return "No email sent due to one sent in last minute"
-
-        chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
-        forgotID = ''.join(random.SystemRandom().choice(chars)
-                           for _ in range(8))
-        query = ("UPDATE accounts SET forgot = ?, forgotTime = ? "
-                 "WHERE user = ?;")
-
-        conn.execute(query, (pwd_context.hash(forgotID),
-                             datetime.datetime.now(), username))
-        return self.emailToken(conn, username, forgotID)
+        return ret
 
     def verify_forgot(self, conn, username, forgot, newPassword):
         query = "SELECT forgot, forgotTime from accounts WHERE user = ?;"

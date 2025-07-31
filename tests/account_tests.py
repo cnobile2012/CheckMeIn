@@ -293,7 +293,7 @@ class TestAccounts(BaseAsyncTests):
         # Tell BaseDatabase what we are doing.
         self.bd = BaseDatabase()
         self.bd.db_fullpath = (os.path.join('data', 'tests'),
-                               'testing.db', False)
+                               self.TEST_DB, False)
         # Create tables and views.
         self.tables_and_views = {
             'tables': (self.bd._T_ACCOUNTS, self.bd._T_MEMBERS,
@@ -508,3 +508,59 @@ class TestAccounts(BaseAsyncTests):
             item = await self.get_data('accounts')
             new_pd = item[idx][1]
             self.assertNotEqual(old_pd, new_pd, msg.format(new_pd, user))
+
+    #@unittest.skip("Temporarily skipped")
+    async def test__send_email(self):
+        """
+        Test that the _send_email returns the users email address.
+        """
+        data = (
+            ('admin', 'fake1@email.com'),
+            ('joe', 'fake2@email.com'),
+            )
+        msg = "Expected {} with user {}, found {}"
+
+        for user, expected in data:
+            token = self._accounts._get_random_id()
+            result = await self._accounts._send_email(user, token)
+            self.assertEqual(expected, result, msg.format(
+                expected, user, result))
+
+    #@unittest.skip("Temporarily skipped")
+    async def test__get_random_id(self):
+        """
+        Test that the _get_random_id returns a unique vale on each call.
+        """
+        tokens = []
+
+        for idx in range(8):
+            tokens.append(self._accounts._get_random_id())
+
+        t0_size = len(tokens)
+        t1_size = len(set(tokens))  # Gets rid of dups.
+        msg = f"Expected {t0_size} tokens, found {t1_size} tokens."
+        self.assertEqual(t0_size, t1_size, msg)
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_forgot_password(self):
+        """
+        Test that the forgot_password method
+        """
+        err_msg1 = "No email sent, cannot finding user: {}."
+        err_msg2 = "No email sent due to one sent within last minute."
+
+        data = (
+            ('admin', True, 'fake1@email.com'),
+            ('joe', True, 'fake2@email.com'),
+            #(),
+            )
+        msg = "Expected {} with user {}, found {}"
+        #print(await self.get_data('accounts'))
+
+        for user, valid, expected in data:
+            if valid:
+                result = await self._accounts.forgot_password(user)
+                self.assertEqual(expected, result, msg.format(
+                    expected, user, result))
+            else:
+                pass
