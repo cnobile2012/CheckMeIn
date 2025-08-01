@@ -5,12 +5,10 @@
 
 import os
 import datetime
-import logging
 import shutil
 import aiosqlite
 
-from . import BASE_DIR, _log
-from .utils import Borg
+from . import Borg, BASE_DIR, AppConfig
 
 
 def adapt_datetime(dt):
@@ -151,7 +149,7 @@ class BaseDatabase(Borg):
                         if var.startswith('_T_')]
         self._VIEWS = [getattr(self, var) for var in dir(self)
                        if var.startswith('_V_')]
-        self._log = _log
+        self._log = AppConfig().log
 
     @property
     def db_fullpath(self) -> str:

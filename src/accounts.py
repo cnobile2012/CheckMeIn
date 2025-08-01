@@ -8,7 +8,7 @@ import urllib
 from passlib.apps import custom_app_context as pwd_context
 from enum import IntEnum
 
-from . import _log
+from . import AppConfig
 from .base_database import BaseDatabase
 from .utils import sendEmail
 
@@ -111,7 +111,7 @@ class Accounts:
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._log = _log
+        self._log = AppConfig().log
 
     async def add_users(self, data: list) -> None:
         """
@@ -132,19 +132,12 @@ class Accounts:
             role = Role(items['role'])
             items = (user, password, barcode, role.cookie_value)
             params.append(items)
-            email_address = await self._get_email(user)
-            sendEmail('TFI Ops', 'tfi-ops@googlegroups.com', 'New User',
-                      f"User {user} <{email_address}> added with roles "
-                      f": {role}")
+            email = await self._get_email(user)
+            msg = f"User {user} <{email}> added with roles : {role}"
+            await self._send_email('TFI Ops', 'New User', msg,
+                                   email='tfi-ops@googlegroups.com')
 
         await self.BD._do_insert_query(query, params)
-
-    async def _get_email(self, user):
-        query = ("SELECT m.email from accounts a "
-                 "INNER JOIN members m ON a.barcode = m.barcode "
-                 "WHERE a.user = ?;")
-        data = await self.BD._do_select_one_query(query, (user,))
-        return data[0] if data else 'No email'
 
     async def get_accounts(self) -> list:
         query = "SELECT * FROM accounts;"
@@ -192,18 +185,6 @@ class Accounts:
         await self.BD._do_update_query(
             query, [(pwd_context.hash(new_password), user)])
 
-    async def _send_email(self, username, token):
-        email_address = await self._get_email(username)
-        safe_username = urllib.parse.quote_plus(username)
-        msg = ("Please go to http://tfi.checkmein.site/profile/"
-               f"resetPasswordToken?user={safe_username}&token={token} "
-               "to reset your password. If you did not request a password "
-               "reset you can safely ignore this e-mail. This link expires "
-               f"in 24 hours. Your username is {safe_username}.\n\n"
-               "Thank you,\nTFI")
-        sendEmail(username, email_address, 'Forgotten Password', msg)
-        return email_address
-
     def _get_random_id(self):
         chars = string.ascii_uppercase + string.digits
         return ''.join(random.SystemRandom().choice(chars) for _ in range(8))
@@ -218,32 +199,54 @@ class Accounts:
         """
         query = "SELECT forgotTime from accounts WHERE user = ?;"
         data = await self.BD._do_select_one_query(query, (username,))
-        print('POOP0', data)
 
         if data in ((), None):  # If username is an email.
             username = await self._get_user(username)
             data = await self.BD._do_select_one_query(query, (username,))
-            print('POOP1', data)
 
-        if data not in ((), None) and data[0] is not None:
+        if data in ((), None):
+            msg = f"No email sent, cannot finding user: {username}."
+            #self._log.warning(ret)
+            return msg
+
+        if data[0] is not None:
             long_ago = datetime.datetime.now() - data[0]
 
             # To keep people from spamming others.
             if long_ago.total_seconds() < 60:
-                ret = "No email sent due to one sent within last minute."
-            else:
-                forgot_id = self._get_random_id()
-                query = ("UPDATE accounts SET forgot = ?, forgotTime = ? "
-                         "WHERE user = ?;")
-                await self.BD._do_update_query(
-                    query, (pwd_context.hash(forgot_id),
-                            datetime.datetime.now(), username))
-                ret = await self._send_email(username, forgot_id)
-        else:
-            ret = f"No email sent, cannot finding user: {username}."
-            #self._log.warning(ret)
+                msg = "No email sent due to one sent within last minute."
+                #self._log.warning(ret)
+                return msg
 
-        return ret
+        token = self._get_random_id()
+        query = ("UPDATE accounts SET forgot = ?, forgotTime = ? "
+                 "WHERE user = ?;")
+        await self.BD._do_update_query(
+            query, [(pwd_context.hash(token), datetime.datetime.now(),
+                     username)])
+        safe_username = urllib.parse.quote_plus(username)
+        msg_type = 'Forgotten Password'
+        msg = ("Please go to http://tfi.checkmein.site/profile/"
+               f"resetPasswordToken?user={safe_username}&token={token} "
+               "to reset your password. If you did not request a password "
+               "reset you can safely ignore this e-mail. This link expires "
+               f"in 24 hours. Your username is {safe_username}.\n\n"
+               "Thank you,\nTFI")
+        return await self._send_email(username, msg_type, msg)
+
+    async def _send_email(self, user, msg_type, message, *, email=None):
+        if not email:
+            email = await self._get_email(user)
+
+        sendEmail(user, email, msg_type, message)
+        return email
+
+    async def _get_email(self, user):
+        query = ("SELECT m.email from accounts a "
+                 "INNER JOIN members m ON a.barcode = m.barcode "
+                 "WHERE a.user = ?;")
+        data = await self.BD._do_select_one_query(query, (user,))
+        return data[0] if data else 'No email'
 
     def verify_forgot(self, conn, username, forgot, newPassword):
         query = "SELECT forgot, forgotTime from accounts WHERE user = ?;"

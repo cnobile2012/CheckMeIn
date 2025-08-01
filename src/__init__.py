@@ -8,13 +8,53 @@ import os
 import sys
 import logging
 
-from .utils import Borg
+__all__ = ('BASE_DIR', 'Borg', 'AppConfig')
 
-__all__ = ('BASE_DIR', 'Logger', 'AppConfig', '_log')
-
-_log = None
 PWD = os.path.dirname(os.path.abspath(__file__))
 BASE_DIR = os.path.dirname(PWD)
+APP_RUNNING = False
+
+
+class Borg:
+    """
+    We store the instances instead of the __dict__. This alows the updating
+    of future instances with the data from the previous instances. Without
+    this, new instances would not have all the data.
+    """
+    _instances = []
+
+    def __new__(cls, *args, **kwargs):
+        instance = super().__new__(cls)
+        cls._instances.append(instance)
+
+        if cls._instances:
+            for key, value in cls._instances[0].__dict__.items():
+                # Avoid copying test framework internals
+                if not key.startswith('_') and not key.startswith('__'):
+                    instance.__dict__[key] = value
+
+        return instance
+
+    def __setattr__(self, name, value):
+        # Let built-in Python attributes work as normal
+        object.__setattr__(self, name, value)
+
+        if not name.startswith('__') and not name.endswith('__'):
+            # Propagate to others (excluding private/dunder)
+            for inst in self._instances:
+                if inst is not self:
+                    inst.__dict__[name] = value
+
+    def clear_state(self):
+        for inst in self._instances:
+            keys_to_clear = [k for k in inst.__dict__
+                             if (not k.startswith('_') and
+                                 not k.startswith('__'))]
+
+            for key in keys_to_clear:
+                del inst.__dict__[key]
+
+        self._instances.clear()
 
 
 class Logger:
@@ -88,21 +128,22 @@ class Logger:
         self.logger.setLevel(level)
 
 
-class AppConfig:
+class AppConfig(Borg):
     _LOGGER_PATH = os.path.join(BASE_DIR, 'logs', )
     _LOG_FILENAME = 'checkmein.log'
     _LOGGER_NAME = 'checkmein'
     _TEST_LOG_FILENAME = 'testing.log'
     _TEST_LOGGER_NAME = 'testing'
+    _ENVIRONMENT = 'production'
 
-    def __init__(self, *args, testing=False, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         root_logger = logging.getLogger()
 
         for handler in root_logger.handlers[:]:
             root_logger.removeHandler(handler)
 
-        if testing:
+        if self._ENVIRONMENT == 'testing':
             self._fullpath = os.path.join(self._LOGGER_PATH,
                                           self._TEST_LOG_FILENAME)
             self._logger = self._TEST_LOGGER_NAME
@@ -116,10 +157,18 @@ class AppConfig:
         log = logging.getLogger(self._logger)
         # The next line shuts off the annoying asyncio debug messages.
         logging.getLogger("asyncio").setLevel(logging.CRITICAL)
-        environment = 'testing' if testing else 'production'
         path, filename = os.path.split(self._fullpath)
         log.info("Logger configured as '%s' with file '%s'.",
-                 environment, filename)
+                 self._ENVIRONMENT, filename)
+
+    @classmethod
+    def start_logging(cls, testing=False):
+        cls._ENVIRONMENT = 'testing' if testing else 'production'
+        return logging.getLogger(AppConfig().logger_name)
+
+    @property
+    def log(self):
+        return logging.getLogger(self.logger_name)
 
     @property
     def logger_name(self):
@@ -128,17 +177,3 @@ class AppConfig:
     @property
     def full_log_path(self):
         return self._fullpath
-
-
-def start_logging():
-    from checkMeIn import CheckMeIn
-    global _log
-
-    if _log is None:
-        if CheckMeIn.RUNNING:
-            _log = logging.getLogger(AppConfig().logger_name)
-        else:
-            _log = logging.getLogger(AppConfig(testing=True).logger_name)
-
-
-start_logging()

@@ -13,9 +13,13 @@ import cherrypy
 import tracemalloc
 tracemalloc.start()
 
+from src import AppConfig
+
 
 @pytest.fixture(scope="session", autouse=True)
 def my_own_session_run_at_beginning(request):
+    log = AppConfig.start_logging(testing=True)
+
     path = 'data'
     db_file = 'testing.db'
     test_config = {'global': {
@@ -28,8 +32,8 @@ def my_own_session_run_at_beginning(request):
     try:
         # Make sure we are starting with a clean database
         os.remove(dbpath)
-    except FileNotFoundError:
-        pass
+    except FileNotFoundError as e:
+        log.info("%s", e)
 
     keypath = os.path.join(path, 'tests')
 

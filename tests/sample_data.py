@@ -38,13 +38,13 @@ TEST_DATA = {
                  "lastName": "Name",
                  "email": "fake0@email.com",
                  "membershipExpires": timeAgo(days=-30)},
-                {"barcode": "100091",
+                {"barcode": "100091",  # user: admin
                  "displayName": "Member N",
                  "firstName": "Member",
                  "lastName": "Name",
                  "email": "fake1@email.com",
                  "membershipExpires": timeAgo(days=-30)},
-                {"barcode": "100032",
+                {"barcode": "100032",  # user: Joe
                  "displayName": "Average J",
                  "firstName": "Average",
                  "lastName": "Joe",
@@ -61,7 +61,7 @@ TEST_DATA = {
                   "password": "password",
                   "barcode": "100091",
                   "role": 0xFF},
-                 {"user": "joe",
+                 {"user": "Joe",
                   "password": "password",
                   "barcode": "100032",
                   "role": 0x40}

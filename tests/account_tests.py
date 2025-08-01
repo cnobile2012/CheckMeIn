@@ -287,7 +287,7 @@ class TestAccounts(BaseAsyncTests):
 
     async def asyncSetUp(self):
         """
-        Create the accounts, members, and config tables and the
+        Create the accounts, config, menbers, and views tables and the
         current_members view.
         """
         # Tell BaseDatabase what we are doing.
@@ -364,38 +364,20 @@ class TestAccounts(BaseAsyncTests):
         msg = "Expected {} for table 'accounts', found {}."
         await self._accounts.add_users(new_users)
 
-        for user_profile in new_users:
-            user = user_profile['user']
-            password = user_profile['password']
-            barcode = user_profile['barcode']
-            role = user_profile['role']
+        for user in new_users:
+            username = user['user']
+            password = user['password']
+            barcode = user['barcode']
+            role = user['role']
             expected = (barcode, Role(role))
-            result = await self._accounts.get_barcode_and_role(user, password)
+            result = await self._accounts.get_barcode_and_role(
+                username, password)
             self.assertEqual(expected[0], result[0], msg.format(
                 expected[0], result[0]))
             # The Role() objects will never be equal so we need to test
             # the cookie_value.
             self.assertEqual(expected[1].cookie_value, result[1].cookie_value,
                              msg.format(expected[1], result[1]))
-
-    #@unittest.skip("Temporarily skipped")
-    async def test__get_email(self):
-        """
-        Test that the _get_email method returns the email of the user.
-        """
-        params = {'barcode': 100100, 'displayName': 'Jack F',
-                  'firstName': 'Jack', 'lastName': 'Fobi', 'email': '',
-                  'membershipExpires': timeAgo(days=7, hours=2)}
-        await self._members.add_members([params])
-        accounts = await self.get_data('accounts')
-        members = await self.get_data('members')
-        data = [(account[0], member[4]) for account in accounts
-                for member in members if account[4] == member[0]]
-        msg = "Expected {} with user {}, found {}."
-
-        for user, email in data:
-            result = await self._accounts._get_email(user)
-            self.assertEqual(email, result, msg.format(email, user, result))
 
     #@unittest.skip("Temporarily skipped")
     async def test_get_accounts(self):
@@ -416,7 +398,7 @@ class TestAccounts(BaseAsyncTests):
         """
         params = {'user': 'YuanJi', 'password': 'MyParty',
                   'barcode': '', 'role': 0x00}
-        new_user = await self._accounts.add_users([params])
+        await self._accounts.add_users([params])
         data = (
             ('admin', 'password', '100091', Role(0xFF).cookie_value),
             ('joe', 'password', '100032', Role(0x40).cookie_value),
@@ -502,29 +484,12 @@ class TestAccounts(BaseAsyncTests):
         msg = "Expected {} with user {}."
 
         for idx, (user, password, forgot, forgotTime, barcode, activeKeyholder,
-             role, new_pd) in enumerate(data):
+                  role, new_pd) in enumerate(data):
             old_pd = password
             await self._accounts.change_password(user, new_pd)
             item = await self.get_data('accounts')
             new_pd = item[idx][1]
             self.assertNotEqual(old_pd, new_pd, msg.format(new_pd, user))
-
-    #@unittest.skip("Temporarily skipped")
-    async def test__send_email(self):
-        """
-        Test that the _send_email returns the users email address.
-        """
-        data = (
-            ('admin', 'fake1@email.com'),
-            ('joe', 'fake2@email.com'),
-            )
-        msg = "Expected {} with user {}, found {}"
-
-        for user, expected in data:
-            token = self._accounts._get_random_id()
-            result = await self._accounts._send_email(user, token)
-            self.assertEqual(expected, result, msg.format(
-                expected, user, result))
 
     #@unittest.skip("Temporarily skipped")
     async def test__get_random_id(self):
@@ -555,7 +520,7 @@ class TestAccounts(BaseAsyncTests):
             #(),
             )
         msg = "Expected {} with user {}, found {}"
-        #print(await self.get_data('accounts'))
+        #print(await self.get_data())
 
         for user, valid, expected in data:
             if valid:
@@ -564,3 +529,40 @@ class TestAccounts(BaseAsyncTests):
                     expected, user, result))
             else:
                 pass
+
+    #@unittest.skip("Temporarily skipped")
+    async def test__send_email(self):
+        """
+        Test that the _send_email returns the users email address.
+        """
+        data = (
+            ('admin', 'fake1@email.com'),
+            ('joe', 'fake2@email.com'),
+            )
+        msg = "Expected {} with user {}, found {}"
+        msg_type = "Test Message"
+        message = "Some unbearably long message."
+
+        for user, expected in data:
+            result = await self._accounts._send_email(user, msg_type, message)
+            self.assertEqual(expected, result, msg.format(
+                expected, user, result))
+
+    #@unittest.skip("Temporarily skipped")
+    async def test__get_email(self):
+        """
+        Test that the _get_email method returns the email of the user.
+        """
+        params = {'barcode': 100100, 'displayName': 'Jack F',
+                  'firstName': 'Jack', 'lastName': 'Fobi', 'email': '',
+                  'membershipExpires': timeAgo(days=7, hours=2)}
+        await self._members.add_members([params])
+        accounts = await self.get_data('accounts')
+        members = await self.get_data('members')
+        data = [(account[0], member[4]) for account in accounts
+                for member in members if account[4] == member[0]]
+        msg = "Expected {} with user {}, found {}."
+
+        for user, email in data:
+            result = await self._accounts._get_email(user)
+            self.assertEqual(email, result, msg.format(email, user, result))
