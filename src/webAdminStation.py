@@ -258,10 +258,7 @@ class WebAdminStation(BaseDatabase, WebBase):
         newRole.setShopCertifier(certifier)
         newRole.setCoach(coach)
         newRole.setShopSteward(steward)
-
-        with self.dbConnect() as dbConnection:
-            self.engine.accounts.changeRole(dbConnection, barcode, newRole)
-
+        self.engine.accounts.change_role(barcode, newRole)
         raise cherrypy.HTTPRedirect("/admin/users")
 
     @cherrypy.expose

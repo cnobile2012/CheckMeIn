@@ -75,14 +75,12 @@ class WebProfile(WebBase):
                                  error='Passwords must match', user=user,
                                  token=token)
 
-        with self.dbConnect() as dbConnection:
-            worked = self.engine.accounts.verify_forgot(
-                dbConnection, user, token, newPass1)
+        worked = self.engine.accounts.verify_forgot(user, token, newPass1)
 
         if worked:
             raise cherrypy.HTTPRedirect("/profile/login")
 
-        return "Token not correct.  Try link again"
+        return "Token not correct. Try link again"
 
     @cherrypy.expose
     def changePassword(self, oldPass, newPass1, newPass2):
@@ -91,15 +89,13 @@ class WebProfile(WebBase):
         if newPass1 != newPass2:
             error = "New Passwords must match."
         else:
-            with self.dbConnect() as dbConnection:
-                barcode = self.engine.accounts.get_barcode_and_role(
-                    user, oldPass)
+            barcode = self.engine.accounts.get_barcode_and_role(user, oldPass)
 
-                if barcode:
-                    self.engine.accounts.change_password(user, newPass1)
-                    error = ""
-                else:
-                    error = "Incorrect password."
+            if barcode:
+                self.engine.accounts.change_password(user, newPass1)
+                error = ""
+            else:
+                error = "Incorrect password."
 
         return self.index(error)
 

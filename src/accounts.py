@@ -10,7 +10,7 @@ from enum import IntEnum
 
 from . import AppConfig
 from .base_database import BaseDatabase
-from .utils import sendEmail
+from .utils import Utilities
 
 
 class Status(IntEnum):
@@ -106,8 +106,9 @@ class Role:
         return str(self.cookie_value)
 
 
-class Accounts:
+class Accounts(Utilities):
     BD = BaseDatabase()
+    _MAX_FOGOT_TIME = 60 * 60 * 24
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -173,13 +174,6 @@ class Accounts:
                  "ORDER BY cm.displayName;")
         return await self.BD._do_select_all_query(query, (role,))
 
-    async def _get_user(self, email) -> str:
-        query = ("SELECT a.user from accounts a "
-                 "INNER JOIN members m ON a.barcode = m.barcode "
-                 "WHERE m.email = ?;")
-        data = await self.BD._do_select_one_query(query, (email,))
-        return data[0] if data else None
-
     async def change_password(self, user: str, new_password: str) -> None:
         query = "UPDATE accounts SET password = ? WHERE user = ?;"
         await self.BD._do_update_query(
@@ -191,22 +185,23 @@ class Accounts:
 
     async def forgot_password(self, username):
         """
-        Handles forgotton passwords.
+        Handles forgotten passwords.
 
         :param str username: The username or email address.
         :returns: The email address or an error message.
         :rtype: str
         """
+        user_name = username
         query = "SELECT forgotTime from accounts WHERE user = ?;"
         data = await self.BD._do_select_one_query(query, (username,))
 
         if data in ((), None):  # If username is an email.
-            username = await self._get_user(username)
+            username = await self._get_user_from_email(username)
             data = await self.BD._do_select_one_query(query, (username,))
 
         if data in ((), None):
-            msg = f"No email sent, cannot finding user: {username}."
-            #self._log.warning(ret)
+            msg = f"No email sent, cannot find user '{user_name}'."
+            self._log.warning(msg)
             return msg
 
         if data[0] is not None:
@@ -214,8 +209,9 @@ class Accounts:
 
             # To keep people from spamming others.
             if long_ago.total_seconds() < 60:
-                msg = "No email sent due to one sent within last minute."
-                #self._log.warning(ret)
+                msg = (f"Email already sent to user '{username}' within the "
+                       "last minute.")
+                self._log.warning(msg)
                 return msg
 
         token = self._get_random_id()
@@ -234,11 +230,18 @@ class Accounts:
                "Thank you,\nTFI")
         return await self._send_email(username, msg_type, msg)
 
+    async def _get_user_from_email(self, email) -> str:
+        query = ("SELECT a.user from accounts a "
+                 "INNER JOIN members m ON a.barcode = m.barcode "
+                 "WHERE m.email = ?;")
+        data = await self.BD._do_select_one_query(query, (email,))
+        return data[0] if data else None
+
     async def _send_email(self, user, msg_type, message, *, email=None):
         if not email:
             email = await self._get_email(user)
 
-        sendEmail(user, email, msg_type, message)
+        self.send_email(user, email, msg_type, message)
         return email
 
     async def _get_email(self, user):
@@ -248,39 +251,48 @@ class Accounts:
         data = await self.BD._do_select_one_query(query, (user,))
         return data[0] if data else 'No email'
 
-    def verify_forgot(self, conn, username, forgot, newPassword):
+    async def verify_forgot(self, username, token, new_password):
         query = "SELECT forgot, forgotTime from accounts WHERE user = ?;"
-        data = conn.execute(query, (username, )).fetchone()
+        data = await self.BD._do_select_one_query(query, (username,))
 
-        if not data:
-            return False
+        if data and None not in data:
+            db_token = data[0]
+            db_forgot_time = data[1]
+            long_ago = datetime.datetime.now() - db_forgot_time
 
-        forgotTime = data[1]
-        longAgo = datetime.datetime.now() - forgotTime
+            # More than a day ago
+            if long_ago.total_seconds() > self._MAX_FOGOT_TIME:
+                ret = False
+            elif pwd_context.verify(token, db_token):
+                query = ("UPDATE accounts SET forgot = ?, password = ? "
+                         "WHERE user = ?;")
+                await self.BD._do_update_query(
+                    query, ('', pwd_context.hash(new_password), username))
+                ret = True
+            else:
+                self._log.warning("Tokens for user '%s' did not match for "
+                                  "forgot password.", username)
+                ret = False
+        else:
+            self._log.warning("Could not find user '%s' for forgot password.",
+                              username)
+            ret = False
 
-        if longAgo.total_seconds() > (60 * 60 * 24):  # more than a day ago
-            return False
+        return ret
 
-        if pwd_context.verify(forgot, data[0]):
-            query = ("UPDATE accounts SET forgot = ?, password = ? "
-                     "WHERE user = ?;")
-            conn.execute(query, ('', pwd_context.hash(newPassword), username))
-            return True
-
-        return False
-
-    def changeRole(self, conn, barcode, newRole):
+    async def change_role(self, barcode, new_role):
         query = "UPDATE accounts SET role = ? WHERE barcode = ?;"
-        conn.execute(query, (newRole.cookie_value, barcode))
+        await self.BD._do_update_query(query,
+                                       [(new_role.cookie_value, barcode)])
         query = "SELECT user FROM accounts WHERE barcode = ?;"
-        data = conn.execute(query, (barcode, )).fetchone()
+        data = await self.BD._do_select_one_query(query, (barcode,))
 
         if data:
-            emailAddress = self.get_email(data[0])
-            sendEmail("TFI Ops", "tfi-ops@googlegroups.com",
-                      "Role change for user",
-                      f"User {data[0]} <{emailAddress}> roles changed "
-                      f"to : {newRole}")
+            email_address = await self._get_email(data[0])
+            self.send_email("TFI Ops", "tfi-ops@googlegroups.com",
+                            "Role change for user",
+                            f"User {data[0]} <{email_address}> roles changed "
+                            f"to : {new_role}")
 
     def removeUser(self, conn, barcode):
         query = "DELETE from accounts WHERE barcode= ?;"

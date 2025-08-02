@@ -85,23 +85,31 @@ class Logger:
         :param initial_msg: Print the initial log message. The default is True.
         :type initial_msg: bool
         """
-        if logger_name and file_path:
+
+
+        if logger_name and file_path:  # Creates a custom file logger.
             self._make_log_dir(file_path)
             self.logger = logging.getLogger(logger_name)
-            self.logger.setLevel(level)
-            handler = logging.FileHandler(file_path)
-            formatter = logging.Formatter(self._format)
-            handler.setFormatter(formatter)
-            self.logger.addHandler(handler)
+
+            if not self.logger.handlers:
+                self.logger.setLevel(level)
+                handler = logging.FileHandler(file_path)
+                formatter = logging.Formatter(self._format)
+                handler.setFormatter(formatter)
+                self.logger.addHandler(handler)
         elif file_path:  # Creates a file root logger.
-            self._make_log_dir(file_path)
-            logging.basicConfig(filename=file_path, format=self._format,
-                                level=level, force=True)
             self.logger = logging.getLogger()
+
+            if not self.logger.handlers:
+                self._make_log_dir(file_path)
+                logging.basicConfig(filename=file_path, format=self._format,
+                                    level=level, force=True)
         else:  # Creates a stdout root logger.
-            logging.basicConfig(stream=sys.stdout, format=self._format,
-                                level=level, force=True)
             self.logger = logging.getLogger()
+
+            if not self.logger.handlers:
+                logging.basicConfig(stream=sys.stdout, format=self._format,
+                                level=level, force=True)
 
         if logger_name:
             log = logging.getLogger(logger_name)
@@ -135,31 +143,35 @@ class AppConfig(Borg):
     _TEST_LOG_FILENAME = 'testing.log'
     _TEST_LOGGER_NAME = 'testing'
     _ENVIRONMENT = 'production'
+    _RUN_TIMES = 1
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        root_logger = logging.getLogger()
 
-        for handler in root_logger.handlers[:]:
-            root_logger.removeHandler(handler)
+        if self._RUN_TIMES <= 1:
+            root_logger = logging.getLogger()
 
-        if self._ENVIRONMENT == 'testing':
-            self._fullpath = os.path.join(self._LOGGER_PATH,
-                                          self._TEST_LOG_FILENAME)
-            self._logger = self._TEST_LOGGER_NAME
-        else:
-            self._fullpath = os.path.join(self._LOGGER_PATH,
-                                          self._LOG_FILENAME)
-            self._logger = self._LOGGER_NAME
+            for handler in root_logger.handlers[:]:
+                root_logger.removeHandler(handler)
 
-        Logger().config(logger_name=self.logger_name,
-                        file_path=self.full_log_path, initial_msg=False)
-        log = logging.getLogger(self._logger)
-        # The next line shuts off the annoying asyncio debug messages.
-        logging.getLogger("asyncio").setLevel(logging.CRITICAL)
-        path, filename = os.path.split(self._fullpath)
-        log.info("Logger configured as '%s' with file '%s'.",
-                 self._ENVIRONMENT, filename)
+            if self._ENVIRONMENT == 'testing':
+                self._fullpath = os.path.join(self._LOGGER_PATH,
+                                            self._TEST_LOG_FILENAME)
+                self._logger = self._TEST_LOGGER_NAME
+            else:
+                self._fullpath = os.path.join(self._LOGGER_PATH,
+                                            self._LOG_FILENAME)
+                self._logger = self._LOGGER_NAME
+
+            Logger().config(logger_name=self.logger_name,
+                            file_path=self.full_log_path, initial_msg=False)
+            log = logging.getLogger(self._logger)
+            # The next line shuts off the annoying asyncio debug messages.
+            logging.getLogger("asyncio").setLevel(logging.CRITICAL)
+            path, filename = os.path.split(self._fullpath)
+            log.info("Logger configured as '%s' with file '%s'.",
+                    self._ENVIRONMENT, filename)
+            self._RUN_TIMES += 1
 
     @classmethod
     def start_logging(cls, testing=False):

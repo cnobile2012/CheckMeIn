@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
+#
+# src/certifications.py
+#
 
 import datetime
 
-from . import utils
+from .utils import Utilities
 
 from enum import IntEnum
 
@@ -64,7 +67,7 @@ class ToolUser:
             return "Key: " + str(level)
 
 
-class Certifications:
+class Certifications(Utilities):
 
     def __init__(self):
         self.levels = {
@@ -98,41 +101,6 @@ class Certifications:
                 self.addTool(dbConnection, tool[0], tool[1], tool[2], 1)
             else:
                 self.addTool(dbConnection, tool[0], tool[1], tool[2])
-
-    # def migrate(self, dbConnection, db_schema_version):
-    #     if db_schema_version < 8:
-    #         query = ("CREATE TABLE restrictions (id INTEGER PRIMARY KEY, "
-    #                  "descr TEXT);")
-    #         dbConnection.execute(query)
-    #         query = "INSERT INTO restrictions VALUES(1, 'Over 18 Only');"
-    #         dbConnection.execute(query)
-    #         query = ("CREATE TABLE tools (id INTEGER PRIMARY KEY, "
-    #                  "grouping TEXT, name TEXT, "
-    #                  "restriction INTEGER DEFAULT 0, comments TEXT);")
-    #         dbConnection.execute(query)
-    #         query = ("CREATE TABLE certifications user_id TEXT, "
-    #                  "tool_id INTEGER, certifier_id TEXT, date TIMESTAMP, "
-    #                  "level INTEGER default 0;")
-    #         dbConnection.execute(query)
-    #         self.addTools(dbConnection)
-
-    #     if db_schema_version < 16:
-    #         self.addTool(dbConnection, 19, 3, "Grinder")
-    #         query = "UPDATE tools SET name='Sander' WHERE id=10;"
-    #         dbConnection.execute(query)
-    #         query = ("SELECT user_id, tool_id, date, level, certifier_id "
-    #                  "FROM certifications WHERE tool_id = 10;")
-
-    #         for row in dbConnection.execute(query):
-    #             self.addCertification(dbConnection, row[0], 19, row[3], row[2],
-    #                                   row[4])
-
-    def injectData(self, dbConnection, data):
-        # Only used in testing
-        for datum in data:
-            self.addCertification(dbConnection, datum["barcode"],
-                                  datum["tool_id"], datum["level"],
-                                  datum["date"], datum["certifier"])
 
     def addNewCertification(self, dbConnection, member_id, tool_id, level,
                             certifier):
@@ -268,6 +236,5 @@ class Certifications:
         emailAddress = "shopcertifiers@theforgeinitiative.org"
         msg = (f"{name} was just certified as {levelDescription} on "
                f"{toolName} by {certifierName}!!")
-        utils.sendEmail("Shop Certifiers", emailAddress, "New Certification",
+        self.send_email("Shop Certifiers", emailAddress, "New Certification",
                         msg)
-        return ''

@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+#
+# src/utils.py
+#
 
 from email.mime.text import MIMEText
 import email.utils
@@ -6,24 +9,32 @@ import smtplib
 
 from . import AppConfig
 
-FROM_EMAIL = "noreply@theforgeinitiative.org"
-FROM_NAME = "TFI CheckMeIn"
 
+class Utilities:
+    """
+    This class must be inherited by other classes or logging will
+    cause errors.
+    """
+    FROM_EMAIL = "noreply@theforgeinitiative.org"
+    FROM_NAME = "TFI CheckMeIn"
 
-def sendEmail(toName, toEmail, subject, message, ccName="", ccEmail=""):
-    msg = MIMEText(message)
-    msg['To'] = email.utils.formataddr((toName, toEmail))
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-    if ccEmail:
-        msg['Cc'] = email.utils.formataddr((ccName, ccEmail))
+    def send_email(self, toName, toEmail, subject, message, ccName="",
+                   ccEmail=""):
+        msg = MIMEText(message)
+        msg['To'] = email.utils.formataddr((toName, toEmail))
 
-    msg['From'] = email.utils.formataddr((FROM_NAME, FROM_EMAIL))
-    msg['Subject'] = subject
+        if ccEmail:
+            msg['Cc'] = email.utils.formataddr((ccName, ccEmail))
 
-    try:  # pragma: no cover
-        server = smtplib.SMTP('localhost')
-        server.sendmail(FROM_EMAIL, [toEmail], msg.as_string())
-        server.quit()
-    except IOError:
-        log = AppConfig().log
-        log.warning('Email would have been:\n%s', msg)
+        msg['From'] = email.utils.formataddr((self.FROM_NAME, self.FROM_EMAIL))
+        msg['Subject'] = subject
+
+        try:  # pragma: no cover
+            server = smtplib.SMTP('localhost')
+            server.sendmail(self.FROM_EMAIL, [toEmail], msg.as_string())
+            server.quit()
+        except IOError:
+            self._log.warning('Email would have been:\n%s', msg)

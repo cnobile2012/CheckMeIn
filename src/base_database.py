@@ -6,6 +6,7 @@
 import os
 import datetime
 import shutil
+import sqlite3
 import aiosqlite
 
 from . import Borg, BASE_DIR, AppConfig
@@ -26,7 +27,7 @@ def custom_converter(value):
 
 
 aiosqlite.register_adapter(datetime.datetime, adapt_datetime)
-aiosqlite.register_converter('TIMESTAMP', custom_converter)
+aiosqlite.register_converter('DATETIME', custom_converter)
 
 
 class BaseDatabase(Borg):
@@ -55,8 +56,8 @@ class BaseDatabase(Borg):
         _T_ACCOUNTS: (
             'user TEXT PRIMARY KEY COLLATE NOCASE',
             'password TEXT NOT NULL',
-            'forgot TEXT',
-            'forgotTime TIMESTAMP',
+            'forgot TEXT',  # Hashed token used in URL.
+            'forgotTime DATETIME',
             'barcode TEXT UNIQUE',
             'activeKeyholder INTEGER default 0',
             'role INTEGER default 0'),
@@ -64,7 +65,7 @@ class BaseDatabase(Borg):
             'user_id TEXT',
             'tool_id INTEGER',
             'certifier_id TEXT',
-            'date TIMESTAMP',
+            'date DATETIME',
             'level INTEGER default 0'),
         _T_CONFIG: (
             'key TEXT PRIMARY KEY',
@@ -84,7 +85,7 @@ class BaseDatabase(Borg):
             'newsletter INTEGER default 0'),
         _T_LOG_EVENTS: (
             'what TEXT',
-            'date TIMESTAMP',
+            'date DATETIME',
             'barcode TEXT'),
         _T_MEMBERS: (
             'barcode TEXT UNIQUE',
@@ -92,7 +93,7 @@ class BaseDatabase(Borg):
             'firstName TEXT',
             'lastName TEXT',
             'email TEXT',
-            'membershipExpires TIMESTAMP'),
+            'membershipExpires DATETIME'),
         _T_REPORTS: (
             'report_id INTEGER PRIMARY KEY',
             'name TEXT UNIQUE',
@@ -111,7 +112,7 @@ class BaseDatabase(Borg):
             'program_name TEXT NOT NULL',
             'program_number INTEGER NOT NULL',
             'team_name TEXT',
-            'start_date TIMESTAMP',
+            'start_date DATETIME',
             'active INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0, 1))',
             'CONSTRAINT unq UNIQUE (program_name, program_number, start_date)'
             ),
@@ -122,12 +123,12 @@ class BaseDatabase(Borg):
             'restriction INTEGER DEFAULT 0',
             'comments TEXT'),
         _T_UNLOCKS: (
-            'time TIMESTAMP',
+            'time DATETIME',
             'location TEXT',
             'barcode TEXT'),
         _T_VISITS: (
-            'enter_time TIMESTAMP',
-            'exit_time TIMESTAMP',
+            'enter_time DATETIME',
+            'exit_time DATETIME',
             'barcode TEXT',
             'status TEXT'),
         _V_CURRENT_MEMBERS: (
@@ -266,7 +267,9 @@ class BaseDatabase(Borg):
         :returns: A list of the data.
         :rtype: list
         """
-        async with aiosqlite.connect(self.db_fullpath) as db:
+        async with aiosqlite.connect(self.db_fullpath,
+            detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES
+            ) as db:
             async with db.execute(query, params) as cursor:
                 values = await cursor.fetchall()
 
@@ -280,7 +283,9 @@ class BaseDatabase(Borg):
         :returns: One item of data.
         :rtype: tuple or NoneType
         """
-        async with aiosqlite.connect(self.db_fullpath) as db:
+        async with aiosqlite.connect(self.db_fullpath,
+            detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES
+            ) as db:
             async with db.execute(query, params) as cursor:
                 value = await cursor.fetchone()
 
@@ -293,7 +298,9 @@ class BaseDatabase(Borg):
         :param str query: The SQL query to execute.
         :param list data: Data to insert into the Data table.
         """
-        async with aiosqlite.connect(self.db_fullpath) as db:
+        async with aiosqlite.connect(self.db_fullpath,
+            detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES
+            ) as db:
             try:
                 await db.executemany(query, data)
             except Exception as e:
@@ -308,7 +315,10 @@ class BaseDatabase(Borg):
         :param str query: The SQL query to do.
         :param list data: Data to update into the Data table.
         """
-        async with aiosqlite.connect(self.db_fullpath) as db:
+        async with aiosqlite.connect(
+            self.db_fullpath,
+            detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES
+            ) as db:
             try:
                 await db.executemany(query, data)
             except Exception as e:

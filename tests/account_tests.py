@@ -4,10 +4,13 @@
 #
 
 import os
+import datetime
 import unittest
 import aiosqlite
-import tracemalloc
-tracemalloc.start()
+from passlib.apps import custom_app_context as pwd_context
+
+#import tracemalloc
+#tracemalloc.start()
 
 from src.accounts import Role, Accounts
 from src.base_database import BaseDatabase
@@ -459,21 +462,6 @@ class TestAccounts(BaseAsyncTests):
                 expected, role, result))
 
     #@unittest.skip("Temporarily skipped")
-    async def test_get_user(self):
-        """
-        Test that the get_user method returns the expected user's data.
-        """
-        accounts = await self.get_data('accounts')
-        members = await self.get_data('members')
-        data = [(account[0], member[4]) for account in accounts
-                for member in members if account[4] == member[0]]
-        msg = "Expected {}, found {}."
-
-        for user, email in data:
-            result = await self._accounts._get_user(email)
-            self.assertEqual(user, result, msg.format(user, result))
-
-    #@unittest.skip("Temporarily skipped")
     async def test_change_password(self):
         """
         Test that the change_password method properly changes the user's
@@ -511,24 +499,38 @@ class TestAccounts(BaseAsyncTests):
         """
         Test that the forgot_password method
         """
-        err_msg1 = "No email sent, cannot finding user: {}."
-        err_msg2 = "No email sent due to one sent within last minute."
+        err_msg1 = "No email sent, cannot find user '{}'."
+        err_msg2 = "Email already sent to user '{}' within the last minute."
 
         data = (
-            ('admin', True, 'fake1@email.com'),
-            ('joe', True, 'fake2@email.com'),
-            #(),
+            ('admin', 'fake1@email.com'),
+            ('fake2@email.com', 'fake2@email.com'),
+            ('nobody', err_msg1.format('nobody')),
+            ('admin', err_msg2.format('admin'))
             )
         msg = "Expected {} with user {}, found {}"
         #print(await self.get_data())
 
-        for user, valid, expected in data:
-            if valid:
-                result = await self._accounts.forgot_password(user)
-                self.assertEqual(expected, result, msg.format(
-                    expected, user, result))
-            else:
-                pass
+        for user, expected in data:
+            result = await self._accounts.forgot_password(user)
+            self.assertEqual(expected, result, msg.format(
+                expected, user, result))
+
+    #@unittest.skip("Temporarily skipped")
+    async def test__get_user_from_email(self):
+        """
+        Test that the _get_user_from_email method returns the expected
+        user's data.
+        """
+        accounts = await self.get_data('accounts')
+        members = await self.get_data('members')
+        data = [(account[0], member[4]) for account in accounts
+                for member in members if account[4] == member[0]]
+        msg = "Expected {}, found {}."
+
+        for user, email in data:
+            result = await self._accounts._get_user_from_email(email)
+            self.assertEqual(user, result, msg.format(user, result))
 
     #@unittest.skip("Temporarily skipped")
     async def test__send_email(self):
@@ -566,3 +568,61 @@ class TestAccounts(BaseAsyncTests):
         for user, email in data:
             result = await self._accounts._get_email(user)
             self.assertEqual(email, result, msg.format(email, user, result))
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_verify_forgot(self):
+        """
+        Test that the verify_forgot method verifies that the arguments are
+        all correct.
+        """
+        async def update_forgot_user(user, forgot_time):
+            query = ("UPDATE accounts SET forgot = ?, forgotTime = ? "
+                     "WHERE user = ?;")
+            token = self._accounts._get_random_id()
+            await self.bd._do_update_query(
+                query, [(pwd_context.hash(token), forgot_time, user)])
+            return token
+
+        now = datetime.datetime.now()
+        long_ago = datetime.datetime(2000, 1, 1)
+        data = (
+            ('admin', await update_forgot_user('admin', now),
+             'new_password', True),
+            ('joe', await update_forgot_user('joe', long_ago),
+             'new_password', False),
+            ('joe', 'U4G1T6Q1', 'new_password', False),
+            ('unknown_user', 'U4G1T6Q1', 'new_password', False),
+            )
+        msg = "Expected {} with user {}, found {}."
+
+        for user, token, new_pw, expected in data:
+            if user == 'joe' and token == 'U4G1T6Q1':  # Third test only
+                await update_forgot_user('joe', now)
+
+            result = await self._accounts.verify_forgot(user, token, new_pw)
+            self.assertEqual(expected, result, msg.format(
+                expected, user, result))
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_change_role(self):
+        """
+        Test that the change_role method properly changes the role of a user.
+        """
+        async def get_user_with_barcode(barcode):
+            query = "SELECT role FROM accounts WHERE barcode = ?;"
+            return await self.bd._do_select_one_query(query, (barcode,))
+
+        data = (
+            ('100091', 0xFF, 0x20),  # admin
+            ('100032', 0x40, 0xFF),  # joe
+            )
+        msg = "Expected {} with barcode {} and role {}, found {}."
+
+        for barcode, old_role, new_role in data:
+            await self._accounts.change_role(barcode, Role(new_role))
+            items = await get_user_with_barcode(barcode)
+            result = items[0]
+            self.assertNotEqual(old_role, result, msg.format(
+                old_role, barcode, new_role, result))
+            self.assertEqual(new_role, result, msg.format(
+                new_role, barcode, old_role, result))

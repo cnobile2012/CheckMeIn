@@ -1,11 +1,19 @@
+# -*- coding: utf-8 -*-
+#
+# src/webGuestStation.py
+#
+
 import cherrypy
 
 from .webBase import WebBase
-from . import utils
+from .utils import Utilities
 
 
-class WebGuestStation(WebBase):
-    # Guest Pages
+class WebGuestStation(Utilities, WebBase):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
     def showGuestPage(self, message=''):
         with self.dbConnect() as dbConnection:
             building_guests, recent_guests = self.engine.getGuestLists(
@@ -54,7 +62,7 @@ class WebGuestStation(WebBase):
 
         if comments:
             error, email = self.engine.guests.getEmail(dbConnection, guest_id)
-            utils.sendEmail('TFI Ops', 'tfi-ops@googlegroups.com',
+            self.send_email('TFI Ops', 'tfi-ops@googlegroups.com',
                             f'Comments from {name}',
                             f'Comments left:\n{comments}', name, email)
 
