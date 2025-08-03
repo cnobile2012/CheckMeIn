@@ -12,7 +12,7 @@ from passlib.apps import custom_app_context as pwd_context
 #import tracemalloc
 #tracemalloc.start()
 
-from src.accounts import Role, Accounts
+from src.accounts import Status, Role, Accounts
 from src.base_database import BaseDatabase
 from src.config import Config
 from src.members import Members
@@ -340,6 +340,19 @@ class TestAccounts(BaseAsyncTests):
 
         return result
 
+    async def activate_key_holder(self, barcode=None):
+        params = (Status.active, Status.inactive)
+        where = "WHERE activeKeyholder = ?"
+
+        if barcode:
+            params += (barcode,)
+            where += " AND barcode = ?;"
+        else:
+            where += ';'
+
+        query = f"UPDATE accounts SET activeKeyholder = ?{where}"
+        await self.bd._do_update_query(query, [params])
+
     #@unittest.skip("Temporarily skipped")
     async def test_tables_and_views_exist(self):
         """
@@ -626,3 +639,91 @@ class TestAccounts(BaseAsyncTests):
                 old_role, barcode, new_role, result))
             self.assertEqual(new_role, result, msg.format(
                 new_role, barcode, old_role, result))
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_remove_user(self):
+        """
+        Test that remove_user removeds the user.
+        """
+        data = ('100091', '100032',)  # admin and joe
+        msg = "Expected {} with barcode {}, found {}."
+
+        for barcode in data:
+            await self._accounts.remove_user(barcode)
+
+        items = await self.get_data('accounts')
+        self.assertEqual([], items, msg.format([], barcode, items))
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_get_users(self):
+        """
+        Test that get_users method returns all users.
+        """
+        data = ('admin', 'Joe',)
+        msg = "Expected {} with user {}, found {}."
+        items = await self._accounts.get_users()
+        users = items.keys()
+
+        for user in data:
+            self.assertIn(user, users, msg.format(True, user, user in users))
+
+        self.assertEqual(len(data), len(users), msg.format(
+            len(data), data, len(users)))
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_get_non_accounts(self):
+        """
+        Test that the get_non_accounts method returns all non account users.
+        """
+        data = ('100090', '100093')
+        msg = "Expected {} with barcode {}, found {}."
+        items = await self._accounts.get_non_accounts()
+        barcodes = items.keys()
+
+        for barcode in data:
+            self.assertIn(barcode, barcodes, msg.format(
+                True, barcode, barcode in barcodes))
+
+        self.assertEqual(len(data), len(barcodes), msg.format(
+            len(data), data, len(barcodes)))
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_inactivate_all_key_holders(self):
+        """
+        Test that the inactivate_all_key_holders method inactivates all
+        key holders properly.
+        """
+        await self.activate_key_holder()
+        msg = "Expected {} with user {}, found {}."
+        data = [(item[0], item[5]) for item in await self.get_data('accounts')]
+        await self._accounts.inactivate_all_key_holders()
+        items = {item[0]: item[5] for item in await self.get_data('accounts')}
+
+        for user, status in data:
+            self.assertNotEqual(status, items[user], msg.format(
+                status, user, items[user]))
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_set_key_holder_active(self):
+        """
+        Test that the set_key_holder_active method sets the user with a
+        specific barcode active.
+        """
+        test_barcode = '100091'
+        item = await self._accounts.set_key_holder_active(test_barcode)
+
+        print(item)
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_get_active_key_holder(self):
+        """
+        Test that the get_active_key_holder method returns the first active
+        key holder.
+        """
+        test_barcode = '100091'
+        test_dn = 'Member N'
+        await self.activate_key_holder()
+        msg = "Expected {}, found {}."
+        bc, dn = await self._accounts.get_active_key_holder()
+        self.assertEqual(test_barcode, bc, msg.format(test_barcode, bc))
+        self.assertEqual(test_dn, dn, msg.format(test_dn, dn))

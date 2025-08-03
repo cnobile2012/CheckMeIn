@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+#
+# src/engine.py
+#
 
 import sqlite3
 import asyncio
@@ -72,19 +75,6 @@ class Engine(BaseDatabase):
         self.members = Members()
         self.log_events = LogEvents()
 
-        # if not os.path.exists(self.db_fullpath):
-        #     if not os.path.exists(dbPath):
-        #         os.mkdir(dbPath)
-
-        #     with self.dbConnect() as c:
-        #         self.migrate(c, 0)
-        # else:
-        #     with self.dbConnect() as c:
-        #         data = c.execute('PRAGMA schema_version').fetchone()
-
-        #         if data[0] != SCHEMA_VERSION:
-        #             self.migrate(c, data[0])
-
     @property
     def data_path(self):
         return self._data_path
@@ -92,48 +82,6 @@ class Engine(BaseDatabase):
     def dbConnect(self):
         return sqlite3.connect(self.db_fullpath,
                                detect_types=sqlite3.PARSE_DECLTYPES)
-
-    # def migrate(self, dbConnection, db_schema_version):
-    #     if db_schema_version < SCHEMA_VERSION:
-    #         self.config.migrate(dbConnection, db_schema_version)
-    #         self.visits.migrate(dbConnection, db_schema_version)
-    #         self.members.migrate(dbConnection, db_schema_version)
-    #         self.guests.migrate(dbConnection, db_schema_version)
-    #         self.teams.migrate(dbConnection, db_schema_version)
-    #         self.customReports.migrate(dbConnection, db_schema_version)
-    #         self.certifications.migrate(dbConnection, db_schema_version)
-    #         self.accounts.migrate(dbConnection, db_schema_version)
-    #         self.devices.migrate(dbConnection, db_schema_version)
-    #         self.unlocks.migrate(dbConnection, db_schema_version)
-    #         self.log_events.migrate(dbConnection, db_schema_version)
-    #         dbConnection.execute('PRAGMA schema_version = ' +
-    #                              str(SCHEMA_VERSION))
-    #     elif db_schema_version != SCHEMA_VERSION:  # pragma: no cover
-    #         raise Exception("Unknown DB schema version" +
-    #                         str(db_schema_version) + ": " + self.db_fullpath)
-
-    # def injectData(self, dictValues):
-    #     """
-    #     Only used for testing.
-    #     """
-    #     areas = {
-    #         "visits": self.visits,
-    #         "members": self.members,
-    #         "guests": self.guests,
-    #         "teams": self.teams,
-    #         "customReports": self.customReports,
-    #         "certifications": self.certifications,
-    #         "accounts": self.accounts,
-    #         "devices": self.devices,
-    #         "unlocks": self.unlocks,
-    #         "logEvents": self.log_events,
-    #         "config": self.config
-    #         }
-
-    #     for key, member in areas.items():
-    #         if key in dictValues:
-    #             with self.dbConnect() as dbConnection:
-    #                 member.injectData(dbConnection, dictValues[key])
 
     def getGuestLists(self, dbConnection):
         all_guests = self.guests.getList(dbConnection)
@@ -143,12 +91,11 @@ class Engine(BaseDatabase):
         return (building_guests, guests_not_here)
 
     def checkin(self, dbConnection, check_ins):
-        current_keyholder_bc, _ = self.accounts.getActiveKeyholder(
-            dbConnection)
+        current_keyholder_bc, _ = self.accounts.get_active_key_holder()
 
         for barcode in check_ins:
             if not current_keyholder_bc:
-                if self.accounts.setActiveKeyholder(dbConnection, barcode):
+                if self.accounts.set_key_holder_active(barcode):
                     current_keyholder_bc = barcode
 
         return current_keyholder_bc

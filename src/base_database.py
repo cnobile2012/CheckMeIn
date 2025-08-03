@@ -264,6 +264,7 @@ class BaseDatabase(Borg):
         Do the actual query and return the results.
 
         :param str query: The SQL query to execute.
+        :params tuple params: Parameters to query.
         :returns: A list of the data.
         :rtype: list
         """
@@ -280,6 +281,7 @@ class BaseDatabase(Borg):
         Do the actual query and return the results.
 
         :param str query: The SQL query to execute.
+        :params tuple params: Parameters to query.
         :returns: One item of data.
         :rtype: tuple or NoneType
         """
@@ -291,40 +293,66 @@ class BaseDatabase(Borg):
 
         return value
 
-    async def _do_insert_query(self, query: str, data: list) -> None:
+    async def _do_insert_query(self, query: str, data: list) -> int:
         """
         Do the insert query.
 
         :param str query: The SQL query to execute.
-        :param list data: Data to insert into the Data table.
+        :param list or tuple data: Data to insert into the table.
+        :returns: Number of rows affected by the query or 'None' of an
+                  exception was raised.
+        :rtype: int or None
         """
-        async with aiosqlite.connect(self.db_fullpath,
-            detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES
-            ) as db:
-            try:
-                await db.executemany(query, data)
-            except Exception as e:
-                self._log.error(str(e), exc_info=True)
-            else:
-                await db.commit()
+        return await self._do_query(query, data)
 
-    async def _do_update_query(self, query: str, data: list) -> None:
+    async def _do_update_query(self, query: str, data: list) -> int:
         """
         Do the update query.
 
         :param str query: The SQL query to do.
-        :param list data: Data to update into the Data table.
+        :param list or tuple data: Data to update into the table.
+        :returns: Number of rows affected by the query or 'None' of an
+                  exception was raised.
+        :rtype: int or None
+        """
+        return await self._do_query(query, data)
+
+    async def _do_delete_query(self, query: str, data: list) -> int:
+        """
+        Do the delete query.
+
+        :param str query: The SQL query to do.
+        :param list or tuple data: Data used to delete items from a table.
+        :returns: Number of rows affected by the query or 'None' of an
+                  exception was raised.
+        :rtype: int or None
+        """
+        return await self._do_query(query, data)
+
+    async def _do_query(self, query: str, data: list) -> int:
+        """
+        Do the INSERT, UPDATE, or DELETE queries.
+
+        :param str query: The SQL query to do.
+        :param list or tuple data: Data used to insert, update, or delete
+                                   items from a table.
+        :returns: Number of rows affected by the query or 'None' of an
+                  exception was raised.
+        :rtype: int or None
         """
         async with aiosqlite.connect(
             self.db_fullpath,
             detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES
             ) as db:
+            data = [data] if isinstance(data, (tuple, dict)) else data
+
             try:
-                await db.executemany(query, data)
+                cursor = await db.executemany(query, data)
             except Exception as e:
                 self._log.error(str(e), exc_info=True)
             else:
                 await db.commit()
+                return cursor.rowcount
 
     #
     # Utility methods

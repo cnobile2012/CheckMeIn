@@ -66,8 +66,7 @@ class CheckMeIn(WebBase):
     @cherrypy.expose
     def whoishere(self):
         with self.dbConnect() as dbConnection:
-            _, keyholder_name = self.engine.accounts.getActiveKeyholder(
-                dbConnection)
+            _, keyholder_name = self.engine.accounts.get_active_key_holder()
             return self.template('who_is_here.mako',
                                  now=datetime.datetime.now(),
                                  keyholder=keyholder_name,
@@ -85,7 +84,7 @@ class CheckMeIn(WebBase):
         if self.hasPermissionsNologin(Role.KEYHOLDER):
             with self.dbConnect() as dbConnection:
                 (current_keyholder_bc, _
-                 ) = self.engine.accounts.getActiveKeyholder(dbConnection)
+                 ) = self.engine.accounts.get_allactive_key_holders()
                 self.engine.checkout(dbConnection, current_keyholder_bc,
                                      check_outs)
 

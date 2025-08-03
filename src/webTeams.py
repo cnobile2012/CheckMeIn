@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+#
+# src/webTeams.py
+#
 
 import datetime
 import cherrypy
@@ -158,7 +161,7 @@ class WebTeams(WebBase):
                                          barcode=leaving_keyholder_bc,
                                          whoIsHere=whoIsHere)
 
-                self.engine.accounts.removeKeyholder(dbConnection)
+                self.engine.accounts.inactivate_all_key_holders()
                 self.engine.visits.checkOutMember(dbConnection,
                                                   leaving_keyholder_bc)
 

@@ -5,8 +5,8 @@ import random
 import datetime
 import urllib
 
-from passlib.apps import custom_app_context as pwd_context
 from enum import IntEnum
+from passlib.apps import custom_app_context as pwd_context
 
 from . import AppConfig
 from .base_database import BaseDatabase
@@ -161,15 +161,15 @@ class Accounts(Utilities):
     async def get_members_with_role(self, role: int) -> list:
         query = ("SELECT cm.displayName, a.barcode FROM accounts a "
                  "INNER JOIN current_members cm "
-                 "ON (cm.barcode = a.barcode) "
+                 "ON cm.barcode = a.barcode "
                  "WHERE a.role & ? != 0 ORDER BY cm.displayName;")
         return await self.BD._do_select_all_query(query, (role,))
 
     async def get_present_with_role(self, role: int) -> list:
         query = ("SELECT cm.displayName, a.barcode FROM accounts a "
                  "INNER JOIN current_members cm "
-                 "ON (cm.barcode = a.barcode) "
-                 "INNER JOIN visits v ON (v.barcode = a.barcode) "
+                 "ON cm.barcode = a.barcode "
+                 "INNER JOIN visits v ON v.barcode = a.barcode "
                  "WHERE v.status = 'In' AND role & ? != 0 "
                  "ORDER BY cm.displayName;")
         return await self.BD._do_select_all_query(query, (role,))
@@ -294,79 +294,88 @@ class Accounts(Utilities):
                             f"User {data[0]} <{email_address}> roles changed "
                             f"to : {new_role}")
 
-    def removeUser(self, conn, barcode):
+    async def remove_user(self, barcode):
         query = "DELETE from accounts WHERE barcode= ?;"
-        conn.execute(query, (barcode, ))
+        await self.BD._do_delete_query(query, [(barcode,)])
 
-    def getUsers(self, conn):
-        dictUsers = {}
+    async def get_users(self):
+        dict_users = {}
         query = ("SELECT a.user, a.barcode, a.role, m.displayName "
                  "FROM accounts a "
                  "INNER JOIN members m ON m.barcode = a.barcode "
                  "ORDER BY a.user;")
 
-        for row in conn.execute(query):
-            dictUsers[row[0]] = {
-                'barcode': row[1],
-                'role': Role(row[2]),
-                'displayName': row[3]
-                }
+        for row in await self.BD._do_select_all_query(query):
+            dict_users[row[0]] = {'barcode': row[1],
+                                  'role': Role(row[2]),
+                                  'displayName': row[3]}
 
-        return dictUsers
+        return dict_users
 
-    def getNonAccounts(self, conn):
-        dictUsers = {}
+    async def get_non_accounts(self):
+        dict_users = {}
         query = ("SELECT cm.barcode, cm.displayName "
                  "FROM current_members cm "
                  "LEFT JOIN accounts a USING (barcode) "
                  "WHERE a.user is NULL ORDER BY cm.displayName;")
 
-        for row in conn.execute(query):
-            dictUsers[row[0]] = row[1]
+        for row in await self.BD._do_select_all_query(query):
+            dict_users[row[0]] = row[1]
 
-        return dictUsers
+        return dict_users
 
-    def removeKeyholder(self, conn):
+    async def inactivate_all_key_holders(self):
         query = ("UPDATE accounts SET activeKeyholder = ? "
                  "WHERE activeKeyholder = ?;")
-        conn.execute(query, (Status.inactive, Status.active))
+        await self.BD._do_update_query(query,
+                                       [(Status.inactive, Status.active)])
 
-    def setActiveKeyholder(self, conn, barcode):
-        returnValue = False
-        # If current barcode is a keyholder
+    async def set_key_holder_active(self, barcode):
+        ret = False
 
         if barcode:
-            keyholderBarcode, _ = self.getActiveKeyholder(conn)
+            item = await self.get_active_key_holder()
 
-            if barcode != keyholderBarcode:
-                query = ("UPDATE accounts SET activeKeyholder = ? "
-                         "WHERE barcode = ? AND role & ? != 0;")
-                conn.execute(query, (Status.active, barcode, Role.KEYHOLDER))
-                # *** TODO *** The query below does not use changes()
-                # correctly.
-                data = conn.execute('SELECT changes();').fetchone()
+            if barcode != item[0]:
+                query = ("UPDATE accounts SET activeKeyholder = :akh "
+                         "WHERE barcode = :bc AND activeKeyholder != :akh "
+                         "AND role & :role != 0;")
+                params = {'akh': Status.active, 'bc': barcode,
+                          'role': Role.KEYHOLDER}
+                row_count = await self.BD._do_update_query(query, parms)
+                query = "SELECT changes();"
+                data = await self.BD._do_select_one_query(query)
+                print('RESULT', data, row_count)
 
-                # There were changes from the last update statement
-                if data and data[0]:
-                    returnValue = True
+                # Were there changes from the last update query?
+                if data and data[0] > 0:
+                    ret = True
 
-                    if keyholderBarcode:
+                    if items[0]:
                         # *** TODO *** The query below does not use changes()
                         # correctly.
+
                         query = ("UPDATE accounts SET activeKeyholder = ? "
                                  "WHERE barcode = ? AND changes() > 0;")
-                        conn.execute(query, (Status.inactive,
-                                             keyholderBarcode))
 
-        return returnValue
+                        conn.execute(query, (Status.inactive, keyholderBarcode))
 
-    def getActiveKeyholder(self, conn):
-        """Returns the (barcode, name) of the active keyholder"""
+        return ret
+
+    async def get_active_key_holder(self):
+        """
+        Returns the (barcode, displayName) for the active key holder.
+        """
         query = ("SELECT a.barcode, m.displayName FROM accounts a "
                  "INNER JOIN members m ON a.barcode = m.barcode "
-                 "WHERE a.activeKeyholder = ?")
-        data = conn.execute(query, (Status.active, )).fetchone()
-        return ('', '') if data is None else (data[0], data[1])
+                 "WHERE a.activeKeyholder = ?;")
+        data = await self.BD._do_select_all_query(query, (Status.active,))
+
+        if len(data) > 1:
+            self._log.warning("Found more than one active key holder %s.",
+                              data)
+
+        return data[0] if data else ('', '')
 
     def getKeyholders(self, conn):
         query = ("SELECT user, barcode, password FROM accounts "

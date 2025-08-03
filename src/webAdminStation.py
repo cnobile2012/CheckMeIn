@@ -50,7 +50,7 @@ class WebAdminStation(BaseDatabase, WebBase):
     def emptyBuilding(self):
         with self.dbConnect() as dbConnection:
             self.engine.visits.emptyBuilding(dbConnection, "")
-            self.engine.accounts.removeKeyholder(dbConnection)
+            self.engine.accounts.inactivate_all_key_holders()
 
         return "Building Empty"
 
@@ -159,14 +159,11 @@ class WebAdminStation(BaseDatabase, WebBase):
     @cherrypy.expose
     def users(self, error=""):
         self.checkPermissions()
-
-        with self.dbConnect() as dbConnection:
-            users = self.engine.accounts.getUsers(dbConnection)
-            nonUsers = self.engine.accounts.getNonAccounts(dbConnection)
-
-        return self.template(
-            'users.mako', error=error, username=Cookie('username').get(''),
-            users=users, nonAccounts=nonUsers)
+        users = self.engine.accounts.get_users()
+        non_users = self.engine.accounts.get_non_accounts()
+        return self.template('users.mako', error=error,
+                             username=Cookie('username').get(''), users=users,
+                             nonAccounts=non_users)
 
     @cherrypy.expose
     async def addUser(self, user, barcode, keyholder=0, admin=0, certifier=0,
@@ -204,10 +201,7 @@ class WebAdminStation(BaseDatabase, WebBase):
     @cherrypy.expose
     def deleteUser(self, barcode):
         self.checkPermissions()
-
-        with self.dbConnect() as dbConnection:
-            self.engine.accounts.removeUser(dbConnection, barcode)
-
+        self.engine.accounts.remove_user(barcode)
         raise cherrypy.HTTPRedirect("/admin/users")
 
     @cherrypy.expose
