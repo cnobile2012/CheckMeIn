@@ -322,6 +322,7 @@ class TestAccounts(BaseAsyncTests):
         await self.truncate_all_tables()
         # Clear the Borg state.
         self.bd.clear_state()
+        self.bd = None
 
     async def get_data(self, module='all'):
         if module == 'accounts':
@@ -400,7 +401,7 @@ class TestAccounts(BaseAsyncTests):
         """
         Test that the get_accounts method returns all data from all accounts.
         """
-        expected = 2  # Two accounts
+        expected = 3  # Two accounts
         data = await self._accounts.get_accounts()
         result = len(data)
         msg = f"Expected {expected}, found {result}."
@@ -417,7 +418,7 @@ class TestAccounts(BaseAsyncTests):
         await self._accounts.add_users([params])
         data = (
             ('admin', 'password', '100091', Role(0xFF).cookie_value),
-            ('joe', 'password', '100032', Role(0x40).cookie_value),
+            ('Joe', 'password', '100032', Role(0x40).cookie_value),
             ('Pete', '', '', Role(0x00).cookie_value),
             ('YuanJi', 'AnotherParty', '', Role(0x00).cookie_value),
             )
@@ -441,7 +442,7 @@ class TestAccounts(BaseAsyncTests):
         data = (
             (Role.COACH, 1),
             (Role.SHOP_CERTIFIER, 1),
-            (Role.KEYHOLDER, 1),
+            (Role.KEYHOLDER, 2),
             (Role.ADMIN, 1),
             (Role.SHOP_STEWARD, 2),
             )
@@ -462,7 +463,7 @@ class TestAccounts(BaseAsyncTests):
         data = (
             (Role.COACH, 1),           # Role 0x04
             (Role.SHOP_CERTIFIER, 1),  # Role 0x08
-            (Role.KEYHOLDER, 1),       # Role 0x10
+            (Role.KEYHOLDER, 2),       # Role 0x10
             (Role.ADMIN, 1),           # Role 0x20
             (Role.SHOP_STEWARD, 2),    # Role 0x40
             )
@@ -643,9 +644,12 @@ class TestAccounts(BaseAsyncTests):
     #@unittest.skip("Temporarily skipped")
     async def test_remove_user(self):
         """
-        Test that remove_user removeds the user.
+        Test that remove_user removes all user.
+
+        NOTE: If users are added to the TEST_DATA in the sample_data.py
+              they need to be added here for this test to pass.
         """
-        data = ('100091', '100032',)  # admin and joe
+        data = ('100091', '100032', '100015')  # admin, Joe, and Fred
         msg = "Expected {} with barcode {}, found {}."
 
         for barcode in data:
@@ -659,7 +663,7 @@ class TestAccounts(BaseAsyncTests):
         """
         Test that get_users method returns all users.
         """
-        data = ('admin', 'Joe',)
+        data = ('admin', 'Joe', 'Paul',)
         msg = "Expected {} with user {}, found {}."
         items = await self._accounts.get_users()
         users = items.keys()
@@ -709,10 +713,22 @@ class TestAccounts(BaseAsyncTests):
         Test that the set_key_holder_active method sets the user with a
         specific barcode active.
         """
-        test_barcode = '100091'
-        item = await self._accounts.set_key_holder_active(test_barcode)
+        data = (
+            ('100091', '', True),        # No one else active
+            ('100015', '100091', True),  # admin is active
+            )
+        msg = "Expected {} with bc0 {}, and bc1 {}, found {}."
 
-        print(item)
+        for bc0, bc1, expected in data:
+            result = await self._accounts.set_key_holder_active(bc0)
+            self.assertEqual(expected, result, msg.format(
+                expected, bc0, bc1, result))
+
+            if bc1 != '':
+                items = [item for item in await self.get_data('accounts')
+                         if item[4] == bc1]
+                self.assertEqual(0, items[0][5], msg.format(
+                    0, bc0, bc1, result))
 
     #@unittest.skip("Temporarily skipped")
     async def test_get_active_key_holder(self):
@@ -727,3 +743,24 @@ class TestAccounts(BaseAsyncTests):
         bc, dn = await self._accounts.get_active_key_holder()
         self.assertEqual(test_barcode, bc, msg.format(test_barcode, bc))
         self.assertEqual(test_dn, dn, msg.format(test_dn, dn))
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_get_key_holders(self):
+        """
+        Test that the get_key_holders method returns the correct number
+        of people that have the key holder role.
+        """
+        num_key_holders = 2
+        items = await self._accounts.get_key_holders()
+        self.assertEqual(num_key_holders, len(items))
+
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_get_key_holder_barcodes(self):
+        """
+        Test that the get_key_holder_barcodes method returns all the
+        barcodes for people that have the key holder role.
+        """
+        num_key_holders = 2
+        items = await self._accounts.get_key_holder_barcodes()
+        self.assertEqual(num_key_holders, len(items))

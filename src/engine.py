@@ -47,7 +47,7 @@ class Engine(BaseDatabase):
     """
     This is the engine for all of the backend.
     """
-    def __init__(self, db_path: str, db_name: str, *args, **kwargs): #, update):
+    def __init__(self, db_path: str, db_name: str, *args, **kwargs):
         """
         Constructor
 
@@ -60,6 +60,7 @@ class Engine(BaseDatabase):
         self.db_fullpath = (db_path, db_name, True)  # called from BaseDatabase
         asyncio.run(self.create_schema())
         self._data_path = db_path
+        print('DUNG')
 
         self.visits = Visits()
         self.guests = Guests()

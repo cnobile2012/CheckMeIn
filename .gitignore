@@ -117,6 +117,7 @@ nohup.out
 .vscode
 
 #web sessions
+sessions
 data/tests/*
 data/*.db
 data/*.key

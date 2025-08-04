@@ -31,14 +31,14 @@ class CheckMeIn(WebBase):
     #     fullMessage = f"event: update\ndata: {msg}\n\n"
     #     cherrypy.engine.publish(self.updateChannel, fullMessage)
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+        AppConfig().start_logging()
         self.lookup = TemplateLookup(directories=['HTMLTemplates'],
                                      default_filters=['h'])
         self.updateChannel = 'updates'
         self.engine = Engine(cherrypy.config["database.path"],
                              cherrypy.config["database.name"])
-        super().__init__(self.lookup, self.engine)
-        AppConfig().start_logging()
+        super().__init__(self.lookup, self.engine, *args, **kwargs)
         self.station = WebMainStation(self.lookup, self.engine)
         self.guests = WebGuestStation(self.lookup, self.engine)
         self.certifications = WebCertifications(self.lookup, self.engine)

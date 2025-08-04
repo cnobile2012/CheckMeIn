@@ -10,27 +10,31 @@ def timeAgo(days=0, hours=0):
 
 
 TEST_DATA = {
-    "visits": [{"enter_time": timeAgo(days=7, hours=1),
+    "visits": [{"enter_time": timeAgo(days=7, hours=1),  # admin
                 "exit_time": timeAgo(days=7, hours=0),
                 "barcode": "100091",
                 "status": "Out"},
-               {"enter_time": timeAgo(days=7, hours=1),
+               {"enter_time": timeAgo(days=7, hours=1),  # Joe
                 "exit_time": timeAgo(days=7, hours=0),
                 "barcode": "100032",
                 "status": "Out"},
-               {"enter_time": timeAgo(days=7, hours=2),
+               {"enter_time": timeAgo(days=7, hours=2),  # Visitor
                 "exit_time": timeAgo(days=7, hours=0.5),
                 "barcode": "202107310001",
                 "status": "Out"},
-               {"enter_time": timeAgo(hours=1),
+               {"enter_time": timeAgo(hours=1),  # admin
                 "barcode": "100091",
                 "status": "In"},
-               {"enter_time": timeAgo(hours=1),
+               {"enter_time": timeAgo(hours=1),  # Visitor
                 "barcode": "202107310001",
                 "status": "In"},
-               {"enter_time": timeAgo(hours=1),
+               {"enter_time": timeAgo(hours=1),  # Joe
                 "barcode": "100032",
                 "status": "In"},
+               {"enter_time": timeAgo(hours=1),  # Paul
+                "barcode": "100015",
+                "status": "In"
+                },
                ],
     "members": [{"barcode": "100090",
                  "displayName": "Daughter N",
@@ -55,7 +59,13 @@ TEST_DATA = {
                  "firstName": "Fred",
                  "lastName": "Name",
                  "email": "fakeFreddie@email.com",
-                 "membershipExpires": timeAgo(days=-30)}
+                 "membershipExpires": timeAgo(days=-30)},
+                {"barcode": "100015",
+                 "displayName": "Paul F.",
+                 "firstName": "Paul",
+                 "lastName": "Flintstone",
+                 "email": "fakePaul@email.com",
+                 "membershipExpires": timeAgo(days=-30)},
                 ],
     "accounts": [{"user": "admin",
                   "password": "password",
@@ -64,7 +74,11 @@ TEST_DATA = {
                  {"user": "Joe",
                   "password": "password",
                   "barcode": "100032",
-                  "role": 0x40}
+                  "role": 0x40},
+                 {"user": "Paul",
+                  "password": "password",
+                  "barcode": "100015",
+                  "role": 0x10}
                  ],
     "teams": [{"team_id": 1,
                "program_name": "TFI",

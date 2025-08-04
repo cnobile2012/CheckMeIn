@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+#
+# src/accounts.py
+#
 
 import string
 import random
@@ -160,15 +163,13 @@ class Accounts(Utilities):
 
     async def get_members_with_role(self, role: int) -> list:
         query = ("SELECT cm.displayName, a.barcode FROM accounts a "
-                 "INNER JOIN current_members cm "
-                 "ON cm.barcode = a.barcode "
+                 "INNER JOIN current_members cm ON cm.barcode = a.barcode "
                  "WHERE a.role & ? != 0 ORDER BY cm.displayName;")
         return await self.BD._do_select_all_query(query, (role,))
 
     async def get_present_with_role(self, role: int) -> list:
         query = ("SELECT cm.displayName, a.barcode FROM accounts a "
-                 "INNER JOIN current_members cm "
-                 "ON cm.barcode = a.barcode "
+                 "INNER JOIN current_members cm ON cm.barcode = a.barcode "
                  "INNER JOIN visits v ON v.barcode = a.barcode "
                  "WHERE v.status = 'In' AND role & ? != 0 "
                  "ORDER BY cm.displayName;")
@@ -342,23 +343,19 @@ class Accounts(Utilities):
                          "AND role & :role != 0;")
                 params = {'akh': Status.active, 'bc': barcode,
                           'role': Role.KEYHOLDER}
-                row_count = await self.BD._do_update_query(query, parms)
-                query = "SELECT changes();"
-                data = await self.BD._do_select_one_query(query)
-                print('RESULT', data, row_count)
+                row_count = await self.BD._do_update_query(query, params)
 
                 # Were there changes from the last update query?
-                if data and data[0] > 0:
+                if row_count > 0:
                     ret = True
 
-                    if items[0]:
-                        # *** TODO *** The query below does not use changes()
-                        # correctly.
-
-                        query = ("UPDATE accounts SET activeKeyholder = ? "
-                                 "WHERE barcode = ? AND changes() > 0;")
-
-                        conn.execute(query, (Status.inactive, keyholderBarcode))
+                    if item[0]:
+                        query = ("UPDATE accounts SET activeKeyholder = :akh "
+                                 "WHERE barcode = :bc "
+                                 "AND activeKeyholder != :akh;")
+                        params = {'akh': Status.inactive, 'bc': item[0],
+                                  'role': Role.KEYHOLDER}
+                        await self.BD._do_update_query(query, params)
 
         return ret
 
@@ -377,13 +374,14 @@ class Accounts(Utilities):
 
         return data[0] if data else ('', '')
 
-    def getKeyholders(self, conn):
+    async def get_key_holders(self):
         query = ("SELECT user, barcode, password FROM accounts "
                  "WHERE role & ? != 0;")
         return [{'user': row[0], 'barcode': row[1], 'password': row[2]}
-                for row in conn.execute(query, (Role.KEYHOLDER,))]
+                for row in await self.BD._do_select_all_query(
+                    query, (Role.KEYHOLDER,))]
 
-    def getKeyholderBarcodes(self, conn):
+    async def get_key_holder_barcodes(self):
         query = "SELECT barcode FROM accounts WHERE role & ? != 0;"
-        return [row[0] for row in conn.execute(
+        return [row[0] for row in await self.BD._do_select_all_query(
             query, (Role.KEYHOLDER,))]

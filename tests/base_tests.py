@@ -3,8 +3,11 @@
 # tests/base_tests.py
 #
 
+import os
 import unittest
 import aiosqlite
+
+from src import BASE_DIR
 
 
 __all__ = ('BaseAsyncTests',)
@@ -47,6 +50,14 @@ class BaseAsyncTests(unittest.IsolatedAsyncioTestCase):
                     await db.commit()
 
     async def does_table_exist(self, table: str) -> bool:
+        """
+        Do an SQL query to see if a table exists.
+
+        :param str table: The name of the table.
+        :returns: Returns 'True' if a table exists and 'False' if it does
+                          not exist.
+        :rtype: bool
+        """
         query = ("SELECT name FROM sqlite_master WHERE type = 'table' "
                  "AND name = ?;")
 
@@ -55,6 +66,9 @@ class BaseAsyncTests(unittest.IsolatedAsyncioTestCase):
             return await cursor.fetchone() != ()
 
     async def truncate_all_tables(self):
+        """
+        Truncate all tables.
+        """
         query0 = ("SELECT name FROM sqlite_master "
                   "WHERE type='table' AND name NOT LIKE 'sqlite_%';")
         query1 = ("SELECT name FROM sqlite_master "
@@ -72,3 +86,10 @@ class BaseAsyncTests(unittest.IsolatedAsyncioTestCase):
                     await cursor.execute("DELETE FROM sqlite_sequence;")
 
                 await db.commit()
+
+    def import_file(self, filename: str) -> str:
+        """
+        Returns the file contents as a string.
+        """
+        with open(os.path.join(BASE_DIR, 'tests', filename)) as f:
+            return f.read()

@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+#
+# src/webAdminStation.py
+#
 
 import os
 import datetime
@@ -8,14 +11,15 @@ import sqlite3
 import json
 from cryptography.fernet import Fernet
 
-from .base_database import BaseDatabase
-
 from .accounts import Role
 from .webBase import WebBase, Cookie
 from .teams import TeamMemberType
 
 
-class WebAdminStation(BaseDatabase, WebBase):
+class WebAdminStation(WebBase):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
     def checkPermissions(self, source="/admin"):
         super().checkPermissions(Role.ADMIN, source)
@@ -70,7 +74,7 @@ class WebAdminStation(BaseDatabase, WebBase):
         self.checkPermissions()
 
         with self.dbConnect() as dbConnection:
-            error = self.engine.members.bulkAdd(dbConnection, csvfile)
+            error = self.engine.members.bulk_add(csvfile)
             self.engine.logEvents.addEvent(
                 dbConnection, "Bulk Add", self.getBarcode("/admin"))
 
@@ -260,7 +264,7 @@ class WebAdminStation(BaseDatabase, WebBase):
         jsonData = ''
 
         with self.dbConnect() as dbConnection:
-            keyholders = self.engine.accounts.getKeyholders(dbConnection)
+            keyholders = self.engine.accounts.get_key_holders()
 
             for keyholder in keyholders:
                 keyholder['devices'] = []

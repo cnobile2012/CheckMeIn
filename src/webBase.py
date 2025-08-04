@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+#
+# src/webBase.py
+#
 
 import datetime
 import cherrypy
@@ -37,7 +40,8 @@ class Cookie:
 
 class WebBase:
 
-    def __init__(self, lookup, engine):
+    def __init__(self, lookup, engine, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.lookup = lookup
         self.engine = engine
 

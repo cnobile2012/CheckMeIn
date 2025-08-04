@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
+#
+# src/members.py
+#
 
+import re
 import csv
 import sqlite3
 import codecs
@@ -8,8 +12,19 @@ import datetime
 from .base_database import BaseDatabase
 
 
-class Members(object):
+class QuoteDialect(csv.Dialect):
+    delimiter = ','
+    quotechar = '"'
+    escapechar = None
+    doublequote = True
+    skipinitialspace = True
+    lineterminator = '\n'
+    quoting = csv.QUOTE_MINIMAL
+
+
+class Members:
     BD = BaseDatabase()
+    _DEFAULT_DATE = (6, 30, 2019)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -17,81 +32,58 @@ class Members(object):
     async def add_members(self, data: list):
         query = ("INSERT INTO members (barcode, displayName, firstName, "
                  "lastName, email, membershipExpires) "
-                 "VALUES (?, ?, ?, ?, ?, ?);")
-        params = []
+                 "VALUES (:barcode, :displayName, :firstName, :lastName, "
+                 "        :email, :membership_expires);")
+        await self.BD._do_insert_query(query, data)
 
-        for items in data:
-            barcode = items['barcode']
-            display_name = items['displayName']
-            first_name = items['firstName']
-            last_name = items['lastName']
-            email = items['email']
-            membership_expires = items['membershipExpires']
-            items = (barcode, display_name, first_name, last_name, email,
-                     membership_expires)
-            params.append(items)
+    async def bulk_add(self, csv_file):
+        num_members = 0
 
-        await self.BD._do_insert_query(query, params)
-
-    def bulkAdd(self, dbConnection, csvFile):
-        numMembers = 0
-
-        for row in csv.DictReader(codecs.iterdecode(csvFile.file, 'utf-8')):
-            displayName = row['TFI Display Name for Button']
-
-            if not displayName:
-                displayName = row['First Name'] + ' ' + row['Last Name'][0]
-
+        for row in csv.DictReader(codecs.iterdecode(csv_file.file, 'utf-8'),
+                                  dialect=QuoteDialect):
+            display_name = row['TFI Display Name for Button']
+            f_name = row['First Name']
+            l_name = row['Last Name']
             barcode = row['TFI Barcode for Button']
+            barcode = barcode if barcode else row['TFI Barcode AUTONUM']
 
-            if not barcode:
-                barcode = row['TFI Barcode AUTONUM']
+            if not display_name:
+                display_name = f"{f_name} {l_name[0]}"
 
-            try:
-                email = row['Email']
-            except KeyError:
-                email = ''
+            email = row.get('Email', '')
+            date = row.get('Membership End Date')
 
-            try:
-                month, day, year = row['Membership End Date'].split("/")
-            except ValueError:
-                month, day, year = (6, 30, 2019)
+            if date:
+                new_date = re.split(r'\.|-|/', date)
+                error = any([not sub.isdigit() for sub in new_date])
+                month, day, year = self._DEFAULT_DATE if error else new_date
+            else:
+                month, day, year = self._DEFAULT_DATE
 
-            membershipExpires = datetime.datetime(year=int(year),
-                                                  month=int(month),
-                                                  day=int(day))
+            mem_exps = datetime.datetime(year=int(year), month=int(month),
+                                         day=int(day))
+            query = "SELECT * from members WHERE barcode = ?;"
+            data = await self.BD._do_select_one_query(query, (barcode,))
+            params = {'d_name': display_name, 'f_name': f_name,
+                      'l_name': l_name, 'email': email, 'mem_exps': mem_exps,
+                      'barcode': barcode}
 
-            # This is because I can't figure our how to get the ubuntu to use
-            # the newer version of sqlite3.  At some point this should go back
-            # to the commit before this one.   Arrggghhhh.
-            query = ("INSERT INTO MEMBERS (barcode, displayName, firstName, "
-                     "lastName, email, membershipExpires) "
-                     "VALUES (?, ?, ?, ?, ?, ?);")
+            if data:
+                query = ("UPDATE MEMBERS SET displayName = :d_name, "
+                         "firstName = :f_name, lastName = :l_name, "
+                         "email = :email, membershipExpires = :mem_exps "
+                         "WHERE barcode = :barcode;")
+                await self.BD._do_update_query(query, params)
+            else:
+                query = ("INSERT INTO members (barcode, displayName, "
+                         "firstName, lastName, email, membershipExpires) "
+                         "VALUES (:barcode, :d_name, :f_name, :l_name, "
+                         "        :email :mem_exps);")
+                await self.BD._do_insert_query(query, params)
 
-            try:
-                dbConnection.execute(query, (barcode, displayName,
-                                             row['First Name'],
-                                             row['Last Name'], email,
-                                             membershipExpires))
-            except sqlite3.IntegrityError:
-                query = ("UPDATE MEMBERS SET displayName = ?, firstName = ?, "
-                         "lastName = ?, email = ?, membershipExpires = ? "
-                         "WHERE barcode = ?;")
-                dbConnection.execute(query, (displayName, row['First Name'],
-                                             row['Last Name'], email,
-                                             membershipExpires, barcode))
+            num_members = num_members + 1
 
-                # ON CONFLICT(barcode)
-                # DO UPDATE SET
-                #     displayName=excluded.displayName,
-                #     firstName=excluded.firstName,
-                #     lastName=excluded.lastName,
-                #     email=excluded.email,
-                #     membershipExpires=excluded.membershipExpires
-                # ''',
-            numMembers = numMembers + 1
-
-        return f"Imported {numMembers} from {csvFile.filename}"
+        return f"Imported {num_members} from {csv_file.filename}"
 
     async def get_members(self) -> list:
         query = "SELECT * from members;"

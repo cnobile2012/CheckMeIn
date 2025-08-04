@@ -85,8 +85,6 @@ class Logger:
         :param initial_msg: Print the initial log message. The default is True.
         :type initial_msg: bool
         """
-
-
         if logger_name and file_path:  # Creates a custom file logger.
             self._make_log_dir(file_path)
             self.logger = logging.getLogger(logger_name)
@@ -109,7 +107,7 @@ class Logger:
 
             if not self.logger.handlers:
                 logging.basicConfig(stream=sys.stdout, format=self._format,
-                                level=level, force=True)
+                                    level=level, force=True)
 
         if logger_name:
             log = logging.getLogger(logger_name)
@@ -156,11 +154,11 @@ class AppConfig(Borg):
 
             if self._ENVIRONMENT == 'testing':
                 self._fullpath = os.path.join(self._LOGGER_PATH,
-                                            self._TEST_LOG_FILENAME)
+                                              self._TEST_LOG_FILENAME)
                 self._logger = self._TEST_LOGGER_NAME
             else:
                 self._fullpath = os.path.join(self._LOGGER_PATH,
-                                            self._LOG_FILENAME)
+                                              self._LOG_FILENAME)
                 self._logger = self._LOGGER_NAME
 
             Logger().config(logger_name=self.logger_name,
@@ -170,7 +168,7 @@ class AppConfig(Borg):
             logging.getLogger("asyncio").setLevel(logging.CRITICAL)
             path, filename = os.path.split(self._fullpath)
             log.info("Logger configured as '%s' with file '%s'.",
-                    self._ENVIRONMENT, filename)
+                     self._ENVIRONMENT, filename)
             self._RUN_TIMES += 1
 
     @classmethod

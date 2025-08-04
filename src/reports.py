@@ -1,4 +1,7 @@
-# src/base_database.py
+# -*- coding: utf-8 -*-
+#
+# src/reports.py
+#
 
 import datetime
 
@@ -183,7 +186,7 @@ class Reports:
         self.engine = engine
 
     def whoIsHere(self, dbConnection):
-        keyholders = self.engine.accounts.getKeyholderBarcodes(dbConnection)
+        keyholders = self.engine.accounts.get_key_holder_barcodes()
         listPresent = []
         query = ("SELECT displayName, v0.enter_time, v0.barcode "
                  "FROM visits v0 "
@@ -245,7 +248,7 @@ class Reports:
         return self.transactions(dbConnection, startDate, endDate)
 
     def transactions(self, dbConnection, startDate, endDate):
-        keyholders = self.engine.accounts.getKeyholderBarcodes(dbConnection)
+        keyholders = self.engine.accounts.get_key_holder_barcodes()
         listTransactions = []
         query = ("SELECT displayName, v0.enter_time, v0.exit_time, "
                  "v0.status, v0.barcode FROM visits v0 "

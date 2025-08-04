@@ -142,6 +142,7 @@ class BaseDatabase(Borg):
             "FROM members m WHERE m.membershipExpires > date('now', '-' || ("
             "SELECT value FROM config WHERE key = 'grace_period') || ' days')")
         }
+    _DETECT_TYPES = sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -269,8 +270,7 @@ class BaseDatabase(Borg):
         :rtype: list
         """
         async with aiosqlite.connect(self.db_fullpath,
-            detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES
-            ) as db:
+                                     detect_types=self._DETECT_TYPES) as db:
             async with db.execute(query, params) as cursor:
                 values = await cursor.fetchall()
 
@@ -281,13 +281,12 @@ class BaseDatabase(Borg):
         Do the actual query and return the results.
 
         :param str query: The SQL query to execute.
-        :params tuple params: Parameters to query.
+        :params tuple or dict params: Parameters to query.
         :returns: One item of data.
         :rtype: tuple or NoneType
         """
         async with aiosqlite.connect(self.db_fullpath,
-            detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES
-            ) as db:
+                                     detect_types=self._DETECT_TYPES) as db:
             async with db.execute(query, params) as cursor:
                 value = await cursor.fetchone()
 
@@ -340,16 +339,17 @@ class BaseDatabase(Borg):
                   exception was raised.
         :rtype: int or None
         """
-        async with aiosqlite.connect(
-            self.db_fullpath,
-            detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES
-            ) as db:
-            data = [data] if isinstance(data, (tuple, dict)) else data
+        async with aiosqlite.connect(self.db_fullpath,
+                                     detect_types=self._DETECT_TYPES) as db:
+            if data and (isinstance(data, dict) or not
+                         isinstance(data[0], (tuple, list, dict))):
+                data = [data]
 
             try:
                 cursor = await db.executemany(query, data)
             except Exception as e:
-                self._log.error(str(e), exc_info=True)
+                self._log.error("Error with data %s, %s", data, e,
+                                exc_info=True)
             else:
                 await db.commit()
                 return cursor.rowcount
