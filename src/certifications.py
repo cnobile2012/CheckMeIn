@@ -20,9 +20,10 @@ class CertificationLevels(IntEnum):
 
 
 class ToolUser:
-    def __init__(self, displayName, barcode):
+    def __init__(self, display_name, barcode, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.tools = {}
-        self.displayName = displayName
+        self.display_name = display_name
         self.barcode = barcode
 
     def addTool(self, tool_id, date, level):
@@ -30,9 +31,9 @@ class ToolUser:
             date = datetime.datetime(2019, 1, 1)
 
         if tool_id in self.tools:
-            currDate, nil = self.tools[tool_id]
+            curr_date, nil = self.tools[tool_id]
 
-            if date > currDate:
+            if date > curr_date:
                 self.tools[tool_id] = (date, level)
         else:
             self.tools[tool_id] = (date, level)
@@ -44,8 +45,8 @@ class ToolUser:
             return ("", CertificationLevels.NONE)
 
     def getHTMLCellTool(self, tool_id):
-        dateObj, level = self.getTool(tool_id)
-        date = str(dateObj)[:7]
+        date_obj, level = self.getTool(tool_id)
+        date = str(date_obj)[:7]
         HTMLDetails = {
             CertificationLevels.NONE:
             '<TD class="clNone"></TD>',
