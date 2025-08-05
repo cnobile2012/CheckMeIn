@@ -26,14 +26,13 @@ class WebCertifications(WebBase):
 
         with self.dbConnect() as dbConnection:
             if all:
-                members = self.engine.members.getActive(dbConnection)
+                members = self.engine.members.get_active()
             else:
                 members = self.engine.visits.getMembersInBuilding(dbConnection)
 
             return self.template(
                 'certify.mako', message=message,
-                certifier=self.engine.members.getName(dbConnection,
-                                                      certifier_id)[1],
+                certifier=self.engine.members.get_name(certifier_id),
                 certifier_id=certifier_id, members_in_building=members,
                 tools=self.engine.certifications.getListCertifyTools(
                     dbConnection, certifier_id))
@@ -50,10 +49,8 @@ class WebCertifications(WebBase):
 
         # separate out committing from getting
         with self.dbConnect() as dbConnection:
-            memberName = self.engine.members.getName(dbConnection,
-                                                     member_id)[1]
-            certifierName = self.engine.members.getName(dbConnection,
-                                                        certifier_id)[1]
+            memberName = self.engine.members.get_name(member_id)
+            certifierName = self.engine.members.get_name(certifier_id)
             level = self.engine.certifications.getLevelName(level)
             tool = self.engine.certifications.getToolName(dbConnection,
                                                           tool_id)

@@ -116,8 +116,7 @@ class CheckMeIn(WebBase):
                 if barcode == loggedInBarcode:
                     role = Role(Cookie('role').get(0))
 
-                _, displayName = self.engine.members.getName(dbConnection,
-                                                             barcode)
+                displayName = self.engine.members.get_name(barcode)[1]
                 activeMembers = {}
 
                 if role.isCoach():
@@ -126,7 +125,7 @@ class CheckMeIn(WebBase):
                                                                 barcode))
             else:
                 displayName = ""
-                activeMembers = self.engine.members.getActive(dbConnection)
+                activeMembers = self.engine.members.get_active()
 
             inBuilding = self.engine.visits.inBuilding(dbConnection, barcode)
 

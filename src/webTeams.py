@@ -77,7 +77,7 @@ class WebTeams(WebBase):
             firstDate = teamInfo.startDate
             todayDate = datetime.date.today().isoformat()
             members = self.engine.teams.getTeamMembers(dbConnection, team_id)
-            activeMembers = self.engine.members.getActive(dbConnection)
+            activeMembers = self.engine.members.get_active()
             seasons = self.engine.teams.getAllSeasons(dbConnection, teamInfo)
 
         return self.template('team.mako', firstDate=firstDate, team_id=team_id,

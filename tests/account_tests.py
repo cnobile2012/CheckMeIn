@@ -293,7 +293,6 @@ class TestAccounts(BaseAsyncTests):
         Create the accounts, config, menbers, and views tables and the
         current_members view.
         """
-        # Tell BaseDatabase what we are doing.
         self.bd = BaseDatabase()
         self.bd.db_fullpath = (os.path.join('data', 'tests'),
                                self.TEST_DB, False)

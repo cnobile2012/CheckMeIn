@@ -3,12 +3,8 @@
 # tests/base_tests.py
 #
 
-import os
 import unittest
 import aiosqlite
-
-from src import BASE_DIR
-
 
 __all__ = ('BaseAsyncTests',)
 
@@ -86,10 +82,3 @@ class BaseAsyncTests(unittest.IsolatedAsyncioTestCase):
                     await cursor.execute("DELETE FROM sqlite_sequence;")
 
                 await db.commit()
-
-    def import_file(self, filename: str) -> str:
-        """
-        Returns the file contents as a string.
-        """
-        with open(os.path.join(BASE_DIR, 'tests', filename)) as f:
-            return f.read()

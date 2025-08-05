@@ -38,8 +38,7 @@ class WebAdminStation(WebBase):
                 dbConnection, "Bulk Add")
 
             if barcode:
-                _, lastBulkUpdateName = self.engine.members.getName(
-                    dbConnection, barcode)
+                lastBulkUpdateName = self.engine.members.get_name(barcode)
 
             grace_period = self.engine.config.get(dbConnection, 'grace_period')
 

@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+#
+# src/webReports.py
+#
 
 import datetime
 import sqlite3
@@ -23,7 +26,7 @@ class WebReports(WebBase):
             todayDate = datetime.date.today().isoformat()
             reportList = self.engine.customReports.get_report_list(
                 dbConnection)
-            activeMembers = self.engine.members.getActive(dbConnection)
+            activeMembers = self.engine.members.get_active()
             guests = self.engine.guests.getGuests(dbConnection, numDays=30)
 
         return self.template('reports.mako',
@@ -42,8 +45,7 @@ class WebReports(WebBase):
         with self.dbConnect() as dbConnection:
             dictVisits = Tracing().getDictVisits(dbConnection, barcode,
                                                  numDays)
-            _, displayName = self.engine.members.getName(
-                dbConnection, barcode)
+            displayName = self.engine.members.get_name(barcode)
 
             if not displayName:
                 _, displayName = self.engine.guests.getName(

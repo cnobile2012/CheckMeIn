@@ -9,6 +9,7 @@ import sqlite3
 import codecs
 import datetime
 
+from . import AppConfig
 from .base_database import BaseDatabase
 
 
@@ -28,27 +29,36 @@ class Members:
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._log = AppConfig().log
 
     async def add_members(self, data: list):
         query = ("INSERT INTO members (barcode, displayName, firstName, "
                  "lastName, email, membershipExpires) "
                  "VALUES (:barcode, :displayName, :firstName, :lastName, "
-                 "        :email, :membership_expires);")
+                 "        :email, :membershipExpires);")
+
         await self.BD._do_insert_query(query, data)
 
     async def bulk_add(self, csv_file):
+        """
+        Insert data from CSV file into the database.
+
+        :param csv_file: A binary file object.
+        :returns: A message about the import.
+        :rtype: str
+        """
         num_members = 0
 
         for row in csv.DictReader(codecs.iterdecode(csv_file.file, 'utf-8'),
                                   dialect=QuoteDialect):
-            display_name = row['TFI Display Name for Button']
+            d_name = row['TFI Display Name for Button']
             f_name = row['First Name']
             l_name = row['Last Name']
             barcode = row['TFI Barcode for Button']
             barcode = barcode if barcode else row['TFI Barcode AUTONUM']
 
-            if not display_name:
-                display_name = f"{f_name} {l_name[0]}"
+            if not d_name:
+                d_name = f"{f_name} {l_name[0]}"
 
             email = row.get('Email', '')
             date = row.get('Membership End Date')
@@ -62,11 +72,12 @@ class Members:
 
             mem_exps = datetime.datetime(year=int(year), month=int(month),
                                          day=int(day))
+            # Is there a record for this barcode in the database already?
             query = "SELECT * from members WHERE barcode = ?;"
             data = await self.BD._do_select_one_query(query, (barcode,))
-            params = {'d_name': display_name, 'f_name': f_name,
-                      'l_name': l_name, 'email': email, 'mem_exps': mem_exps,
-                      'barcode': barcode}
+            # Parameters for INSERT or UPDATE below.
+            params = {'d_name': d_name, 'f_name': f_name, 'l_name': l_name,
+                      'email': email, 'mem_exps': mem_exps, 'barcode': barcode}
 
             if data:
                 query = ("UPDATE MEMBERS SET displayName = :d_name, "
@@ -78,35 +89,37 @@ class Members:
                 query = ("INSERT INTO members (barcode, displayName, "
                          "firstName, lastName, email, membershipExpires) "
                          "VALUES (:barcode, :d_name, :f_name, :l_name, "
-                         "        :email :mem_exps);")
+                         "        :email, :mem_exps);")
                 await self.BD._do_insert_query(query, params)
 
             num_members = num_members + 1
 
-        return f"Imported {num_members} from {csv_file.filename}"
+        msg = f"Imported {num_members} from {csv_file.filename}"
+        self._log.info(msg)
+        return msg
 
     async def get_members(self) -> list:
         query = "SELECT * from members;"
         return await self.BD._do_select_all_query(query)
 
-    def getActive(self, dbConnection):
-        listUsers = []
+    async def get_active(self):
+        list_users = []
         query = ("SELECT displayName, barcode "
                  "FROM current_members ORDER BY displayName ASC;")
 
-        for row in dbConnection.execute(query):
-            listUsers.append([row[0], row[1]])
+        for row in await self.BD._do_select_all_query(query):
+            list_users.append((row[0], row[1]))
 
-        return listUsers
+        return list_users
 
     # TODO: should this check for inactive?
 
-    def getName(self, dbConnection, barcode):
+    async def get_name(self, barcode):
         query = "SELECT displayName FROM members WHERE barcode = ?;"
-        data = dbConnection.execute(query, (barcode,)).fetchone()
+        data = await self.BD._do_select_one_query(query, (barcode,))
+        msg = f"Member name not found with invalid barcode: {barcode}."
 
-        if data is None:
-            return ('Invalid: ' + barcode, None)   # pragma: no cover
-        else:
-            # Add code here for inactive
-            return ('', data[0])
+        if not data:
+            self._log.warning(msg)
+
+        return data[0] if data else msg
