@@ -3,6 +3,9 @@
 import sqlite3
 from enum import IntEnum
 
+from . import AppConfig
+from .base_database import BaseDatabase
+
 
 class TeamMemberType(IntEnum):
     student = 0
@@ -38,7 +41,10 @@ class Status(IntEnum):
 
 
 class TeamInfo:
-    def __init__(self, teamId, programName, programNumber, name, startDate):
+
+    def __init__(self, teamId, programName, programNumber, name, startDate,
+                 *args, **kwargs):
+        super.__init__(*args, **kwargs)
         self._teamId = teamId
         self.programName = programName
         self.programNumber = programNumber
@@ -59,55 +65,31 @@ class TeamInfo:
 
 
 class Teams:
+    BD = BaseDatabase()
 
-    # def migrate(self, dbConnection, db_schema_version):
-    #     if db_schema_version < 5:
-    #         query = ("CREATE TABLE teams (team_id INTEGER PRIMARY KEY, "
-    #                  "name TEXT UNIQUE, active INTEGER DEFAULT 1);")
-    #         dbConnection.execute(query)
-    #         query = ("CREATE TABLE team_members (team_id TEXT, barcode TEXT, "
-    #                  "type INTEGER default 0);")
-    #         dbConnection.execute(query)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-    #     if db_schema_version < 12:
-    #         query = ("CREATE TABLE new_teams (team_id INTEGER PRIMARY KEY, "
-    #                  "program_name TEXT, program_number INTEGER, "
-    #                  "team_name TEXT, start_date TIMESTAMP, "
-    #                  "active BOOLEAN DEFAULT 1, "
-    #                  "CONSTRAINT unq UNIQUE (program_name, program_number, "
-    #                  "start_date));")
-    #         dbConnection.execute(query)
-    #         query = ("CREATE TABLE new_team_members ("
-    #                  "team_id INTEGER NOT NULL, barcode TEXT, "
-    #                  "type BOOLEAN DEFAULT 0, CONSTRAINT unq UNIQUE ("
-    #                  "team_id, barcode));")
-    #         dbConnection.execute(query)
-    #         # So different we are trashing all old information
-    #         dbConnection.execute("DROP TABLE team_members;")
-    #         dbConnection.execute(
-    #             "ALTER TABLE new_team_members RENAME to team_members;")
-    #         dbConnection.execute("DROP TABLE teams;")
-    #         dbConnection.execute("ALTER TABLE new_teams RENAME TO teams;")
+    async def add_teams(self, data: list):
+        query = ("INSERT INTO teams VALUES (:team_id, :program_name, "
+                 ":program_number, :team_name, :start_date, :active);")
+        await self.BD._do_insert_query(query, data)
 
-    # def injectData(self, dbConnection, data):
-    #     for datum in data:
-    #         query = "INSERT INTO teams VALUES (?, ?, ?, ?, ?, ?);"
-    #         dbConnection.execute(query,
-    #                              (datum["team_id"], datum["program_name"],
-    #                               datum["program_number"], datum["team_name"],
-    #                               datum["start_date"], datum["active"]))
+    async def get_teams(self):
+        query = "SELECT * FROM teams;"
+        return await self.BD._do_select_all_query(query)
 
-    #         if "members" in datum:
-    #             team_id = datum["team_id"]
-    #             query = "INSERT INTO team_members VALUES (?,?,?);"
+    async def add_team_members(self, data: list):
+        query = "INSERT INTO team_members VALUES (:team_id, :barcode, :type);"
+        await self.BD._do_insert_query(query, data)
 
-    #             for datum in datum["members"]:
-    #                 dbConnection.execute(query, (team_id, datum["barcode"],
-    #                                              datum["type"]))
+    async def get_team_members(self):
+        query = "SELECT * FROM team_members;"
+        return await self.BD._do_select_all_query(query)
 
     def createTeam(self, dbConnection, program_name, program_number, team_name,
                    seasonStart):
-        query = "INSERT INTO teams VALUES (NULL,?,?,?,?,1)"
+        query = "INSERT INTO teams VALUES (NULL, ?, ?, ?, ?, 1)"
 
         try:
             dbConnection.execute(query, (program_name.upper(), program_number,

@@ -9,10 +9,9 @@ PACKAGE_DIR	= $(BASE_DIR)-$(VERSION)$(TEST_TAG)
 DOCS_DIR	= $(PREFIX)/docs
 LOGS_DIR	= $(PREFIX)/logs
 TODAY		= $(shell date +"%Y-%m-%dT%H:%M:%S.%N%:z")
-RM_REGEX	= '(^.*.pyc$$)|(^.*.wsgic$$)|(^.*~$$)|(.*\#$$)|(^.*,cover$$)| \
-                   (__pycache__)'
+RM_REGEX	= '(^.*.pyc$$)|(^.*.wsgic$$)|(^.*~$$)|(.*\#$$)|(^.*,cover$$)|(^.*__pycache__$$)'
 RM_CMD		= find $(PREFIX) -regextype posix-egrep -regex $(RM_REGEX) \
-                  -exec rm {} \;
+                  -exec rm -rf {} \;
 COVERAGE_FILE	= $(PREFIX)/.coveragerc
 TEST_TAG	=
 PIP_ARGS	= # Pass variables for pip install.
@@ -87,7 +86,7 @@ run	: setup
 #----------------------------------------------------------------------
 .PHONY	: clean clobber
 clean	:
-	$(shell $(RM_CMD))
+	@$(shell $(RM_CMD))
 
 clobber	: clean
 	@rm -rf testData sessions

@@ -5,9 +5,12 @@
 
 import datetime
 
-from .utils import Utilities
-
+from types import NoneType
 from enum import IntEnum
+
+from . import AppConfig
+from .base_database import BaseDatabase
+from .utils import Utilities
 
 
 class CertificationLevels(IntEnum):
@@ -20,34 +23,53 @@ class CertificationLevels(IntEnum):
 
 
 class ToolUser:
+
     def __init__(self, display_name, barcode, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.tools = {}
-        self.display_name = display_name
-        self.barcode = barcode
+        self._tools = {}  # {tool_id: (date, level), ...}
+        self._display_name = display_name
+        # Seems to not be used anywhere.
+        self._barcode = barcode
 
-    def addTool(self, tool_id, date, level):
+    @property
+    def display_name(self):
+        """
+        Used in the certifications.mako file.
+        """
+        return self._display_name
+
+    def add_tool(self, tool_id, date, level):
+        """
+
+        :param int tool_d: A value between 1 - 18 indicating the tool.
+        :param datetime.datetime or NoneType date: Install date?
+        :param int level: This is the certification level of the user
+                          that's allowed to use the tool.
+        """
+        assert (isinstance(tool_id, int) and
+                isinstance(date, (datetime.datetime, NoneType)) and
+                isinstance(level, int)), (
+                    "At least one of the arguments had a wrong type, found: "
+                    f"{type(tool_id)=}, {type(date)=}, and {type(level)=}.")
+
         if not date:
             date = datetime.datetime(2019, 1, 1)
 
-        if tool_id in self.tools:
-            curr_date, nil = self.tools[tool_id]
+        if tool_id in self._tools:
+            curr_date, nil = self._tools[tool_id]
 
             if date > curr_date:
-                self.tools[tool_id] = (date, level)
+                self._tools[tool_id] = (date, level)
         else:
-            self.tools[tool_id] = (date, level)
+            self._tools[tool_id] = (date, level)
 
-    def getTool(self, tool_id):
-        try:
-            return self.tools[tool_id]
-        except KeyError:
-            return ("", CertificationLevels.NONE)
+    def _get_tool(self, tool_id):
+        return self._tools.get(tool_id, ('', CertificationLevels.NONE))
 
-    def getHTMLCellTool(self, tool_id):
-        date_obj, level = self.getTool(tool_id)
-        date = str(date_obj)[:7]
-        HTMLDetails = {
+    def get_html_cell_tool(self, tool_id):
+        date_obj, level = self._get_tool(tool_id)
+        date = str(date_obj)[:7]  # Just the year-month as in (2025-08).
+        html_details = {
             CertificationLevels.NONE:
             '<TD class="clNone"></TD>',
             CertificationLevels.BASIC:
@@ -61,17 +83,16 @@ class ToolUser:
             CertificationLevels.CERTIFIER:
             f'<TD class="clCertifier">Certifier<br/>{date}</TD>'
             }
-
-        try:
-            return HTMLDetails[level]
-        except KeyError:  # pragma: no cover
-            return "Key: " + str(level)
+        return html_details.get(level, f"Key: {level}")
 
 
 class Certifications(Utilities):
+    BD = BaseDatabase()
 
-    def __init__(self):
-        self.levels = {
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._log = AppConfig().log
+        self._levels = {
             CertificationLevels.NONE: 'NONE',
             CertificationLevels.BASIC: 'BASIC',
             CertificationLevels.CERTIFIED: 'CERTIFIED',
@@ -80,28 +101,47 @@ class Certifications(Utilities):
             CertificationLevels.CERTIFIER: 'CERTIFIER'
         }
 
-    def addTool(self, dbConnection, tool_id, grouping, name, restriction=0,
-                comments=''):  # pragma: no cover
-        dbConnection.execute('INSERT INTO tools VALUES(?,?,?,?,?)',
-                             (tool_id, grouping, name, restriction, comments))
+    async def add_certifications(self, data: list):
+        """
+        Bulk add certifications.
+
+        :param list data: The data to insert in the for of:
+                          [{'barcode: <value>', 'tool_id': <value>,
+                          'certifier_id': <value>, 'date': <value>,
+                          'level': <value>}, ...]
+        """
+        query = ("INSERT INTO certifications (user_id, tool_id, certifier_id, "
+                 "date, level) "
+                 "SELECT :barcode, :tool_id, :level, :date, :certifier;")
+        await self.BD._do_insert_query(query, data)
+
+    async def get_certifications(self):
+        query = "SELECT * FROM certifications;"
+        return await self.BD._do_select_all_query(query)
+
+    async def add_tool(self, tool_id, grouping, name, restriction=0,
+                       comments=''):
+        query = "INSERT INTO tools VALUES(?, ?, ?, ?, ?);"
+        await self.BD._do_insert_query(query, (tool_id, grouping, name,
+                                               restriction, comments))
 
     def addTools(self, dbConnection):
-        tools = [[1, 1, "Sheet Metal Brake"], [2, 1, "Blind Rivet Gun"],
-                 [3, 1, "Stretcher Shrinker"], [4, 1, "3D printers"],
-                 [5, 2, "Power Hand Drill"], [6, 2, "Solder Iron"],
-                 [7, 2, "Dremel"], [8, 3, "Horizontal Band Saw"],
-                 [9, 3, "Drill Press"], [10, 3, "Grinder / Sander"],
-                 [11, 4, "Scroll Saw"], [12, 4, "Table Mounted Jig Saw"],
-                 [13, 4, "Vertical Band Saw"], [14, 4, "Jig Saw"],
-                 [15, 5, "CNC router"], [16, 5, "Metal Lathe"],
-                 [17, 5, "Table Saw"], [18, 5, "Power Miter Saw"]]
+        tools = ((1, 1, "Sheet Metal Brake"), (2, 1, "Blind Rivet Gun"),
+                 (3, 1, "Stretcher Shrinker"), (4, 1, "3D printers"),
+                 (5, 2, "Power Hand Drill"), (6, 2, "Solder Iron"),
+                 (7, 2, "Dremel"), (8, 3, "Horizontal Band Saw"),
+                 (9, 3, "Drill Press"), (10, 3, "Grinder / Sander"),
+                 (11, 4, "Scroll Saw"), (12, 4, "Table Mounted Jig Saw"),
+                 (13, 4, "Vertical Band Saw"), (14, 4, "Jig Saw"),
+                 (15, 5, "CNC router"), (16, 5, "Metal Lathe"),
+                 (17, 5, "Table Saw"), (18, 5, "Power Miter Saw"))
 
         for tool in tools:
-            if tool[2] == "Power Miter Saw" or tool[
-                    2] == "Table Saw":  # Over 18 only tools
-                self.addTool(dbConnection, tool[0], tool[1], tool[2], 1)
+            # Over 18 only tools
+            if tool[2] == "Power Miter Saw" or tool[2] == "Table Saw":
+                self.add_tool(dbConnection, tool[0], tool[1], tool[2], 1)
             else:
-                self.addTool(dbConnection, tool[0], tool[1], tool[2])
+                self.add_tool(dbConnection, tool[0], tool[1], tool[2])
 
     def addNewCertification(self, dbConnection, member_id, tool_id, level,
                             certifier):
@@ -118,17 +158,17 @@ class Certifications(Utilities):
 
     def getAllUserList(self, dbConnection):
         users = {}
-        query = ("SELECT crt.user_id, crt.tool_id, crt.date, crt.level, "
-                 "cm.displayName FROM certifications AS crt "
+        query = ("SELECT c.user_id, c.tool_id, c.date, c.level, "
+                 "cm.displayName FROM certifications AS c "
                  "INNER JOIN current_members AS cm "
-                 "ON cm.barcode = crt.user_id ORDER BY cm.displayName;")
+                 "ON cm.barcode = c.user_id ORDER BY cm.displayName;")
 
         for row in dbConnection.execute(query):
             try:
-                users[row[0]].addTool(row[1], row[2], row[3])
+                users[row[0]].add_tool(row[1], row[2], row[3])
             except KeyError:
                 users[row[0]] = ToolUser(row[4], row[0])
-                users[row[0]].addTool(row[1], row[2], row[3])
+                users[row[0]].add_tool(row[1], row[2], row[3])
 
         return users
 
@@ -142,10 +182,10 @@ class Certifications(Utilities):
 
         for row in dbConnection.execute(query):
             try:
-                users[row[0]].addTool(row[1], row[2], row[3])
+                users[row[0]].add_tool(row[1], row[2], row[3])
             except KeyError:
                 users[row[0]] = ToolUser(row[4], row[0])
-                users[row[0]].addTool(row[1], row[2], row[3])
+                users[row[0]].add_tool(row[1], row[2], row[3])
 
         return users
 
@@ -170,10 +210,10 @@ class Certifications(Utilities):
 
         for row in dbConnection.execute(query, (team_id, )):
             try:
-                users[row[0]].addTool(row[1], row[2], row[3])
+                users[row[0]].add_tool(row[1], row[2], row[3])
             except KeyError:
                 users[row[0]] = ToolUser(row[4], row[0])
-                users[row[0]].addTool(row[1], row[2], row[3])
+                users[row[0]].add_tool(row[1], row[2], row[3])
 
         return users
 
@@ -185,10 +225,10 @@ class Certifications(Utilities):
 
         for row in dbConnection.execute(query, (user_id,)):
             try:
-                users[row[0]].addTool(row[1], row[2], row[3])
+                users[row[0]].add_tool(row[1], row[2], row[3])
             except KeyError:
                 users[row[0]] = ToolUser(row[4], row[0])
-                users[row[0]].addTool(row[1], row[2], row[3])
+                users[row[0]].add_tool(row[1], row[2], row[3])
 
         return users
 
@@ -231,7 +271,7 @@ class Certifications(Utilities):
         return data[0]
 
     def getLevelName(self, level):
-        return self.levels[CertificationLevels(int(level))]
+        return self._levels[CertificationLevels(int(level))]
 
     def emailCertifiers(self, name, toolName, levelDescription, certifierName):
         emailAddress = "shopcertifiers@theforgeinitiative.org"

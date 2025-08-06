@@ -99,7 +99,7 @@ class Members:
         return msg
 
     async def get_members(self) -> list:
-        query = "SELECT * from members;"
+        query = "SELECT * FROM members;"
         return await self.BD._do_select_all_query(query)
 
     async def get_active(self):

@@ -29,13 +29,13 @@
 % for user, user_tools in certifications.items():
    <TR>
    % if show_left_names:
-   <TD>${user_tools.displayName}</TD>
+   <TD>${user_tools.display_name}</TD>
    % endif
    % for tool in tools:
-      ${user_tools.getHTMLCellTool(tool[0]) | n}
+      ${user_tools.get_html_cell_tool(tool[0]) | n}
    % endfor
    % if show_right_names:
-   <TD>${user_tools.displayName}</TD>
+   <TD>${user_tools.display_name}</TD>
    % endif
    </TR>
 % endfor

@@ -60,8 +60,6 @@ class Engine(BaseDatabase):
         self.db_fullpath = (db_path, db_name, True)  # called from BaseDatabase
         asyncio.run(self.create_schema())
         self._data_path = db_path
-        print('DUNG')
-
         self.visits = Visits()
         self.guests = Guests()
         self.reports = Reports(self)
