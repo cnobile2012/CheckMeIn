@@ -33,9 +33,7 @@ TEST_DATA = {
                 "status": "In"},
                {"enter_time": timeAgo(hours=1),  # Paul
                 "barcode": "100015",
-                "status": "In"
-                },
-               ],
+                "status": "In"}],
     "members": [{"barcode": "100090",
                  "displayName": "Daughter N",
                  "firstName": "Daughter",
@@ -65,8 +63,7 @@ TEST_DATA = {
                  "firstName": "Paul",
                  "lastName": "Flintstone",
                  "email": "fakePaul@email.com",
-                 "membershipExpires": timeAgo(days=-30)},
-                ],
+                 "membershipExpires": timeAgo(days=-30)}],
     "accounts": [{"user": "admin",
                   "password": "password",
                   "barcode": "100091",
@@ -78,8 +75,7 @@ TEST_DATA = {
                  {"user": "Paul",
                   "password": "password",
                   "barcode": "100015",
-                  "role": 0x10}
-                 ],
+                  "role": 0x10}],
     "teams": [{"team_id": 1,
                "program_name": "TFI",
                "program_number": 100,
@@ -97,8 +93,7 @@ TEST_DATA = {
                "program_number": 400,
                "team_name": "Inactive team",
                "start_date": datetime.datetime(year=2020, month=5, day=1),
-               "active": 0},
-              ],
+               "active": 0}],
     "team_members": [{"team_id": 1,
                       "barcode": "100091",
                       "type": 2},
@@ -116,8 +111,7 @@ TEST_DATA = {
                       "type": 2},
                      {"team_id": 3,
                       "barcode": "100032",
-                      "type": 0},
-                     ],
+                      "type": 0}],
     "certifications": [{"barcode": "100091",
                         "tool_id": 1,
                         "level": 30,
@@ -132,20 +126,16 @@ TEST_DATA = {
                         "tool_id": 1,
                         "level": 10,
                         "date": timeAgo(days=10),
-                        "certifier": "100091"}
-                       ],
+                        "certifier": "100091"}],
     "customReports": [{"report_id": 1,
                        "name": "fred",
-                       "sql_text": "SELECT * FROM members;"}
-                      ],
+                       "sql_text": "SELECT * FROM members;"}],
     "logEvents": [{"what": "Bulk Add",
                    "barcode": "100091",
-                   "date": timeAgo(hours=1)}
-                  ],
+                   "date": timeAgo(hours=1)}],
     "unlocks": [{"time": timeAgo(hours=1),
                  "location": "TFI",
-                 "barcode": "100091"}
-                ],
+                 "barcode": "100091"}],
     "guests": [{"guest_id": "202107310001",
                 "displayName": "Random G.",
                 "email": "spam@email.com",
@@ -153,13 +143,10 @@ TEST_DATA = {
                 "lastName": "Guest",
                 "whereFound": "invited",
                 "status": "1",
-                "newsletter": 1}
-               ],
+                "newsletter": 1}],
     "devices": [{"mac": "87:65:43:21",
                  "name": "Phone",
-                 "barcode": "100091"}
-                ],
+                 "barcode": "100091"}],
     "config": [{"key": "grace_period",
-                "value": "15"}
-               ]
+                "value": "15"}]
     }

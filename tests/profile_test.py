@@ -12,16 +12,16 @@ class ProfileTest(CPtest.CPTest):
         self.assertStatus('200 OK')
 
     #@unittest.skip("Temporarily skipped")
-    def test_loginAttemptGood(self):
+    def test_login_attempt_good(self):
         with self.patch_session():
             self.getPage(
-                "/profile/loginAttempt?username=admin&password=password")
+                "/profile/login_attempt?username=admin&password=password")
 
         self.assertStatus('303 See Other')
 
-    def test_loginAttemptBad(self):
+    def test_login_attempt_bad(self):
         with self.patch_session():
-            self.getPage("/profile/loginAttempt?username=alan&password=wrong")
+            self.getPage("/profile/login_attempt?username=alan&password=wrong")
 
         self.assertStatus('200 OK')
 

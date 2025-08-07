@@ -40,27 +40,26 @@ class WebCertifications(WebBase):
     @cherrypy.expose
     def addCertification(self, member_id, tool_id, level):
         certifier_id = self.getBarcode("/certifications/certify")
-
         # We don't check here for valid tool since someone is forging HTML
         # to put an invalid one and we'll catch it with the email out...\
-        with self.dbConnect() as dbConnection:
-            self.engine.certifications.addNewCertification(
-                dbConnection, member_id, tool_id, level, certifier_id)
+        self.engine.run_async(self.engine.certifications.add_new_certification(
+            member_id, tool_id, level, certifier_id))
+        member_name = self.engine.run_async(
+            self.engine.members.get_name(member_id))
+        certifier_name = self.engine.run_async(self.engine.members.get_name(
+            certifier_id))
 
         # separate out committing from getting
         with self.dbConnect() as dbConnection:
-            memberName = self.engine.members.get_name(member_id)
-            certifierName = self.engine.members.get_name(certifier_id)
             level = self.engine.certifications.getLevelName(level)
             tool = self.engine.certifications.getToolName(dbConnection,
                                                           tool_id)
-
-            self.engine.certifications.emailCertifiers(memberName, tool,
-                                                       level, certifierName)
+            self.engine.certifications.emailCertifiers(member_name, tool,
+                                                       level, certifier_name)
 
         return self.template('congrats.mako', message='',
                              certifier_id=certifier_id,
-                             memberName=memberName, level=level, tool=tool)
+                             memberName=member_name, level=level, tool=tool)
 
     @cherrypy.expose
     def index(self):

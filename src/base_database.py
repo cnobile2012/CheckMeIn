@@ -118,7 +118,7 @@ class BaseDatabase(Borg):
             ),
         _T_TOOLS: (
             'id INTEGER PRIMARY KEY',
-            'grouping TEXT',
+            'grouping INTEGER',
             'name TEXT',
             'restriction INTEGER DEFAULT 0',
             'comments TEXT'),

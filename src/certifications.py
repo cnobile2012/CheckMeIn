@@ -11,6 +11,7 @@ from enum import IntEnum
 from . import AppConfig
 from .base_database import BaseDatabase
 from .utils import Utilities
+#from .settings import TOOLS
 
 
 class CertificationLevels(IntEnum):
@@ -119,42 +120,41 @@ class Certifications(Utilities):
         query = "SELECT * FROM certifications;"
         return await self.BD._do_select_all_query(query)
 
-    async def add_tool(self, tool_id, grouping, name, restriction=0,
-                       comments=''):
-        query = "INSERT INTO tools VALUES(?, ?, ?, ?, ?);"
-        await self.BD._do_insert_query(query, (tool_id, grouping, name,
-                                               restriction, comments))
+    async def add_tools(self, tools) -> None:
+        """
+        Do a bulk insert or update with values from the settings.py file.
 
-    def addTools(self, dbConnection):
-        tools = ((1, 1, "Sheet Metal Brake"), (2, 1, "Blind Rivet Gun"),
-                 (3, 1, "Stretcher Shrinker"), (4, 1, "3D printers"),
-                 (5, 2, "Power Hand Drill"), (6, 2, "Solder Iron"),
-                 (7, 2, "Dremel"), (8, 3, "Horizontal Band Saw"),
-                 (9, 3, "Drill Press"), (10, 3, "Grinder / Sander"),
-                 (11, 4, "Scroll Saw"), (12, 4, "Table Mounted Jig Saw"),
-                 (13, 4, "Vertical Band Saw"), (14, 4, "Jig Saw"),
-                 (15, 5, "CNC router"), (16, 5, "Metal Lathe"),
-                 (17, 5, "Table Saw"), (18, 5, "Power Miter Saw"))
+        :param list tools: A list of tools to add or update. The list is in
+                           the form of: [{'id': <value>, 'grouping': <value>,
+                           'name': <value>, 'restriction': <value>,
+                           'comments': <value>}, ...]
+        """
+        query = ("INSERT INTO tools "
+                 "VALUES (:id, :grouping, :name, :restriction, :comments) "
+                 "ON CONFLICT(id) DO UPDATE SET "
+                 "grouping = excluded.grouping, name = excluded.name, "
+                 "restriction = excluded.restriction, "
+                 "comments = excluded.comments "
+                 "WHERE excluded.grouping IS NOT tools.grouping "
+                 "OR excluded.name IS NOT tools.name "
+                 "OR excluded.restriction IS NOT tools.restriction "
+                 "OR excluded.comments IS NOT tools.comments;")
+        await self.BD._do_insert_query(query, tools)
 
-        for tool in tools:
-            # Over 18 only tools
-            if tool[2] == "Power Miter Saw" or tool[2] == "Table Saw":
-                self.add_tool(dbConnection, tool[0], tool[1], tool[2], 1)
-            else:
-                self.add_tool(dbConnection, tool[0], tool[1], tool[2])
+    async def get_tools(self):
+        query = "SELECT * FROM tools;"
+        return await self.BD._do_select_all_query(query)
 
-    def addNewCertification(self, dbConnection, member_id, tool_id, level,
-                            certifier):
-        return self.addCertification(dbConnection, member_id, tool_id, level,
-                                     datetime.datetime.now(), certifier)
+    async def add_new_certification(self, mbr_id, tool_id, level, cert):
+        now = datetime.datetime.now()
+        return await self._add_certification(mbr_id, tool_id, level, now, cert)
 
-    def addCertification(self, dbConnection, barcode, tool_id, level, date,
-                         certifier):
-        # TODO: need to verify that the certifier can indeed certify
-        # on this tool
+    async def _add_certification(self, barcode, tool_id, level, date, cert):
         query = ("INSERT INTO certifications (user_id, tool_id, certifier_id, "
-                 "date, level) SELECT ?, ?, ?, ?, ?;")
-        dbConnection.execute(query, (barcode, tool_id, certifier, date, level))
+                 "date, level) SELECT ?, ?, ?, ?, ? "
+                 "WHERE EXISTS (SELECT 1 FROM members m WHERE m.barcode = ?);")
+        return await self.BD._do_insert_query(query, (barcode, tool_id, cert,
+                                                      date, level, barcode))
 
     def getAllUserList(self, dbConnection):
         users = {}

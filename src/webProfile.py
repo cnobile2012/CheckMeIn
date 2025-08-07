@@ -23,22 +23,19 @@ class WebProfile(WebBase):
         return self.template('login.mako', error=error)
 
     @cherrypy.expose
-    def loginAttempt(self, username, password):
-        with self.dbConnect() as dbConnection:
-            barcode, role = self.engine.accounts.get_barcode_and_role(
-                username, password)
+    def login_attempt(self, username, password):
+        barcode, role = self.engine.run_async(
+            self.engine.accounts.get_barcode_and_role(username, password))
 
-            if not barcode:
-                return self.template('login.mako',
-                                     error="Invalid username/password")
-
+        if barcode:
             Cookie('barcode').set(barcode)
             Cookie('username').set(username)
             Cookie('role').set(role.cookie_value)
+            dest = Cookie('source').get(f"/links?barcode={barcode}")
+            Cookie('source').delete()
+            raise cherrypy.HTTPRedirect(dest)
 
-        dest = Cookie('source').get(f"/links?barcode={barcode}")
-        Cookie('source').delete()
-        raise cherrypy.HTTPRedirect(dest)
+        return self.template('login.mako', error="Invalid username/password")
 
     # Profile
     @cherrypy.expose

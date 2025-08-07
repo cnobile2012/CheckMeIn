@@ -6,6 +6,7 @@
 import sqlite3
 import asyncio
 import datetime
+import threading
 
 from src.base_database import BaseDatabase
 
@@ -21,8 +22,6 @@ from .devices import Devices
 from .unlocks import Unlocks
 from .logEvents import LogEvents
 from .config import Config
-
-SCHEMA_VERSION = 16
 
 
 def adapt_datetime(dt):
@@ -73,6 +72,18 @@ class Engine(BaseDatabase):
         self.certifications = Certifications()
         self.members = Members()
         self.log_events = LogEvents()
+        # Async event loop
+        # (CherryPi cannot work with async directly, so we put all async
+        #  code in a separate thread.)
+        self.__loop = asyncio.new_event_loop()
+        threading.Thread(target=self.__start_event_loop, daemon=True).start()
+
+    def __start_event_loop(self):
+        asyncio.set_event_loop(self.__loop)
+        self.__loop.run_forever()
+
+    def run_async(self, coro):
+        return asyncio.run_coroutine_threadsafe(coro, self.__loop).result()
 
     @property
     def data_path(self):

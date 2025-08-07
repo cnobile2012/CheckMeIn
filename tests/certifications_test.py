@@ -11,6 +11,7 @@ from src.base_database import BaseDatabase
 from src.certifications import CertificationLevels, ToolUser, Certifications
 from src.members import Members
 from src.teams import Teams
+from src.settings import TOOLS
 from src.visits import Visits
 
 from .base_tests import BaseAsyncTests
@@ -144,10 +145,18 @@ class TestCertifications(BaseAsyncTests):
         await self._members.add_members(TEST_DATA[self.bd._T_MEMBERS])
         await self._teams.add_teams(TEST_DATA[self.bd._T_TEAMS])
         await self._teams.add_team_members(TEST_DATA[self.bd._T_TEAM_MEMBERS])
+        await self._certs.add_tools(TOOLS)
         await self._visits.add_visits(TEST_DATA[self.bd._T_VISITS])
 
     async def asyncTearDown(self):
         self._cert = None
+        self._members = None
+        self._teams = None
+        self._visits = None
+        await self.truncate_all_tables()
+        # Clear the Borg state.
+        self.bd.clear_state()
+        self.bd = None
 
     async def get_data(self, module='all'):
         if module == self.bd._T_CERTIFICATIONS:
@@ -158,22 +167,75 @@ class TestCertifications(BaseAsyncTests):
             results = await self._teams.get_teams()
         elif module == self.bd._T_TEAM_MEMBERS:
             result = await self._teams.get_team_members()
+        elif module == self.bd._T_TOOLS:
+            result = await self._certs.get_tools()
         elif module == self.bd._T_VISITS:
             result = await self._visits.get_visits()
         else:
-            result = {self.bd._T_CERTIFICATIONS:
-                      await self._certs.get_certifications(),
-                      self.bd._T_MEMBERS: await self._members.get_members(),
-                      self.bd._T_TEAMS: await self._teams.get_teams(),
-                      self.bd._T_TEAM_MEMBERS:
-                      await self._teams.get_team_members(),
-                      self.bd._T_VISITS: await self._visits.get_visits()}
+            result = {
+                self.bd._T_CERTIFICATIONS:
+                await self._certs.get_certifications(),
+                self.bd._T_MEMBERS: await self._members.get_members(),
+                self.bd._T_TEAMS: await self._teams.get_teams(),
+                self.bd._T_TEAM_MEMBERS: await self._teams.get_team_members(),
+                self.bd._T_TOOLS: await self._certs.get_tools(),
+                self.bd._T_VISITS: await self._visits.get_visits()
+                }
 
         return result
 
     #@unittest.skip("Temporarily skipped")
-    async def test_add_tool(self):
+    async def test_get_certifications(self):
         """
-        Test that the add_tool method correctly adds a new certification.
+        Test that the get_certifications method returns all certifications.
         """
-        print(await self.get_data())
+        result = await self._certs.get_certifications()
+        result_size = len(result)
+        self.assertEqual(3, result_size)
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_add_tools(self):
+        """
+        Test that the add_tools method correctly adds a new certification.
+        """
+        data = (
+            {'id': 100, 'grouping': 10, 'name': 'Plasma Rail Gun',
+             'restriction': 5, 'comments': 'For shoot down satellites.'},
+            {'id': 101, 'grouping': 10, 'name': 'Planet Killer',
+             'restriction': 5, 'comments': 'Never use this.'},
+            )
+        msg = ("Expected {}, with tool_id {}, found {}.")
+        await self._certs.add_tools(data)
+        results = await self.get_data('tools')
+
+        for tools in data:
+            tool_id = tools['id']
+            grouping = tools['grouping']
+            name = tools['name']
+            restriction = tools['restriction']
+            comments = tools['comments']
+
+            for item in results:
+                if tool_id == item[0]:
+                    self.assertEqual(grouping, item[1], msg.format(
+                        grouping, item[0], item[1]))
+                    self.assertEqual(name, item[2], msg.format(
+                        name, item[0], item[2]))
+                    self.assertEqual(restriction, item[3], msg.format(
+                        restriction, item[0], item[3]))
+                    self.assertEqual(comments, item[4], msg.format(
+                        comments, item[0], item[4]))
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_add_new_certification(self):
+        """
+        Test that the add_new_certification method 
+        """
+        data = ()
+
+        now = datetime.datetime.now()
+        result = await self._certs._add_certification("100015", 5, 40, now,
+                                                      '100091')
+        print(result)
+        print(await self.get_data('certifications'))
+

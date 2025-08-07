@@ -8,7 +8,7 @@
 ${self.logo()}<br/>
 <H1>Login Page</H1>
 
-<form action="loginAttempt">
+<form action="login_attempt">
 <fieldset>
    <legend>Login</legend>
    <input id="user_id" type="text" name="username" placeholder="Login Name" /><br />

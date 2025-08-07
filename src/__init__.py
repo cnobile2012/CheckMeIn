@@ -7,6 +7,7 @@ __docformat__ = "restructuredtext en"
 import os
 import sys
 import logging
+from logging.handlers import RotatingFileHandler
 
 __all__ = ('BASE_DIR', 'Borg', 'AppConfig')
 
@@ -55,6 +56,32 @@ class Borg:
                 del inst.__dict__[key]
 
         self._instances.clear()
+
+
+class DeferredRotatingFileHandler(RotatingFileHandler):
+    """
+    'task_file': {
+        'class': 'realm.common.loghandlers.DeferredRotatingFileHandler',
+        'level': 'DEBUG',
+        'formatter': 'verbose',
+        'filename': '/dev/null',
+        'maxBytes': 50000000, # 50 Meg bytes
+        'backupCount': 5,
+        }
+
+    RotatingFileHandler args:
+    filename, mode='a', maxBytes=0, backupCount=0, encoding=None,
+    delay=False, errors=None
+    """
+
+    def __init__(self, filename, *args, **kwargs):
+        self.filename = filename
+        kwargs['delay'] = True
+        RotatingFileHandler.__init__(self, "/dev/null", *args, **kwargs)
+
+    def _open(self):
+        self.baseFilename = self.filename
+        return RotatingFileHandler._open(self)
 
 
 class Logger:
