@@ -11,7 +11,6 @@ from enum import IntEnum
 from . import AppConfig
 from .base_database import BaseDatabase
 from .utils import Utilities
-#from .settings import TOOLS
 
 
 class CertificationLevels(IntEnum):
@@ -29,7 +28,7 @@ class ToolUser:
         super().__init__(*args, **kwargs)
         self._tools = {}  # {tool_id: (date, level), ...}
         self._display_name = display_name
-        # Seems to not be used anywhere.
+        # *** TODO*** Remove as it seems to not be used anywhere.
         self._barcode = barcode
 
     @property
@@ -41,8 +40,9 @@ class ToolUser:
 
     def add_tool(self, tool_id, date, level):
         """
+        Add tool that a user can certify.
 
-        :param int tool_d: A value between 1 - 18 indicating the tool.
+        :param int tool_d: A value between 1 - n indicating the tool.
         :param datetime.datetime or NoneType date: Install date?
         :param int level: This is the certification level of the user
                           that's allowed to use the tool.
@@ -107,13 +107,13 @@ class Certifications(Utilities):
         Bulk add certifications.
 
         :param list data: The data to insert in the for of:
-                          [{'barcode: <value>', 'tool_id': <value>,
+                          [{'user_id: <value>', 'tool_id': <value>,
                           'certifier_id': <value>, 'date': <value>,
                           'level': <value>}, ...]
         """
         query = ("INSERT INTO certifications (user_id, tool_id, certifier_id, "
                  "date, level) "
-                 "SELECT :barcode, :tool_id, :level, :date, :certifier;")
+                 "SELECT :user_id, :tool_id, :certifier_id, :date, :level;")
         await self.BD._do_insert_query(query, data)
 
     async def get_certifications(self):
@@ -156,79 +156,62 @@ class Certifications(Utilities):
         return await self.BD._do_insert_query(query, (barcode, tool_id, cert,
                                                       date, level, barcode))
 
-    def getAllUserList(self, dbConnection):
+    async def get_all_user_list(self):
         users = {}
         query = ("SELECT c.user_id, c.tool_id, c.date, c.level, "
                  "cm.displayName FROM certifications AS c "
                  "INNER JOIN current_members AS cm "
                  "ON cm.barcode = c.user_id ORDER BY cm.displayName;")
+        rows = await self.BD._do_select_all_query(query)
 
-        for row in dbConnection.execute(query):
-            try:
-                users[row[0]].add_tool(row[1], row[2], row[3])
-            except KeyError:
-                users[row[0]] = ToolUser(row[4], row[0])
-                users[row[0]].add_tool(row[1], row[2], row[3])
+        for user_id, tool_id, date, level, d_name in rows:
+            user = users.setdefault(user_id, ToolUser(d_name, user_id))
+            user.add_tool(tool_id, date, level)
 
         return users
 
-    def getInBuildingUserList(self, dbConnection):
+    async def get_in_building_user_list(self):
         users = {}
         query = ("SELECT c.user_id, c.tool_id, c.date, c.level, m.displayName "
                  "FROM certifications c "
                  "INNER JOIN members m ON c.user_id = m.barcode "
                  "INNER JOIN visits v ON m.barcode = v.barcode "
                  "WHERE v.status = 'In' ORDER BY m.displayName;")
+        rows = await self.BD._do_select_all_query(query)
 
-        for row in dbConnection.execute(query):
-            try:
-                users[row[0]].add_tool(row[1], row[2], row[3])
-            except KeyError:
-                users[row[0]] = ToolUser(row[4], row[0])
-                users[row[0]].add_tool(row[1], row[2], row[3])
+        for user_id, tool_id, date, level, d_name in rows:
+            user = users.setdefault(user_id, ToolUser(d_name, user_id))
+            user.add_tool(tool_id, date, level)
 
         return users
 
-    def getTeamUserList(self, dbConnection, team_id):
-        # This is because SQLITE doesn't support RIGHT JOIN
+    async def get_team_user_list(self, team_id):
         users = {}
-        query = ("SELECT tm.barcode, m.displayName, tm.type "
-                 "FROM team_members tm "
-                 "INNER JOIN members m ON tm.barcode = m.barcode "
-                 "WHERE tm.team_id = ? "
-                 "ORDER BY tm.type DESC, m.displayName ASC;")
-
-        for row in dbConnection.execute(query, (team_id,)):
-            users[row[0]] = ToolUser(row[1], row[0])
-
         query = ("SELECT c.user_id, c.tool_id, c.date, c.level, m.displayName "
                  "FROM certifications c "
                  "INNER JOIN members m ON c.user_id = m.barcode "
                  "INNER JOIN team_members tm ON m.barcode = tm.barcode "
                  "WHERE tm.team_id = ? "
                  "ORDER BY tm.type DESC, m.displayName ASC;")
+        rows = await self.BD._do_select_all_query(query, (team_id,))
 
-        for row in dbConnection.execute(query, (team_id, )):
-            try:
-                users[row[0]].add_tool(row[1], row[2], row[3])
-            except KeyError:
-                users[row[0]] = ToolUser(row[4], row[0])
-                users[row[0]].add_tool(row[1], row[2], row[3])
+        for user_id, tool_id, date, level, d_name in rows:
+            user = users.setdefault(user_id, ToolUser(d_name, user_id))
+            user.add_tool(tool_id, date, level)
 
         return users
 
-    def getUserList(self, dbConnection, user_id):
+    async def get_user_list(self, user_id):
         users = {}
         query = ("SELECT c.user_id, c.tool_id, c.date, c.level, m.displayName "
-                 "FROM certifications c WHERE c.user_id IN ("
-                 "SELECT barcode FROM members WHERE barcode = ?);")
+                 "FROM certifications c "
+                 "INNER JOIN members m ON m.barcode = c.user_id "
+                 "WHERE c.user_id = ?;")
+        rows = await self.BD._do_select_all_query(query, (user_id,))
 
-        for row in dbConnection.execute(query, (user_id,)):
-            try:
-                users[row[0]].add_tool(row[1], row[2], row[3])
-            except KeyError:
-                users[row[0]] = ToolUser(row[4], row[0])
-                users[row[0]].add_tool(row[1], row[2], row[3])
+        for user_id, tool_id, date, level, d_name in rows:
+            user = users.setdefault(user_id, ToolUser(d_name, user_id))
+            user.add_tool(tool_id, date, level)
 
         return users
 

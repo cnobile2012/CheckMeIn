@@ -9,6 +9,7 @@ import datetime
 
 from src.base_database import BaseDatabase
 from src.certifications import CertificationLevels, ToolUser, Certifications
+from src.config import Config
 from src.members import Members
 from src.teams import Teams
 from src.settings import TOOLS
@@ -129,19 +130,22 @@ class TestCertifications(BaseAsyncTests):
                                self.TEST_DB, False)
         # Create tables and views.
         self.tables_and_views = {
-            'tables': (self.bd._T_CERTIFICATIONS, self.bd._T_MEMBERS,
-                       self.bd._T_TEAMS, self.bd._T_TEAM_MEMBERS,
-                       self.bd._T_TOOLS, self.bd._T_VISITS),
+            'tables': (self.bd._T_CERTIFICATIONS, self.bd._T_CONFIG,
+                       self.bd._T_MEMBERS, self.bd._T_TEAMS,
+                       self.bd._T_TEAM_MEMBERS, self.bd._T_TOOLS,
+                       self.bd._T_VISITS),
             'views': (self.bd._V_CURRENT_MEMBERS,)
             }
         await self.create_database(self.tables_and_views)
         # Populate tables
         self._certs = Certifications()
         self._members = Members()
+        self._config = Config()
         self._teams = Teams()
         self._visits = Visits()
         await self._certs.add_certifications(
             TEST_DATA[self.bd._T_CERTIFICATIONS])
+        await self._config.add_config(TEST_DATA[self.bd._T_CONFIG])
         await self._members.add_members(TEST_DATA[self.bd._T_MEMBERS])
         await self._teams.add_teams(TEST_DATA[self.bd._T_TEAMS])
         await self._teams.add_team_members(TEST_DATA[self.bd._T_TEAM_MEMBERS])
@@ -150,6 +154,7 @@ class TestCertifications(BaseAsyncTests):
 
     async def asyncTearDown(self):
         self._cert = None
+        self._config = None
         self._members = None
         self._teams = None
         self._visits = None
@@ -161,6 +166,8 @@ class TestCertifications(BaseAsyncTests):
     async def get_data(self, module='all'):
         if module == self.bd._T_CERTIFICATIONS:
             result = await self._certs.get_certifications()
+        elif module == self.bd._T_CONFIG:
+            result = await self._config.get_config()
         elif module == self.bd._T_MEMBERS:
             result = await self._members.get_members()
         elif module == self.bd._T_TEAMS:
@@ -175,6 +182,7 @@ class TestCertifications(BaseAsyncTests):
             result = {
                 self.bd._T_CERTIFICATIONS:
                 await self._certs.get_certifications(),
+                self.bd._T_CONFIG: await self._config.get_config(),
                 self.bd._T_MEMBERS: await self._members.get_members(),
                 self.bd._T_TEAMS: await self._teams.get_teams(),
                 self.bd._T_TEAM_MEMBERS: await self._teams.get_team_members(),
@@ -229,13 +237,77 @@ class TestCertifications(BaseAsyncTests):
     #@unittest.skip("Temporarily skipped")
     async def test_add_new_certification(self):
         """
-        Test that the add_new_certification method 
+        Test that the add_new_certification and _add_certification methods
+        inserts an new certifier if the barcode is also in the members table.
+        """
+        data = (
+            ('100015', 5, 40, '100091', 1),
+            ('999999', 5, 40, '100091', 0),
+            )
+        msg = "Expected {} with barcode {}, found {}."
+
+        for new_barcode, tool_id, level, cert, expected in data:
+            result = await self._certs.add_new_certification(
+                new_barcode, tool_id, level, cert)
+            self.assertEqual(expected, result, msg.format(
+                expected, new_barcode, result))
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_get_all_user_list(self):
+        """
+        Test that the get_all_user_list method returns the latest changes
+        to a users certification status.
+        """
+        data = ('100032', '100091')
+        users = await self._certs.get_all_user_list()
+        self.assertEqual(len(data), len(users))
+
+        for user_id in data:
+            self.assertIn(user_id, users)
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_get_in_building_user_list(self):
+        """
+        Test that the get_in_building_user_list method returns the latest
+        changes to a users certification status.
+        """
+        data = ('100032', '100091')
+        users = await self._certs.get_in_building_user_list()
+        self.assertEqual(len(data), len(users))
+
+        for user_id in data:
+            self.assertIn(user_id, users)
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_get_team_user_list(self):
+        """
+        Test that the get_team_user_list method returns the ToolUser objcet
+        for each team_id and barcode combination.
+        """
+        data = (
+            (1, '100091', 'Member N', datetime.datetime, 40),
+            (1, '100032', 'Average J', datetime.datetime, 10),
+            (2, '100091', 'Member N', str, 0),
+            (2, '100032', 'Average J', str, 0),
+            (3, '100091', 'Member N', str, 0),
+            (3, '100032', 'Average J', str, 0),
+            )
+        msg = "Expected {}, with barcode {}, found {}."
+
+        for team_id, barcode, d_name, date_type, _level in data:
+            users = await self._certs. get_team_user_list(team_id)
+            tu = users[barcode]
+            self.assertEqual(d_name, tu.display_name, msg.format(
+                d_name, barcode, tu.display_name))
+            date, level = tu._get_tool(team_id)
+            self.assertTrue(isinstance(date, date_type), msg.format(
+                date_type, barcode, type(date)))
+            self.assertEqual(_level, level, msg.format(_level, barcode, level))
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_get_user_list(self):
+        """
         """
         data = ()
-
-        now = datetime.datetime.now()
-        result = await self._certs._add_certification("100015", 5, 40, now,
-                                                      '100091')
-        print(result)
-        print(await self.get_data('certifications'))
-
+        users = await self._certs.get_user_list('100091')
+        print(users)

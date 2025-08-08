@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+#
+# src/sample_data.py
+#
 
 import datetime
 
@@ -112,21 +115,21 @@ TEST_DATA = {
                      {"team_id": 3,
                       "barcode": "100032",
                       "type": 0}],
-    "certifications": [{"barcode": "100091",
+    "certifications": [{"user_id": "100091",
                         "tool_id": 1,
-                        "level": 30,
+                        "certifier_id": "LEGACY",
                         "date": "",
-                        "certifier": "LEGACY"},
-                       {"barcode": "100091",
+                        "level": 30},
+                       {"user_id": "100091",
                         "tool_id": 1,
-                        "level": 40,
+                        "certifier_id": "LEGACY",
                         "date": timeAgo(days=8),
-                        "certifier": "LEGACY"},
-                       {"barcode": "100032",
+                        "level": 40},
+                       {"user_id": "100032",
                         "tool_id": 1,
-                        "level": 10,
+                        "certifier_id": "100091",
                         "date": timeAgo(days=10),
-                        "certifier": "100091"}],
+                        "level": 10}],
     "customReports": [{"report_id": 1,
                        "name": "fred",
                        "sql_text": "SELECT * FROM members;"}],

@@ -753,7 +753,6 @@ class TestAccounts(BaseAsyncTests):
         items = await self._accounts.get_key_holders()
         self.assertEqual(num_key_holders, len(items))
 
-
     #@unittest.skip("Temporarily skipped")
     async def test_get_key_holder_barcodes(self):
         """

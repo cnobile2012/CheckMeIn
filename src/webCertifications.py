@@ -67,8 +67,8 @@ class WebCertifications(WebBase):
 
         with self.dbConnect() as dbConnection:
             tools = self.engine.certifications.getAllTools(dbConnection)
-            certifications = self.engine.certifications.getInBuildingUserList(
-                dbConnection)
+            certifications = self.engine.run_async(
+                self.engine.certifications.get_in_building_user_list())
             return self.showCertifications(message, tools, certifications)
 
     @cherrypy.expose
@@ -79,8 +79,8 @@ class WebCertifications(WebBase):
             message = 'Certifications for team: ' + \
                 self.engine.teams.teamNameFromId(dbConnection, team_id)
             tools = self.engine.certifications.getAllTools(dbConnection)
-            certifications = self.engine.certifications.getTeamUserList(
-                dbConnection, team_id)
+            certifications = self.engine.run_async(
+                self.engine.certifications.get_team_user_list(team_id))
             return self.showCertifications(message, tools, certifications)
 
     @cherrypy.expose
@@ -90,8 +90,8 @@ class WebCertifications(WebBase):
         with self.dbConnect() as dbConnection:
             message = 'Certifications for Individual'
             tools = self.engine.certifications.getAllTools(dbConnection)
-            certifications = self.engine.certifications.getUserList(
-                dbConnection, user_id=barcode)
+            certifications = self.engine.run_async(
+                self.engine.certifications.get_user_list(user_id=barcode))
             return self.showCertifications(message, tools, certifications)
 
     def getBoolean(self, term):
@@ -106,8 +106,8 @@ class WebCertifications(WebBase):
         message = ''
 
         with self.dbConnect() as dbConnection:
-            certifications = self.engine.certifications.getInBuildingUserList(
-                dbConnection)
+            certifications = self.engine.run_async(
+                self.engine.certifications.get_in_building_user_list())
             start = int(start_row)
 
             if start <= len(certifications):
@@ -136,7 +136,8 @@ class WebCertifications(WebBase):
 
         with self.dbConnect() as dbConnection:
             tools = self.engine.certifications.getAllTools(dbConnection)
-            certifications = self.engine.certifications.getAllUserList(
-                dbConnection)
+
+            certifications = self.engine.run_async(
+                self.engine.certifications.get_all_user_list())
 
             return self.showCertifications(message, tools, certifications)

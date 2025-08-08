@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+#
+# src/visits.py
+#
 
 import datetime
 from dateutil import parser
@@ -8,6 +11,10 @@ from .base_database import BaseDatabase
 
 class Visits:
     BD = BaseDatabase()
+    _STATUS_VALUES = ('In', 'Out')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
     async def add_visits(self, data: list) -> None:
         """
@@ -22,6 +29,9 @@ class Visits:
                      "VALUES (:enter_time, :{}, :barcode, :status);")
 
         for item in data:
+            assert item['status'] in self._STATUS_VALUES, (
+                f"Invalid status value, must be either {self._STATUS_VALUES}.")
+
             if 'exit_time' in item:
                 query = pre_query.format('exit_time')
             else:
