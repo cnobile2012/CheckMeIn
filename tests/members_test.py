@@ -11,7 +11,7 @@ from src.base_database import BaseDatabase
 from src.config import Config
 from src.members import Members
 
-from .base_tests import BaseAsyncTests
+from .base_test import BaseAsyncTests
 from .sample_data import TEST_DATA
 
 

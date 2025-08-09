@@ -15,7 +15,7 @@ from src.teams import Teams
 from src.settings import TOOLS
 from src.visits import Visits
 
-from .base_tests import BaseAsyncTests
+from .base_test import BaseAsyncTests
 from .sample_data import TEST_DATA
 
 

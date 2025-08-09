@@ -18,7 +18,7 @@ from src.config import Config
 from src.members import Members
 from src.visits import Visits
 
-from .base_tests import BaseAsyncTests
+from .base_test import BaseAsyncTests
 from .sample_data import timeAgo, TEST_DATA
 
 
