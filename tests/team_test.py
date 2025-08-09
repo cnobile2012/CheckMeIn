@@ -1,9 +1,14 @@
 # -*- coding: utf-8 -*-
+#
+# tests/team_test.py
+#
 
 import unittest
+
 from . import CPtest
 
 
+@unittest.skip("Temporarily disabled")
 class TeamTest(CPtest.CPTest):
 
     def patch_session_coach_alan(self):

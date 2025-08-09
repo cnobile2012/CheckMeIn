@@ -9,7 +9,10 @@ from .webBase import WebBase
 
 
 class WebCertifications(WebBase):
-    # Certifications
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
     def showCertifications(self, message, tools, certifications,
                            show_table_header=True, show_left_names=True,
                            show_right_names=True):
@@ -34,8 +37,10 @@ class WebCertifications(WebBase):
                 'certify.mako', message=message,
                 certifier=self.engine.members.get_name(certifier_id),
                 certifier_id=certifier_id, members_in_building=members,
-                tools=self.engine.certifications.getListCertifyTools(
-                    dbConnection, certifier_id))
+                tools=self.engine.run_async(
+                    self.engine.certifications.get_list_certify_tools(
+                        certifier_id))
+                )
 
     @cherrypy.expose
     def addCertification(self, member_id, tool_id, level):
@@ -48,28 +53,23 @@ class WebCertifications(WebBase):
             self.engine.members.get_name(member_id))
         certifier_name = self.engine.run_async(self.engine.members.get_name(
             certifier_id))
-
-        # separate out committing from getting
-        with self.dbConnect() as dbConnection:
-            level = self.engine.certifications.getLevelName(level)
-            tool = self.engine.certifications.getToolName(dbConnection,
-                                                          tool_id)
-            self.engine.certifications.emailCertifiers(member_name, tool,
-                                                       level, certifier_name)
-
+        level = self.engine.certifications.get_level_name(level)
+        tool = self.engine.run_async(
+            self.engine.certifications.get_tool_name(tool_id))
+        self.engine.certifications.email_certifiers(member_name, tool,
+                                                    level, certifier_name)
         return self.template('congrats.mako', message='',
                              certifier_id=certifier_id,
                              memberName=member_name, level=level, tool=tool)
 
     @cherrypy.expose
     def index(self):
-        message = ''
-
-        with self.dbConnect() as dbConnection:
-            tools = self.engine.certifications.getAllTools(dbConnection)
-            certifications = self.engine.run_async(
-                self.engine.certifications.get_in_building_user_list())
-            return self.showCertifications(message, tools, certifications)
+        message = ""
+        tools = self.engine.run_async(
+            self.engine.certifications.get_all_tools())
+        certifications = self.engine.run_async(
+            self.engine.certifications.get_in_building_user_list())
+        return self.showCertifications(message, tools, certifications)
 
     @cherrypy.expose
     def team(self, team_id):
@@ -78,21 +78,20 @@ class WebCertifications(WebBase):
         with self.dbConnect() as dbConnection:
             message = 'Certifications for team: ' + \
                 self.engine.teams.teamNameFromId(dbConnection, team_id)
-            tools = self.engine.certifications.getAllTools(dbConnection)
+            tools = self.engine.run_async(
+                self.engine.certifications.get_all_tools())
             certifications = self.engine.run_async(
                 self.engine.certifications.get_team_user_list(team_id))
             return self.showCertifications(message, tools, certifications)
 
     @cherrypy.expose
     def user(self, barcode):
-        message = ''
-
-        with self.dbConnect() as dbConnection:
-            message = 'Certifications for Individual'
-            tools = self.engine.certifications.getAllTools(dbConnection)
-            certifications = self.engine.run_async(
-                self.engine.certifications.get_user_list(user_id=barcode))
-            return self.showCertifications(message, tools, certifications)
+        message = 'Certifications for Individual'
+        tools = self.engine.run_async(
+            self.engine.certifications.get_all_tools())
+        certifications = self.engine.run_async(
+            self.engine.certifications.get_user_list(user_id=barcode))
+        return self.showCertifications(message, tools, certifications)
 
     def getBoolean(self, term):
         if term == '0' or term.upper() == 'FALSE':
@@ -101,43 +100,37 @@ class WebCertifications(WebBase):
         return True
 
     @cherrypy.expose
-    def monitor(self, tools, start_row=0, show_left_names="True",
-                show_right_names="True", show_table_header="True"):
+    def monitor(self, tools, start_row=0, show_left_names='True',
+                show_right_names='True', show_table_header='True'):
         message = ''
+        certifications = self.engine.run_async(
+            self.engine.certifications.get_in_building_user_list())
+        start = int(start_row)
 
-        with self.dbConnect() as dbConnection:
-            certifications = self.engine.run_async(
-                self.engine.certifications.get_in_building_user_list())
-            start = int(start_row)
+        if start <= len(certifications):
+            # This depends on python 3.6 or higher for the dictionary
+            # to be ordered by insertion order
+            list_cert_keys = list(certifications.keys())[start:]
+            subsetCerts = {cert: certifications[cert]
+                           for cert in list_cert_keys}
+            certifications = subsetCerts
+        else:
+            return self.template("blank.mako")
 
-            if start <= len(certifications):
-                # This depends on python 3.6 or higher for the dictionary
-                # to be ordered by insertion order
-                listCertKeys = list(certifications.keys())[start:]
-                subsetCerts = {}
-                for cert in listCertKeys:
-                    subsetCerts[cert] = certifications[cert]
-                certifications = subsetCerts
-            else:
-                return self.template("blank.mako")
-
-            show_table_header = self.getBoolean(show_table_header)
-            show_left_names = self.getBoolean(show_left_names)
-            show_right_names = self.getBoolean(show_right_names)
-            tools = self.engine.certifications.getToolsFromList(
-                dbConnection, tools)
-            return self.showCertifications(message, tools, certifications,
-                                           show_table_header, show_left_names,
-                                           show_right_names)
+        show_table_header = self.getBoolean(show_table_header)
+        show_left_names = self.getBoolean(show_left_names)
+        show_right_names = self.getBoolean(show_right_names)
+        tools = self.engine.run_async(
+            self.engine.certifications.get_tools_from_list(tools))
+        return self.showCertifications(message, tools, certifications,
+                                       show_table_header, show_left_names,
+                                       show_right_names)
 
     @cherrypy.expose
     def all(self):
         message = ''
-
-        with self.dbConnect() as dbConnection:
-            tools = self.engine.certifications.getAllTools(dbConnection)
-
-            certifications = self.engine.run_async(
-                self.engine.certifications.get_all_user_list())
-
-            return self.showCertifications(message, tools, certifications)
+        tools = self.engine.run_async(
+            self.engine.certifications.get_all_tools())
+        certifications = self.engine.run_async(
+            self.engine.certifications.get_all_user_list())
+        return self.showCertifications(message, tools, certifications)

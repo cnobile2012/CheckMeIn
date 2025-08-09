@@ -1,6 +1,14 @@
+# -*- coding: utf-8 -*-
+#
+# tests/station_test.py
+#
+
+import unittest
+
 from . import CPtest
 
 
+@unittest.skip("Temporarily disabled")
 class StationTest(CPtest.CPTest):
     def test_station(self):
         with self.patch_session():

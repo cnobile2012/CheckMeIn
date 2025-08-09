@@ -202,6 +202,9 @@ class Certifications(Utilities):
         return users
 
     async def get_user_list(self, user_id):
+        """
+        Returns a list of members that are certifiers.
+        """
         users = {}
         query = ("SELECT c.user_id, c.tool_id, c.date, c.level, m.displayName "
                  "FROM certifications c "
@@ -215,50 +218,52 @@ class Certifications(Utilities):
 
         return users
 
-    def getAllTools(self, dbConnection):
+    async def get_all_tools(self):
         tools = []
         query = ("SELECT id, name, grouping FROM tools "
                  "ORDER BY grouping, id ASC;")
+        rows = await self.BD._do_select_all_query(query)
 
-        for row in dbConnection.execute(query, ()):
-            tools.append([row[0], row[1], row[2]])
+        for id, name, grouping in rows:
+            tools.append([id, name, grouping])
 
         return tools
 
-    def getToolsFromList(self, dbConnection, inputStr):
-        tools = self.getAllTools(dbConnection)
-        inputTools = inputStr.split("_")
-        newToolList = []
+    async def get_tools_from_list(self, input_str):
+        """
+        """
+        tools = await self.get_all_tools()
+        input_tools = input_str.split("_")
+        new_tool_list = []
 
         for tool in tools:
-            if str(tool[0]) in inputTools:
-                newToolList.append(tool)
+            if str(tool[0]) in input_tools:
+                new_tool_list.append(tool)
 
-        return newToolList
+        return new_tool_list
 
-    def getListCertifyTools(self, dbConnection, user_id):
-        tools = []
+    async def get_list_certify_tools(self, user_id):
+        """
+        Return a list of all tools that a certifier can operate.
+        """
         query = ("SELECT c.tool_id, t.name FROM certifications c "
                  "INNER JOIN tools t ON c.tool_id = t.id "
                  "WHERE c.user_id = ? AND c.level >= ? ORDER BY t.name ASC;")
         certifier = CertificationLevels.CERTIFIER
+        rows = await self.BD._do_select_all_query(query, (user_id, certifier))
+        return [(row[0], row[1]) for row in rows]
 
-        for row in dbConnection.execute(query, (user_id, certifier)):
-            tools.append([row[0], row[1]])
-
-        return tools
-
-    def getToolName(self, dbConnection, tool_id):
-        query = "SELECT name FROM tools WHERE id == ?;"
-        data = dbConnection.execute(query, (tool_id,)).fetchone()
+    async def get_tool_name(self, tool_id):
+        query = "SELECT name FROM tools WHERE id = ?;"
+        data = await self.BD._do_select_one_query(query, (tool_id,))
         return data[0]
 
-    def getLevelName(self, level):
+    def get_level_name(self, level):
         return self._levels[CertificationLevels(int(level))]
 
-    def emailCertifiers(self, name, toolName, levelDescription, certifierName):
-        emailAddress = "shopcertifiers@theforgeinitiative.org"
-        msg = (f"{name} was just certified as {levelDescription} on "
-               f"{toolName} by {certifierName}!!")
-        self.send_email("Shop Certifiers", emailAddress, "New Certification",
-                        msg)
+    def email_certifiers(self, name, tool_name, level_desc, certifier_name):
+        email_address = "shopcertifiers@theforgeinitiative.org"
+        msg = (f"{name} was just certified as {level_desc} on the "
+               f"'{tool_name}' by {certifier_name}.")
+        self.send_email("Shop Certifiers", email_address,
+                        "New Certification", msg)

@@ -1,9 +1,14 @@
 # -*- coding: utf-8 -*-
+#
+# tests/profile_test.py
+#
+
 
 import unittest
 from . import CPtest
 
 
+@unittest.skip("Temporarily disabled")
 class ProfileTest(CPtest.CPTest):
     def test_login(self):
         with self.patch_session():

@@ -3,8 +3,11 @@
 # tests/base_tests.py
 #
 
+import re
 import unittest
 import aiosqlite
+
+from src import AppConfig
 
 __all__ = ('BaseAsyncTests',)
 
@@ -17,10 +20,26 @@ class BaseAsyncTests(unittest.IsolatedAsyncioTestCase):
     The one caveat is that self.bd = BaseDatabase() must be defines in the
     async def asyncSetUp(self): methods.
     """
+    _log = None
     TEST_DB = 'testing.db'
+    _RE_FIRST_LINE = r'^.*{}.*$'
 
     def __init__(self, name, *args, **kwargs):
         super().__init__(name, *args, **kwargs)
+
+    @classmethod
+    def setUpClass(cls):
+        if cls._log is None:
+            cls._log = AppConfig.start_logging(testing=True)
+            cls._log.propagate = False
+
+    @property
+    def logger_name(self):
+        return AppConfig().logger_name
+
+    @property
+    def full_log_path(self):
+        return AppConfig().full_log_path
 
     async def create_database(self, tav: dict) -> None:
         """
@@ -82,3 +101,27 @@ class BaseAsyncTests(unittest.IsolatedAsyncioTestCase):
                     await cursor.execute("DELETE FROM sqlite_sequence;")
 
                 await db.commit()
+
+    def read_text_file(self, fullpath: str, mode='r') -> str:
+        with open(fullpath) as f:
+            return f.read()
+
+    def find_text_span(self, data_str: str, start: str, num_lines: int):
+        out = []
+        first_line = self._RE_FIRST_LINE.format(start)
+        sre = re.search(first_line, data_str, re.MULTILINE)
+
+        if sre:
+            file_list = [line for line in data_str.split('\n')]
+            count = 0
+
+            for line in file_list:
+                if count > 0 and count < num_lines:
+                    out.append(line)
+                    count += 1
+
+                if sre.group() in line:
+                    count += 1
+                    out.append(line)
+
+        return out

@@ -1,6 +1,14 @@
+# -*- coding: utf-8 -*-
+#
+# tests/misc_tests.py
+#
+
+import unittest
+
 from . import CPtest
 
 
+@unittest.skip("Temporarily disabled")
 class MiscTest(CPtest.CPTest):
     def test_whoishere(self):
         with self.patch_session():

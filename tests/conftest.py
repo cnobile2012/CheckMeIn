@@ -33,7 +33,7 @@ def my_own_session_run_at_beginning(request):
         # Make sure we are starting with a clean database
         os.remove(dbpath)
     except FileNotFoundError as e:
-        log.info("%s", e)
+        log.info("Could not remove, %s", e)
 
     keypath = os.path.join(path, 'tests')
 

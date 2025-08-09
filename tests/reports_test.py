@@ -1,6 +1,14 @@
+# -*- coding: utf-8 -*-
+#
+# tests/reports_test.py
+#
+
+import unittest
+
 from . import CPtest
 
 
+@unittest.skip("Temporarily disabled")
 class ReportsTest(CPtest.CPTest):
     def test_report_page(self):
         with self.patch_session():

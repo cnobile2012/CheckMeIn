@@ -106,7 +106,7 @@ class TestToolUser(unittest.TestCase):
              f'<TD class="clInstructor">Instructor<br/>{html_date}</TD>'),
             (6, now, CertificationLevels.CERTIFIER,
              f'<TD class="clCertifier">Certifier<br/>{html_date}</TD>'),
-            (7, now, 100, f"Key: 100"),  # Nonexistant level
+            (7, now, 100, "Key: 100"),  # Nonexistant level
             )
         msg = "Expected {}, with date {}, and level {}, found {}."
 
@@ -171,7 +171,7 @@ class TestCertifications(BaseAsyncTests):
         elif module == self.bd._T_MEMBERS:
             result = await self._members.get_members()
         elif module == self.bd._T_TEAMS:
-            results = await self._teams.get_teams()
+            result = await self._teams.get_teams()
         elif module == self.bd._T_TEAM_MEMBERS:
             result = await self._teams.get_team_members()
         elif module == self.bd._T_TOOLS:
@@ -307,7 +307,119 @@ class TestCertifications(BaseAsyncTests):
     #@unittest.skip("Temporarily skipped")
     async def test_get_user_list(self):
         """
+        Test that the get_user_list method returns all members that
+        can certify.
         """
-        data = ()
-        users = await self._certs.get_user_list('100091')
-        print(users)
+        data = (
+            ('100090', None),
+            ('100091', 'Member N',),
+            ('100093', None),
+            ('100032', 'Average J'),
+            ('100015', None)
+            )
+        msg = "Expected {}, with barcode {}, found {}."
+
+        for user_id, d_name in data:
+            users = await self._certs.get_user_list(user_id)
+            tu = users.get(user_id)
+
+            if tu:
+                self.assertEqual(d_name, tu.display_name, msg.format(
+                    d_name, user_id, tu.display_name))
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_get_all_tools(self):
+        """
+        Test that the get_all_tools method returns all tools.
+        """
+        for tool in await self._certs.get_all_tools():
+            self.assertIn(tool[0], range(1, 19))
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_get_tools_from_list(self):
+        """
+        Test that the get_tools_from_list method returns the tools when an
+        underscore seperated list of tool ID numbers is provided.
+        """
+        tool_str = '0_1_2_3_4_5_6_7_8_9_10_11_12_13_14_15_16_17_18_19'
+        tool_str_ids = [int(id) for id in tool_str.split('_')]
+        tools = await self._certs.get_tools_from_list(tool_str)
+        tool_ids = [tool[0] for tool in tools]
+        diff = set(tool_str_ids) - set(tool_ids)
+        self.assertEqual({0, 19}, diff)
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_get_list_certify_tools(self):
+        """
+        Test that the get_list_certify_tools method returns the tools that
+        a certifier can use given a user ID.
+        """
+        data = (
+            ('100090', 0, ''),
+            ('100091', 1, 'Sheet Metal Brake'),
+            ('100093', 0, ''),
+            ('100032', 0, ''),
+            ('100015', 0, ''),
+            )
+        msg = "Expected {}, found {}."
+
+        for user_id, tool_id, name in data:
+            tools = await self._certs.get_list_certify_tools(user_id)
+
+            for id, t_name in tools:
+                self.assertEqual(tool_id, id, msg.format(tool_id, id))
+                self.assertEqual(name, t_name, msg.format(name, t_name))
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_get_tool_name(self):
+        """
+        Test that the get_tool_name method returns the tool names using
+        the tool ID.
+        """
+        data = [(tool['id'], tool['name']) for tool in TOOLS]
+        msg = "Expected {}, with tool_id {}, found {}."
+
+        for tool_id, t_name in data:
+            name = await self._certs.get_tool_name(tool_id)
+            self.assertEqual(t_name, name, msg.format(t_name, tool_id, name))
+
+    #@unittest.skip("Temporarily skipped")
+    def test_get_level_name(self):
+        """
+        Test that the get_level_name method returns the level names using
+        the integer value of the level.
+        """
+        data = (
+            (0, 'NONE'),
+            (1, 'BASIC'),
+            (10, 'CERTIFIED'),
+            (20, 'DOF'),
+            (30, 'INSTRUCTOR'),
+            (40, 'CERTIFIER'),
+            )
+        msg = "Expected {}, found {}."
+
+        for level, l_name in data:
+            name = self._certs.get_level_name(level)
+            self.assertEqual(l_name, name, msg.format(l_name, name))
+
+    #@unittest.skip("Temporarily skipped")
+    def test_email_certifiers(self):
+        """
+        Test that the email_certifiers method sends an email to the shop
+        certifiers that a new person has been certified.
+        """
+        start = "Start test_email_certifiers"
+        self._log.info(start)
+        # Test values only.
+        member_name = 'Daughter N'
+        tool_name = 'Sheet Metal Brake'
+        level_name = self._certs._levels[CertificationLevels.BASIC]
+        cert_name = 'Member N'
+        self._certs.email_certifiers(member_name, tool_name, level_name,
+                                     cert_name)
+        msg = ("Daughter N was just certified as BASIC on the "
+               "'Sheet Metal Brake' by Member N.")
+        full_log = self.read_text_file(self.full_log_path, mode='rb')
+        sub_log = self.find_text_span(full_log, start, 10)
+        self.assertIn(msg, [line for line in sub_log])

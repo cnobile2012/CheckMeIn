@@ -183,13 +183,16 @@ class AppConfig(Borg):
                 self._fullpath = os.path.join(self._LOGGER_PATH,
                                               self._TEST_LOG_FILENAME)
                 self._logger = self._TEST_LOGGER_NAME
+                self._level = logging.DEBUG
             else:
                 self._fullpath = os.path.join(self._LOGGER_PATH,
                                               self._LOG_FILENAME)
                 self._logger = self._LOGGER_NAME
+                self._level = logging.INFO
 
             Logger().config(logger_name=self.logger_name,
-                            file_path=self.full_log_path, initial_msg=False)
+                            file_path=self.full_log_path, level=self._level,
+                            initial_msg=False)
             log = logging.getLogger(self._logger)
             # The next line shuts off the annoying asyncio debug messages.
             logging.getLogger("asyncio").setLevel(logging.CRITICAL)
