@@ -27,10 +27,6 @@ from src.cherrypy_SSE import Portier
 
 class CheckMeIn(WebBase):
 
-    # def update(self, msg):
-    #     fullMessage = f"event: update\ndata: {msg}\n\n"
-    #     cherrypy.engine.publish(self.updateChannel, fullMessage)
-
     def __init__(self, *args, **kwargs):
         AppConfig().start_logging()
         self.lookup = TemplateLookup(directories=['HTMLTemplates'],
@@ -46,6 +42,10 @@ class CheckMeIn(WebBase):
         self.admin = WebAdminStation(self.lookup, self.engine)
         self.reports = WebReports(self.lookup, self.engine)
         self.profile = WebProfile(self.lookup, self.engine)
+
+    def update(self, msg):
+        fullMessage = f"event: update\ndata: {msg}\n\n"
+        cherrypy.engine.publish(self.updateChannel, fullMessage)
 
     @cherrypy.expose
     def index(self):
@@ -166,7 +166,8 @@ if __name__ == '__main__':  # pragma: no cover
     parser.add_argument('conf')
     options = parser.parse_args()
 
-    cherrypy.config.update(options.conf)  # So I can access in __init__
+    # So I can access in __init__
+    cherrypy.config.update(options.conf)
 
     # wd = cherrypy.process.plugins.BackgroundTask(15, func)
     # wd.start()

@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+#
+# /src/config.py
+#
 
 from .base_database import BaseDatabase
 
@@ -32,12 +35,12 @@ class Config:
         query = "SELECT * FROM config;"
         return await self.BD._do_select_all_query(query)
 
-    def update(self, dbConnection, key, value):
-        query = ("INSERT INTO config (key, value) values (?, ?) "
-                 "ON CONFLICT (key) DO UPDATE SET value = ?;")
-        dbConnection.execute(query, (key, value, value))
+    async def update(self, key, value):
+        query = ("INSERT INTO config (key, value) VALUES (?, ?) "
+                 "ON CONFLICT (key) DO UPDATE SET value = excluded.value;")
+        await self.BD._do_insert_query(query, (key, value))
 
-    def get(self, dbConnection, key):
+    async def get(self, key):
         query = "SELECT value from config WHERE key = ?;"
-        row = dbConnection.execute(query, (key,)).fetchone()
+        row = await self.BD._do_select_one_query(query, (key,))
         return row and row[0]

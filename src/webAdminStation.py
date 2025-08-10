@@ -40,7 +40,8 @@ class WebAdminStation(WebBase):
             if barcode:
                 lastBulkUpdateName = self.engine.members.get_name(barcode)
 
-            grace_period = self.engine.config.get(dbConnection, 'grace_period')
+            grace_period = self.engine.run_async(
+                self.engine.config.get('grace_period'))
 
         return self.template('admin.mako', forgotDates=forgotDates,
                              lastBulkUpdateDate=lastBulkUpdateDate,
@@ -62,9 +63,10 @@ class WebAdminStation(WebBase):
         self.checkPermissions()
 
         with self.dbConnect() as dbConnection:
-            self.engine.config.update(dbConnection, "grace_period", grace)
+            self.engine.run_async(
+                self.engine.config.update('grace_period', grace))
             self.engine.logEvents.addEvent(
-                dbConnection, "Grace changed", self.getBarcode("/admin"))
+                dbConnection, 'Grace changed', self.getBarcode('/admin'))
 
         return self.index()
 
@@ -75,7 +77,7 @@ class WebAdminStation(WebBase):
         with self.dbConnect() as dbConnection:
             error = self.engine.members.bulk_add(csvfile)
             self.engine.logEvents.addEvent(
-                dbConnection, "Bulk Add", self.getBarcode("/admin"))
+                dbConnection, 'Bulk Add', self.getBarcode('/admin'))
 
         return self.index(error)
 
@@ -160,7 +162,7 @@ class WebAdminStation(WebBase):
         return self.teams(error)
 
     @cherrypy.expose
-    def users(self, error=""):
+    def users(self, error=''):
         self.checkPermissions()
         users = self.engine.accounts.get_users()
         non_users = self.engine.accounts.get_non_accounts()
