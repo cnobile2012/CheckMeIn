@@ -35,13 +35,14 @@ class WebGuestStation(Utilities, WebBase):
 
         with self.dbConnect() as dbConnection:
             if reason != '':
-                guest_id = self.engine.guests.add(
-                    dbConnection, displayName, first, last, email, reason,
-                    newsletter)
+                guest_id = self.engine.run_async(
+                    self.engine.guests.add_guest(displayName, first, last,
+                                                 email, reason, newsletter))
             else:
-                guest_id = self.engine.guests.add(
-                    dbConnection, displayName, first, last, email,
-                    f'Other: {other_reason}', newsletter)
+                reason = f"Other: {other_reason}"
+                guest_id = self.engine.run_async(
+                    self.engine.guests.add_guest(displayName, first, last,
+                                                 email, reason, newsletter))
 
             self.engine.visits.enterGuest(dbConnection, guest_id)
             welcome_msg = f"Welcome {displayName} We are glad you are here!"
@@ -55,13 +56,15 @@ class WebGuestStation(Utilities, WebBase):
     def leaveGuest(self, guest_id, comments=""):
         with self.dbConnect() as dbConnection:
             self.engine.visits.leaveGuest(dbConnection, guest_id)
-            error, name = self.engine.guests.getName(dbConnection, guest_id)
+            name, error = self.engine.run_async(
+                self.engine.guests.get_name(guest_id))
 
         if error:
             return self.showGuestPage(error)
 
         if comments:
-            error, email = self.engine.guests.getEmail(dbConnection, guest_id)
+            email, error = self.engine.run_async(
+                self.engine.guests.get_email(guest_id))
             self.send_email('TFI Ops', 'tfi-ops@googlegroups.com',
                             f'Comments from {name}',
                             f'Comments left:\n{comments}', name, email)
@@ -73,7 +76,8 @@ class WebGuestStation(Utilities, WebBase):
     def returnGuest(self, guest_id):
         with self.dbConnect() as dbConnection:
             self.engine.visits.enterGuest(dbConnection, guest_id)
-            error, name = self.engine.guests.getName(dbConnection, guest_id)
+            name, error = self.engine.run_async(
+                self.engine.guests.get_name(guest_id))
 
             if error:
                 return self.showGuestPage(error)

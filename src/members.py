@@ -5,7 +5,6 @@
 
 import re
 import csv
-import sqlite3
 import codecs
 import datetime
 
@@ -117,9 +116,13 @@ class Members:
     async def get_name(self, barcode):
         query = "SELECT displayName FROM members WHERE barcode = ?;"
         data = await self.BD._do_select_one_query(query, (barcode,))
-        msg = f"Member name not found with invalid barcode: {barcode}."
 
         if not data:
-            self._log.warning(msg)
+            d_name = None
+            error = f"Member name not found with invalid barcode: {barcode}."
+            self._log.warning(error)
+        else:
+            d_name = data[0]
+            error = None
 
-        return data[0] if data else msg
+        return d_name, error

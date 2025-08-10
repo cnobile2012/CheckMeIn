@@ -223,17 +223,12 @@ class Reports:
 
         return listPresent
 
-    def guestsInBuilding(self, dbConnection):
-        listPresent = []
-        query = ("SELECT g.displayName, v.enter_time, g.guest_id "
-                 "FROM visits v "
+    async def guests_in_building(self):
+        query = ("SELECT g.displayName, g.guest_id FROM visits v "
                  "INNER JOIN guests g ON g.guest_id = v.barcode "
                  "WHERE v.status = 'In' ORDER BY g.displayName;")
-
-        for row in dbConnection.execute(query):
-            listPresent.append(Guest(row[2], row[0]))
-
-        return listPresent
+        rows = await self.BD._do_select_all_query(query, (Status.inactive,))
+        return [Guest(guest_id, d_name) for d_name, guest_id in rows]
 
     def numberPresent(self, dbConnection):
         query = "SELECT count(*) FROM visits WHERE status = 'In';"

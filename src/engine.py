@@ -93,12 +93,12 @@ class Engine(BaseDatabase):
         return sqlite3.connect(self.db_fullpath,
                                detect_types=sqlite3.PARSE_DECLTYPES)
 
-    def getGuestLists(self, dbConnection):
-        all_guests = self.guests.getList(dbConnection)
-        building_guests = self.reports.guestsInBuilding(dbConnection)
+    def getGuestLists(self):
+        all_guests = self.run_async(self.guests.get_all_guests())
+        building_guests = self.run_async(self.reports.guests_in_building())
         guests_not_here = [guest for guest in all_guests
                            if guest not in building_guests]
-        return (building_guests, guests_not_here)
+        return building_guests, guests_not_here
 
     def checkin(self, dbConnection, check_ins):
         current_keyholder_bc, _ = self.accounts.get_active_key_holder()

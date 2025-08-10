@@ -21,14 +21,14 @@ TEST_DATA = {
                 "exit_time": timeAgo(days=7, hours=0),
                 "barcode": "100032",
                 "status": "Out"},
-               {"enter_time": timeAgo(days=7, hours=2),  # Visitor
+               {"enter_time": timeAgo(days=7, hours=2),  # Random (Visitor)
                 "exit_time": timeAgo(days=7, hours=0.5),
                 "barcode": "202107310001",
                 "status": "Out"},
                {"enter_time": timeAgo(hours=1),  # admin
                 "barcode": "100091",
                 "status": "In"},
-               {"enter_time": timeAgo(hours=1),  # Visitor
+               {"enter_time": timeAgo(hours=1),  # Random (Visitor)
                 "barcode": "202107310001",
                 "status": "In"},
                {"enter_time": timeAgo(hours=1),  # Joe
@@ -36,6 +36,9 @@ TEST_DATA = {
                 "status": "In"},
                {"enter_time": timeAgo(hours=1),  # Paul
                 "barcode": "100015",
+                "status": "In"},
+               {"enter_time": timeAgo(days=32),  # Artie (Visitor)
+                "barcode": "202107310002",
                 "status": "In"}],
     "members": [{"barcode": "100090",
                  "displayName": "Daughter N",
@@ -140,13 +143,21 @@ TEST_DATA = {
                  "location": "TFI",
                  "barcode": "100091"}],
     "guests": [{"guest_id": "202107310001",
-                "displayName": "Random G.",
-                "email": "spam@email.com",
+                "displayName": "Random G",
+                "email": "spam1@email.com",
                 "firstName": "Random",
                 "lastName": "Guest",
                 "whereFound": "invited",
-                "status": "1",
-                "newsletter": 1}],
+                "status": 1,
+                "newsletter": 1},
+               {"guest_id": "202107310002",
+                "displayName": "Artie N",
+                "email": "spam2@email.com",
+                "firstName": "Artie",
+                "lastName": "Nobody",
+                "whereFound": "invited",
+                "status": 1,
+                "newsletter": 0}],
     "devices": [{"mac": "87:65:43:21",
                  "name": "Phone",
                  "barcode": "100091"}],

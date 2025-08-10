@@ -324,19 +324,19 @@ class TestAccounts(BaseAsyncTests):
         self.bd = None
 
     async def get_data(self, module='all'):
-        if module == 'accounts':
+        if module == self.bd._T_ACCOUNTS:
             result = await self._accounts.get_accounts()
-        elif module == 'config':
+        elif module == self.bd._T_CONFIG:
             result = await self._config.get_config()
-        elif module == 'members':
+        elif module == self.bd._T_MEMBERS:
             result = await self._members.get_members()
-        elif module == 'visits':
+        elif module == self.bd._T_VISITS:
             result = await self._visits.get_visits()
         else:
-            result = {'accounts': await self._accounts.get_accounts(),
-                      'config': await self._config.get_config(),
-                      'members': await self._members.get_members(),
-                      'visits': await self._visits.get_visits()}
+            result = {self.bd._T_ACCOUNTS: await self._accounts.get_accounts(),
+                      self.bd._T_CONFIG: await self._config.get_config(),
+                      self.bd._T_MEMBERS: await self._members.get_members(),
+                      self.bd._T_VISITS: await self._visits.get_visits()}
 
         return result
 

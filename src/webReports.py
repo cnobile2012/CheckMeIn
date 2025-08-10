@@ -13,6 +13,10 @@ from .tracing import Tracing
 
 
 class WebReports(WebBase):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
     def checkPermissions(self, source="/reports"):
         super().checkPermissions(Role.ADMIN, source)
 
@@ -27,7 +31,8 @@ class WebReports(WebBase):
             reportList = self.engine.customReports.get_report_list(
                 dbConnection)
             activeMembers = self.engine.members.get_active()
-            guests = self.engine.guests.getGuests(dbConnection, numDays=30)
+            guests = self.engine.run_async(
+                self.engine.guests.get_guests_in_building(30))
 
         return self.template('reports.mako',
                              firstDate=firstDate, todayDate=todayDate,
@@ -45,13 +50,14 @@ class WebReports(WebBase):
         with self.dbConnect() as dbConnection:
             dictVisits = Tracing().getDictVisits(dbConnection, barcode,
                                                  numDays)
-            displayName = self.engine.members.get_name(barcode)
+            display_name, error = self.engine.run_async(
+                self.engine.members.get_name(barcode))
 
-            if not displayName:
-                _, displayName = self.engine.guests.getName(
-                    dbConnection, barcode)
+            if not display_name or error is not None:
+                display_name, error = self.engine.run_async(
+                    self.engine.guests.get_name(barcode))
 
-        return self.template('tracing.mako', displayName=displayName,
+        return self.template('tracing.mako', displayName=display_name,
                              dictVisits=dictVisits, error="")
 
     @cherrypy.expose

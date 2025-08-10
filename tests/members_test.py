@@ -115,13 +115,13 @@ class TestMembers(BaseAsyncTests):
     #@unittest.skip("Temporarily skipped")
     async def test_get_name(self):
         """
-        Test that the get_name method returns an error message or the
-        display name.
+        Test that the get_name method returns (display_name, None) or
+        (None, error message).
         """
         err_msg0 = "Member name not found with invalid barcode: {}."
         data = (
-            ('100090', 'Daughter N'),
-            ('999999', err_msg0.format('999999')),
+            ('100090', ('Daughter N', None)),
+            ('999999', (None, err_msg0.format('999999'))),
             )
         msg = "Expected {}, found {}."
 
