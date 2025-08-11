@@ -58,7 +58,7 @@ ${self.logo()}<br/>
    <fieldset><legend>Coach</legend>
       <UL>
       % for team in activeTeamsCoached:
-         <LI><A HREF="/teams?team_id=${team.teamId}">${team.getProgramId()} - ${team.name}</A>
+         <LI><A HREF="/teams?team_id=${team.team_id}">${team.program_id()} - ${team.name}</A>
       % endfor
       </UL>
    </fieldset><br/>

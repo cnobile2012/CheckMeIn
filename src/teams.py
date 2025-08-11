@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+#
+# src/teams.py
+#
 
 import sqlite3
 from enum import IntEnum
@@ -15,24 +18,45 @@ class TeamMemberType(IntEnum):
 
 
 class TeamMember:
-    def __init__(self, name, barcode, type, present="?"):
-        self.name = name
-        self.barcode = barcode
-        self.type = type
-        self.present = present
 
-    def typeString(self):
-        if self.type == TeamMemberType.coach:
-            return "(Coach)"
-        elif self.type == TeamMemberType.mentor:
-            return "(Mentor)"
-        elif self.type == TeamMemberType.other:
-            return "(Other)"
+    def __init__(self, name, barcode, str_type, present="?"):
+        self._name = name
+        self._barcode = barcode
+        self._str_type = str_type
+        self._present = present
 
-        return ""
+    @property
+    def name(self):
+        return self._name
 
+    @property
+    def barcode(self):
+        return self._barcode
+
+    @property
+    def str_type(self):
+        return self._str_type
+
+    @property
+    def present(self):
+        return self._present
+
+    @property
+    def type_string(self):
+        if self._str_type == TeamMemberType.coach:
+            ret = "(Coach)"
+        elif self._str_type == TeamMemberType.mentor:
+            ret = "(Mentor)"
+        elif self._str_type == TeamMemberType.other:
+            ret = "(Other)"
+        else:
+            ret = ""
+
+        return ret
+
+    @property
     def display(self):
-        return self.name + "(" + self.barcode + ")"
+        return f"{self._name}({self.barcode})"
 
 
 class Status(IntEnum):
@@ -42,26 +66,42 @@ class Status(IntEnum):
 
 class TeamInfo:
 
-    def __init__(self, teamId, programName, programNumber, name, startDate,
-                 *args, **kwargs):
-        super.__init__(*args, **kwargs)
-        self._teamId = teamId
-        self.programName = programName
-        self.programNumber = programNumber
-        self.name = name
-        self.startDate = startDate
+    def __init__(self, team_id, program_name, program_number, team_name,
+                 start_date):
+        self._team_id = team_id
+        self._program_name = program_name
+        self._program_number = program_number
+        self._team_name = team_name
+        self._start_date = start_date
 
     @property
-    def teamId(self):
-        return self._teamId
+    def team_id(self):
+        return self._team_id
+
+    @property
+    def program_name(self):
+        return self._program_name
+
+    @property
+    def program_number(self):
+        return self._program_number
+
+    @property
+    def name(self):
+        return self._team_name
+
+    @property
+    def start_date(self):
+        return self._start_date
+
+    @property
+    def program_id(self):
+        msg = f'{self._program_name}{self._program_number}'
+        return msg if self._program_number != 0 else self._program_name
 
     def __repr__(self):
-        return (f"{self.teamId} {self.programName}{self.programNumber} "
-                f"- {self.name}:{self.startDate}")
-
-    def getProgramId(self):
-        msg = f'{self.programName}{self.programNumber}'
-        return msg if self.programNumber else self.programName
+        return (f"{self._team_id} {self._program_name}{self._program_number} "
+                f"- {self._team_name}:{self._start_date}")
 
 
 class Teams:
@@ -69,6 +109,7 @@ class Teams:
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._log = AppConfig().log
 
     async def add_teams(self, data: list):
         query = ("INSERT INTO teams VALUES (:team_id, :program_name, "
@@ -87,60 +128,59 @@ class Teams:
         query = "SELECT * FROM team_members;"
         return await self.BD._do_select_all_query(query)
 
-    def createTeam(self, dbConnection, program_name, program_number, team_name,
-                   seasonStart):
-        query = "INSERT INTO teams VALUES (NULL, ?, ?, ?, ?, 1)"
+    async def create_team(self, program_name, program_number, team_name,
+                          season_start):
+        query = "INSERT INTO teams VALUES (NULL, ?, ?, ?, ?, 1);"
+        result = await self.BD._do_insert_query(
+            query, (program_name.upper(), program_number, team_name,
+                    season_start))
+        return "" if result is not None else "Team name already exists."
 
-        try:
-            dbConnection.execute(query, (program_name.upper(), program_number,
-                                         team_name, seasonStart))
-        except sqlite3.IntegrityError:
-            ret = "Team name already exists"
-        else:
-            ret = ""
-
-        return ret
-
-    def fromTeamId(self, dbConnection, team_id):
+    async def from_team_id(self, team_id):
         query = ("SELECT team_id, program_name, program_number, team_name, "
                  "start_date FROM teams WHERE team_id = ? "
                  "ORDER BY program_name, program_number;")
-        data = dbConnection.execute(query, (team_id,)).fetchone()
+        data =  await self.BD._do_select_one_query(query, (team_id,))
+        return (TeamInfo(data[0], data[1], data[2], data[3], data[4])
+                if data else None)
 
-        if data:
-            return TeamInfo(data[0], data[1], data[2], data[3], data[4])
+    async def delete_team(self, team_id):
+        rowcounts = []
+        query = "DELETE FROM teams WHERE team_id = ?;"
+        rowcount = await self.BD._do_delete_query(query, (team_id,))
+        rowcounts.append(rowcount)
 
-    def deleteTeam(self, dbConnection, team_id):
-        query = "DELETE from teams WHERE team_id = ?;"
-        dbConnection.execute(query, (team_id,))
-        query = "DELETE from team_members WHERE team_id = ?;"
-        dbConnection.execute(query, (team_id, ))
+        if rowcount < 0:  # pragma: no cover
+            self._log.info("Team %s was not deleted.", team_id)
 
-    def editTeam(self, dbConnection, programName, programNumber, seasonStart,
-                 team_id):
+        query = "DELETE FROM team_members WHERE team_id = ?;"
+        rowcount = await self.BD._do_delete_query(query, (team_id,))
+        rowcounts.append(rowcount)
+
+        if rowcount < 0:  # pragma: no cover
+            self._log.info("Team members for team %s was not deleted.",
+                           team_id)
+
+        return rowcounts
+
+    async def edit_team(self, program_name, program_number, season_start,
+                        team_id):
         query = ("UPDATE teams SET program_name = ?, program_number = ?, "
                  "start_date = ? WHERE team_id = ?;")
-        dbConnection.execute(query, (programName, programNumber, seasonStart,
-                                     team_id))
+        rowcount = await self.BD._do_update_query(
+            query, (program_name, program_number, season_start, team_id))
+        return rowcount
 
-    def getActiveTeamList(self, dbConnection):
-        # TODO: Change to use DISTINCT feature of SQLITE to get rid of python
-        dictTeams = {}
+    async def get_active_team_list(self):
         query = ("SELECT team_id, program_name, program_number, team_name, "
-                 "start_date FROM teams WHERE (active = ?) "
+                 "start_date FROM teams WHERE active = ? AND start_date = ("
+                 "SELECT MAX(start_date) FROM teams AS t2 "
+                 "WHERE t2.active = teams.active "
+                 "AND t2.program_name = teams.program_name "
+                 "AND t2.program_number = teams.program_number) "
                  "ORDER BY program_name, program_number;")
-
-        for row in dbConnection.execute(query, (Status.active, )):
-            newTeam = TeamInfo(row[0], row[1], row[2], row[3], row[4])
-            programId = newTeam.getProgramId()
-
-            if programId in dictTeams:
-                if dictTeams[programId].startDate < newTeam.startDate:
-                    dictTeams[programId] = newTeam
-            else:
-                dictTeams[programId] = newTeam
-
-        return dictTeams.values()
+        rows = await self.BD._do_select_all_query(query, (Status.active,))
+        return [TeamInfo(*row) for row in rows]
 
     def getAllSeasons(self, dbConnection, teamInfo):
         teamList = []
@@ -149,8 +189,8 @@ class Teams:
                  "WHERE program_name = ? AND program_number = ? "
                  "ORDER BY start_date DESC;")
 
-        for row in dbConnection.execute(query, (teamInfo.programName,
-                                                teamInfo.programNumber)):
+        for row in dbConnection.execute(query, (teamInfo.program_name,
+                                                teamInfo.program_number)):
             teamList.append(TeamInfo(row[0], row[1], row[2], row[3], row[4]))
 
         return teamList
@@ -209,7 +249,7 @@ class Teams:
 
     def getTeamMembers(self, dbConnection, team_id):
         listMembers = []
-        query = ("SELECT m.displayName, tm.type, tm.barcode, v.status "
+        query = ("SELECT m.displayName, tm.barcode, tm.type, v.status "
                  "FROM team_members tm "
                  "INNER JOIN members m ON m.barcode = tm.barcode "
                  "LEFT JOIN (SELECT barcode, status FROM visits "
@@ -219,7 +259,7 @@ class Teams:
 
         for row in dbConnection.execute(query, (team_id,)):
             listMembers.append(
-                TeamMember(row[0], row[2], row[1], row[3] == 'In'))
+                TeamMember(row[0], row[1], row[2], row[3] == 'In'))
 
         return listMembers
 
@@ -252,18 +292,18 @@ class Teams:
         coachDict = {}
 
         for team in teamList:
-            coachDict[team.teamId] = self.getCoaches(dbConnection, team.teamId)
+            coachDict[team.team_id] = self.getCoaches(dbConnection, team.team_id)
 
         return coachDict
 
-    def getActiveTeamsCoached(self, dbConnection, barcode):
+    async def getActiveTeamsCoached(self, dbConnection, barcode):
         teamsCoached = []
         # TODO: Change to use DISTINCT feature of SQLITE and a join to get
         #       rid of python
-        teams = self.getActiveTeamList(dbConnection)
+        await teams = self.get_active_team_list()
 
         for team in teams:
-            if self.isCoachOfTeam(dbConnection, team.teamId, barcode):
+            if self.isCoachOfTeam(dbConnection, team.team_id, barcode):
                 teamsCoached.append(team)
 
         return teamsCoached

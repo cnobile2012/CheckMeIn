@@ -20,7 +20,7 @@ ${self.logo()}
       <tr><th>Name</th><th></th><th>In</th><th>Out</th></tr>
     % for member in members:
       <tr><td>${member.name}</td>
-      <td>${member.typeString()}</td> 
+      <td>${member.type_string}</td>
       % if member.present:
         <td><input type="radio" name="${member.barcode}" checked="checked"value="in"></td>
         <td><input type="radio" name="${member.barcode}" value="out"></td>
@@ -126,8 +126,8 @@ ${self.logo()}
       <tr><th>Name</th><th>Returning</th></tr>
 	   % for member in members:
       <tr><td>${member.name}</td>
-      <td>${member.typeString()}</td>
-      <td><input type="checkbox" value="${member.type}" name="${member.barcode}"></td></tr>
+      <td>${member.type_string}</td>
+      <td><input type="checkbox" value="${member.str_type}" name="${member.barcode}"></td></tr>
 	   % endfor
       </table>
 		</select>
@@ -138,10 +138,10 @@ ${self.logo()}
 <br/>
 <fieldset>
    <legend>All Seasons</legend>
-   <H3>${seasons[0].getProgramId()}</H3>
+   <H3>${seasons[0].program_id}</H3>
    <UL>
      % for team in seasons:
-     <LI><A HREF="/teams?team_id=${team.teamId}">${team.startDate.strftime("%d %b %y")} : ${team.name}</LI>
+     <LI><A HREF="/teams?team_id=${team.team_id}">${team.start_date.strftime("%d %b %y")} : ${team.name}</LI>
      % endfor
    </UL>
 </fieldset>

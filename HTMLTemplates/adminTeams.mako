@@ -99,22 +99,21 @@ ${self.logo()}
 				<th align="left">Team Name</th>
 				<th align="left">Start Date</th>
 				<th align="left">Coaches</th>
-				
 				<th align="center">Actions</th>
 			</tr>
 			 % for team in activeTeams:
 			 <tr>
-				<td><A HREF="/teams?team_id=${team.teamId}">${team.getProgramId()}</A></td>
-				<td><A HREF="/teams?team_id=${team.teamId}">${team.name}</A></td>
-				<td>${team.startDate.strftime("%d %b %Y")}</td>
+				<td><A HREF="/teams?team_id=${team.team_id}">${team.program_id}</A></td>
+				<td><A HREF="/teams?team_id=${team.team_id}">${team.name}</A></td>
+				<td>${team.start_date.strftime("%d %b %Y")}</td>
 				<td>
-				% for coach in coaches[team.teamId]:
-				    ${coach.display() + " " }
+				% for coach in coaches[team.team_id]:
+				    ${coach.display + " " }
 				% endfor
 				</td>
 				<td align="center">
-					<button name="Edit" onclick="editTeam('${team.programName}', '${team.programNumber}', '${team.name}', '${team.startDate.date()}', '${team.teamId}' )">Edit Team Info</button>
-					<button name="Deactivate" class="deactivate" onclick="deactivateTeam('${team.name}', '${team.teamId}')">Deactivate</button>
+					<button name="Edit" onclick="editTeam('${team.program_name}', '${team.program_number}', '${team.name}', '${team.start_date.date()}', '${team.team_id}' )">Edit Team Info</button>
+					<button name="Deactivate" class="deactivate" onclick="deactivateTeam('${team.name}', '${team.team_id}')">Deactivate</button>
 				</td>
 			 </tr>
    			% endfor
@@ -133,12 +132,12 @@ ${self.logo()}
 			</tr>
 			 % for team in inactiveTeams:
 			 <tr>
-				<td>${team.getProgramId()}</td>
+				<td>${team.program_id}</td>
 				<td>${team.name}</td>
-				<td>${team.startDate.strftime("%d %b %Y")}</td>
+				<td>${team.start_date.strftime("%d %b %Y")}</td>
 				<td align="center">
-					<button name="Activate" onclick="activateTeam('${team.name}', '${team.teamId}')">Activate</button>
-					<button name="Delete" onclick="deleteTeam(${team.name}', '${team.teamId}')">Delete</button>
+					<button name="Activate" onclick="activateTeam('${team.name}', '${team.team_id}')">Activate</button>
+					<button name="Delete" onclick="deleteTeam(${team.name}', '${team.team_id}')">Delete</button>
 				</td>
 			 </tr>
    			% endfor

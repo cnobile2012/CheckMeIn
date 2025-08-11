@@ -73,8 +73,9 @@ class WebTeams(WebBase):
             raise cherrypy.HTTPRedirect("/admin/teams")
 
         with self.dbConnect() as dbConnection:
-            teamInfo = self.engine.teams.fromTeamId(dbConnection, team_id)
-            firstDate = teamInfo.startDate
+            teamInfo = self.engine.run_async(
+                self.engine.teams.from_team_id(team_id))
+            firstDate = teamInfo.start_date
             todayDate = datetime.date.today().isoformat()
             members = self.engine.teams.getTeamMembers(dbConnection, team_id)
             activeMembers = self.engine.members.get_active()
@@ -116,25 +117,24 @@ class WebTeams(WebBase):
         raise cherrypy.HTTPRedirect(f"/teams?team_id={team_id}")
 
     @cherrypy.expose
-    def newSeason(self, team_id, startDate, **returning):
+    def newSeason(self, team_id, start_date, **returning):
         self.checkPermissions(team_id)
+        team_info = self.engine.run_async(
+            self.engine.teams.from_team_id(team_id))
+        seasonStart = self.dateFromString(start_date)
+        self.engine.run_async(self.engine.teams.create_team(
+            team_info.program_name, team_info.program_number, team_info.name,
+            seasonStart))
 
         with self.dbConnect() as dbConnection:
-            teamInfo = self.engine.teams.fromTeamId(dbConnection, team_id)
-            seasonStart = self.dateFromString(startDate)
-            self.engine.teams.createTeam(
-                dbConnection, teamInfo.programName, teamInfo.programNumber,
-                teamInfo.name, seasonStart)
-
-        with self.dbConnect() as dbConnection:
-            teamInfo = self.engine.teams.getTeamFromProgramInfo(
-                dbConnection, teamInfo.programName, teamInfo.programNumber)
+            team_info = self.engine.teams.getTeamFromProgramInfo(
+                dbConnection, team_info.program_name, team_info.program_number)
 
             for member, value in returning.items():
                 self.engine.teams.addMember(
-                    dbConnection, teamInfo.teamId, member, int(value))
+                    dbConnection, team_info.team_id, member, int(value))
 
-        raise cherrypy.HTTPRedirect(f"/teams?team_id={teamInfo.teamId}")
+        raise cherrypy.HTTPRedirect(f"/teams?team_id={team_info.team_id}")
 
     @cherrypy.expose
     def update(self, team_id, **params):

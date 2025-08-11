@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 #
-# tests/config_tests.py
+# tests/config_test.py
 #
 
 import os
-import datetime
 
 from src.base_database import BaseDatabase
 from src.config import Config

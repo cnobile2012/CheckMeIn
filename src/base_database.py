@@ -353,7 +353,3 @@ class BaseDatabase(Borg):
             else:
                 await db.commit()
                 return cursor.rowcount
-
-    #
-    # Utility methods
-    #

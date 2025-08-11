@@ -119,9 +119,11 @@ class WebReports(WebBase):
         self.checkPermissions()
 
         with self.dbConnect() as dbConnection:
-            teams = self.engine.teams.getActiveTeamList(dbConnection)
+            teams = self.engine.run_async(
+                self.engine.teams.get_active_team_list())
+
             for team in teams:
                 team.members = self.engine.teams.getTeamMembers(
-                    dbConnection, team.teamId)
+                    dbConnection, team.team_id)
 
         return self.template('teamReport.mako', teams=teams)

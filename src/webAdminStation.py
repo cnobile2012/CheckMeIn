@@ -32,7 +32,8 @@ class WebAdminStation(WebBase):
             forgotDates = []
             for date in self.engine.reports.getForgottenDates(dbConnection):
                 forgotDates.append(date.isoformat())
-            teamList = self.engine.teams.getActiveTeamList(dbConnection)
+            teamList = self.engine.run_async(
+                self.engine.teams.get_active_team_list())
             lastBulkUpdateName = None
             lastBulkUpdateDate, barcode = self.engine.logEvents.getLastEvent(
                 dbConnection, "Bulk Add")
@@ -122,7 +123,8 @@ class WebAdminStation(WebBase):
         self.checkPermissions()
 
         with self.dbConnect() as dbConnection:
-            activeTeams = self.engine.teams.getActiveTeamList(dbConnection)
+            activeTeams = self.engine.run_async(
+                self.engine.teams.get_active_team_list())
             inactiveTeams = self.engine.teams.getInactiveTeamList(dbConnection)
             activeCoaches = await self.engine.accounts.get_members_with_role(
                 Role.COACH)
@@ -145,19 +147,17 @@ class WebAdminStation(WebBase):
             teamName = "TBD:" + programName + programNumber
 
         seasonStart = self.dateFromString(startDate)
-
-        with self.dbConnect() as connection:
-            error = self.engine.teams.createTeam(
-                connection, programName, programNumber, teamName, seasonStart)
+        error = self.engine.run_async(self.engine.teams.create_team(
+            programName, programNumber, teamName, seasonStart))
 
         if not error:
             with self.dbConnect() as connection:
                 teamInfo = self.engine.teams.getTeamFromProgramInfo(
                     connection, programName, programNumber)
                 self.engine.teams.addMember(
-                    connection, teamInfo.teamId, coach1, TeamMemberType.coach)
+                    connection, teamInfo.team_id, coach1, TeamMemberType.coach)
                 self.engine.teams.addMember(
-                    connection, teamInfo.teamId, coach2, TeamMemberType.coach)
+                    connection, teamInfo.team_id, coach2, TeamMemberType.coach)
 
         return self.teams(error)
 
@@ -230,21 +230,15 @@ class WebAdminStation(WebBase):
     @cherrypy.expose
     def deleteTeam(self, teamId):
         self.checkPermissions()
-
-        with self.dbConnect() as dbConnection:
-            self.engine.teams.deleteTeam(dbConnection, teamId)
-
+        self.engine.run_async(self.engine.teams.delete_team(teamId))
         raise cherrypy.HTTPRedirect("/admin/teams")
 
     @cherrypy.expose
     def editTeam(self, programName, programNumber, startDate, teamId):
         self.checkPermissions()
         seasonStart = self.dateFromString(startDate)
-
-        with self.dbConnect() as dbConnection:
-            self.engine.teams.editTeam(
-                dbConnection, programName, programNumber, seasonStart, teamId)
-
+        self.engine.run_async(self.engine.teams.edit_team(
+            programName, programNumber, seasonStart, teamId))
         raise cherrypy.HTTPRedirect("/admin/teams")
 
     @cherrypy.expose

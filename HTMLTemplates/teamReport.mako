@@ -11,11 +11,11 @@ ${self.logo()}<br/>
 <H1> Team List </H1>
 <UL>
 % for team in teams:
-   <LI>${team.getProgramId()} - ${team.name}
+   <LI>${team.program_id} - ${team.name}
    <UL>
    % for member in team.members: 
      % if member.type >= 0: 
-     <LI>${member.name} ${member.typeString()}</LI>
+     <LI>${member.name} ${member.type_string}</LI>
      % endif %
    % endfor %
    </UL></LI>
