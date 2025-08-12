@@ -26,9 +26,9 @@ class WebTeams(WebBase):
             Cookie('source').set(source)
             raise cherrypy.HTTPRedirect("/profile/login")
 
-        coachTeam = Cookie('coach-' + str(team_id)).get(
-            self.engine.teams.isCoachOfTeam(self.dbConnect(), team_id,
-                                            self.getBarcode('')))
+        is_coach = self.engine.run_async(self.engine.teams.is_coach_of_team(
+            team_id, self.getBarcode('')))
+        coachTeam = Cookie(f'coach-{str(team_id)}').get(is_coach)
 
         if not coachTeam:
             Cookie('source').set(source)
@@ -39,31 +39,32 @@ class WebTeams(WebBase):
         raise cherrypy.HTTPRedirect(f"/certifications/team?team_id={team_id}")
 
     @cherrypy.expose
-    def attendance(self, team_id, date, startTime, endTime):
+    def attendance(self, team_id, date, start_time, end_time):
         with self.dbConnect() as dbConnection:
-            firstDate = self.engine.reports.getEarliestDate(
+            first_date = self.engine.reports.getEarliestDate(
                 dbConnection).isoformat()
-            todayDate = datetime.date.today().isoformat()
-            team_name = self.engine.teams.teamNameFromId(dbConnection, team_id)
-            datePieces = date.split('-')
-            startTimePieces = startTime.split(':')
-            endTimePieces = endTime.split(':')
-            beginMeetingTime = datetime.datetime.combine(
+            today_date = datetime.date.today().isoformat()
+            team_name = self.engine.run_async(
+                self.engine.teams.team_name_from_id(team_id))
+            date_pieces = date.split('-')
+            start_time_pieces = startTime.split(':')
+            end_time_pieces = endTime.split(':')
+            begin_meeting_time = datetime.datetime.combine(
                 datetime.date(int(datePieces[0]),
                               int(datePieces[1]), int(datePieces[2])),
                 datetime.time(int(startTimePieces[0]),
                               int(startTimePieces[1])))
-            endMeetingTime = datetime.datetime.combine(
+            end_meeting_time = datetime.datetime.combine(
                 datetime.date(int(datePieces[0]), int(
                     datePieces[1]), int(datePieces[2])),
                 datetime.time(int(endTimePieces[0]), int(endTimePieces[1])))
-            membersHere = self.engine.reports.whichTeamMembersHere(
-                dbConnection, team_id, beginMeetingTime, endMeetingTime)
+            members_here = self.engine.reports.whichTeamMembersHere(
+                dbConnection, team_id, begin_meeting_time, end_meeting_time)
 
         return self.template('team_attendance.mako', team_id=team_id,
-                             team_name=team_name, firstDate=firstDate,
-                             todayDate=todayDate, membersHere=membersHere,
-                             date=date, startTime=startTime, endTime=endTime)
+                             team_name=team_name, firstDate=first_date,
+                             todayDate=today_date, membersHere=members_here,
+                             date=date, startTime=start_time, endTime=end_time)
 
     @cherrypy.expose
     def index(self, team_id="", error=''):
@@ -73,13 +74,14 @@ class WebTeams(WebBase):
             raise cherrypy.HTTPRedirect("/admin/teams")
 
         with self.dbConnect() as dbConnection:
-            teamInfo = self.engine.run_async(
+            team_info = self.engine.run_async(
                 self.engine.teams.from_team_id(team_id))
             firstDate = teamInfo.start_date
             todayDate = datetime.date.today().isoformat()
             members = self.engine.teams.getTeamMembers(dbConnection, team_id)
             activeMembers = self.engine.members.get_active()
-            seasons = self.engine.teams.getAllSeasons(dbConnection, teamInfo)
+            seasons = self.engine.run_async(
+                self.engine.teams.get_all_seasons(team_info))
 
         return self.template('team.mako', firstDate=firstDate, team_id=team_id,
                              seasons=seasons,
@@ -92,28 +94,21 @@ class WebTeams(WebBase):
     def addMember(self, team_id, type, member=None):
         if member:
             self.checkPermissions(team_id)
-
-            with self.dbConnect() as dbConnection:
-                self.engine.teams.addMember(dbConnection, team_id,
-                                            member, type)
+            self.engine.run_async(
+                self.engine.teams.add_member(team_id, member, type))
 
         raise cherrypy.HTTPRedirect(f"/teams?team_id={team_id}")
 
     @cherrypy.expose
     def removeMember(self, team_id, member):
         self.checkPermissions(team_id)
-
-        with self.dbConnect() as dbConnection:
-            self.engine.teams.removeMember(dbConnection, team_id, member)
-
+        self.engine.run_async(self.engine.teams.remove_member(team_id, member))
         raise cherrypy.HTTPRedirect(f"/teams?team_id={team_id}")
 
     @cherrypy.expose
-    def renameTeam(self, team_id, newName):
+    def renameTeam(self, team_id, new_name):
         self.checkPermissions(team_id)
-        with self.dbConnect() as dbConnection:
-            self.engine.teams.renameTeam(dbConnection, team_id, newName)
-
+        self.engine.run_async(self.engine.teams.rename_team(team_id, new_name))
         raise cherrypy.HTTPRedirect(f"/teams?team_id={team_id}")
 
     @cherrypy.expose
@@ -121,18 +116,17 @@ class WebTeams(WebBase):
         self.checkPermissions(team_id)
         team_info = self.engine.run_async(
             self.engine.teams.from_team_id(team_id))
-        seasonStart = self.dateFromString(start_date)
+        season_start = self.dateFromString(start_date)
         self.engine.run_async(self.engine.teams.create_team(
             team_info.program_name, team_info.program_number, team_info.name,
-            seasonStart))
+            season_start))
+        team_info = self.engine.run_async(
+            self.engine.teams.get_team_from_program_info(
+                team_info.program_name, team_info.program_number))
 
-        with self.dbConnect() as dbConnection:
-            team_info = self.engine.teams.getTeamFromProgramInfo(
-                dbConnection, team_info.program_name, team_info.program_number)
-
-            for member, value in returning.items():
-                self.engine.teams.addMember(
-                    dbConnection, team_info.team_id, member, int(value))
+        for member, value in returning.items():
+            self.engine.run_async(self.engine.teams.add_member(
+                team_info.team_id, member, int(value)))
 
         raise cherrypy.HTTPRedirect(f"/teams?team_id={team_info.team_id}")
 

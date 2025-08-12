@@ -182,70 +182,62 @@ class Teams:
         rows = await self.BD._do_select_all_query(query, (Status.active,))
         return [TeamInfo(*row) for row in rows]
 
-    def getAllSeasons(self, dbConnection, teamInfo):
-        teamList = []
+    async def get_inactive_team_list(self):
+        query = ("SELECT team_id, program_name, program_number, team_name, "
+                 "start_date FROM teams WHERE active= ? "
+                 "ORDER BY program_name, program_number;")
+        rows = await self.BD._do_select_all_query(query, (Status.inactive,))
+        return [TeamInfo(row[0], row[1], row[2], row[3], row[4])
+                for row in rows]
+
+    async def get_all_seasons(self, team_info):
         query = ("SELECT team_id, program_name, program_number, team_name, "
                  "start_date FROM teams "
                  "WHERE program_name = ? AND program_number = ? "
                  "ORDER BY start_date DESC;")
+        rows = await self.BD._do_select_all_query(
+            query, (team_info.program_name, team_info.program_number))
+        return [TeamInfo(row[0], row[1], row[2], row[3], row[4])
+                for row in rows]
 
-        for row in dbConnection.execute(query, (teamInfo.program_name,
-                                                teamInfo.program_number)):
-            teamList.append(TeamInfo(row[0], row[1], row[2], row[3], row[4]))
-
-        return teamList
-
-    def isCoachOfTeam(self, dbConnection, teamId, coachBarcode):
-        query = ("SELECT team_id FROM team_members WHERE team_id = ? "
-                 "AND barcode = ? AND type = ?;")
-        data = dbConnection.execute(query, (teamId, coachBarcode,
-                                            TeamMemberType.coach)).fetchone()
-        return True if data else False
-
-    def getInactiveTeamList(self, dbConnection):
-        teamList = []
-        query = ("SELECT team_id, program_name, program_number, team_name, "
-                 "start_date FROM teams WHERE active= ? "
-                 "ORDER BY program_name, program_number;")
-
-        for row in dbConnection.execute(query, (Status.inactive,)):
-            teamList.append(TeamInfo(row[0], row[1], row[2], row[3], row[4]))
-
-        return teamList
-
-    def getTeamFromProgramInfo(self, dbConnection, name, number):
+    async def get_team_from_program_info(self, program_name, program_number):
         query = ("SELECT team_id, program_name, program_number, team_name, "
                  "start_date FROM teams "
                  "WHERE active= ? AND program_name= ? AND program_number= ? "
                  "ORDER BY start_date DESC LIMIT 1;")
+        rows = await self.BD._do_select_all_query(
+            query, (Status.active, program_name.upper(), program_number))
+        teams = [TeamInfo(row[0], row[1], row[2], row[3], row[4])
+                 for row in rows]
+        return teams[0] if teams else None
 
-        for row in dbConnection.execute(query, (Status.active, name.upper(),
-                                                number)):
-            return TeamInfo(row[0], row[1], row[2], row[3], row[4])
+    async def is_coach_of_team(self, team_id, coach_barcode):
+        query = ("SELECT team_id FROM team_members WHERE team_id = ? "
+                 "AND barcode = ? AND type = ?;")
+        data = await self.BD._do_select_one_query(
+            query, (team_id, coach_barcode, TeamMemberType.coach))
+        return True if data else False
 
-        return None
-
-    def teamNameFromId(self, dbConnection, team_id):
-        query = "SELECT team_name FROM teams WHERE (team_id=?);"
-        data = dbConnection.execute(query, (team_id, )).fetchone()
+    async def team_name_from_id(self, team_id):
+        query = "SELECT team_name FROM teams WHERE team_id = ?;"
+        data = await self.BD._do_select_one_query(query, (team_id, ))
         return data[0] if data else ""
 
-    def addMember(self, dbConnection, team_id, barcode, type):
+    async def add_member(self, team_id, barcode, type):
         query = "INSERT INTO team_members VALUES (?, ?, ?);"
+        rowcount = await self.BD._do_insert_query(query, (team_id, barcode,
+                                                          type))
+        if rowcount is None:
+            self._log.info("The barcode '%s' is already in this team, ("
+                           "team_id: %s).", barcode, team_id)
 
-        try:
-            dbConnection.execute(query, (team_id, barcode, type))
-        except sqlite3.IntegrityError:
-            # Silently let duplicates not be inserted.
-            pass
-
-    def removeMember(self, dbConnection, team_id, barcode):
+    async def remove_member(self, team_id, barcode):
         query = "DELETE FROM team_members WHERE team_id = ? AND barcode = ?;"
-        dbConnection.execute(query, (team_id, barcode))
+        return await self.BD._do_delete_query(query, (team_id, barcode))
 
-    def renameTeam(self, dbConnection, team_id, newName):
-        query = "UPDATE teams SET team_name = ? where team_id = ?"
-        dbConnection.execute(query, (newName, team_id))
+    async def rename_team(self, team_id, new_name):
+        query = "UPDATE teams SET team_name = ? where team_id = ?;"
+        rowcount = await self.BD._do_update_query(query, (new_name, team_id))
 
     def getTeamMembers(self, dbConnection, team_id):
         listMembers = []
@@ -300,10 +292,10 @@ class Teams:
         teamsCoached = []
         # TODO: Change to use DISTINCT feature of SQLITE and a join to get
         #       rid of python
-        await teams = self.get_active_team_list()
+        teams = await self.get_active_team_list()
 
         for team in teams:
-            if self.isCoachOfTeam(dbConnection, team.team_id, barcode):
+            if await self.is_coach_of_team(team.team_id, barcode):
                 teamsCoached.append(team)
 
         return teamsCoached

@@ -123,41 +123,44 @@ class WebAdminStation(WebBase):
         self.checkPermissions()
 
         with self.dbConnect() as dbConnection:
-            activeTeams = self.engine.run_async(
+            active_teams = self.engine.run_async(
                 self.engine.teams.get_active_team_list())
-            inactiveTeams = self.engine.teams.getInactiveTeamList(dbConnection)
-            activeCoaches = await self.engine.accounts.get_members_with_role(
+            inactive_teams = self.engine.run_async(
+                self.engine.teams.get_inactive_team_list())
+            active_coaches = await self.engine.accounts.get_members_with_role(
                 Role.COACH)
             coaches = self.engine.teams.getCoachesList(
                 dbConnection, activeTeams)
-            todayDate = datetime.date.today().isoformat()
+            today_date = datetime.date.today().isoformat()
 
         return self.template(
-            'adminTeams.mako', error=error, todayDate=todayDate,
+            'adminTeams.mako', error=error, todayDate=today_date,
             username=Cookie('username').get(''),
-            activeTeams=activeTeams, inactiveTeams=inactiveTeams,
-            activeCoaches=activeCoaches, coaches=coaches)
+            activeTeams=active_teams, inactiveTeams=inactive_teams,
+            activeCoaches=active_coaches, coaches=coaches)
 
     @cherrypy.expose
-    def addTeam(self, programName, programNumber, teamName, startDate,
+    def addTeam(self, program_name, program_number, team_name, start_date,
                 coach1, coach2):
         self.checkPermissions()
 
-        if not teamName:
-            teamName = "TBD:" + programName + programNumber
+        if not team_name:
+            teamName = f"TBD:{program_name}{program_number}"
 
-        seasonStart = self.dateFromString(startDate)
+        season_start = self.dateFromString(start_date)
         error = self.engine.run_async(self.engine.teams.create_team(
-            programName, programNumber, teamName, seasonStart))
+            program_name, program_number, team_name, season_start))
 
         if not error:
-            with self.dbConnect() as connection:
-                teamInfo = self.engine.teams.getTeamFromProgramInfo(
-                    connection, programName, programNumber)
-                self.engine.teams.addMember(
-                    connection, teamInfo.team_id, coach1, TeamMemberType.coach)
-                self.engine.teams.addMember(
-                    connection, teamInfo.team_id, coach2, TeamMemberType.coach)
+            team_info = self.engine.run_async(
+                self.engine.teams.get_team_from_program_info(
+                    program_name, program_number))
+            self.engine.run_async(
+                self.engine.teams.add_member(team_info.team_id, coach1,
+                                             TeamMemberType.coach))
+            self.engine.run_async(
+                self.engine.teams.add_member(team_info.team_id, coach2,
+                                             TeamMemberType.coach))
 
         return self.teams(error)
 

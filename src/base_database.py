@@ -106,7 +106,8 @@ class BaseDatabase(Borg):
         _T_TEAM_MEMBERS: (
             'team_id TEXT',
             'barcode TEXT',
-            'type INTEGER default 0'),
+            'type INTEGER default 0',
+            'CONSTRAINT unq UNIQUE (team_id, barcode)'),
         _T_TEAMS: (
             'team_id INTEGER PRIMARY KEY',
             'program_name TEXT NOT NULL',

@@ -73,16 +73,15 @@ class WebCertifications(WebBase):
 
     @cherrypy.expose
     def team(self, team_id):
-        message = ''
-
-        with self.dbConnect() as dbConnection:
-            message = 'Certifications for team: ' + \
-                self.engine.teams.teamNameFromId(dbConnection, team_id)
-            tools = self.engine.run_async(
-                self.engine.certifications.get_all_tools())
-            certifications = self.engine.run_async(
-                self.engine.certifications.get_team_user_list(team_id))
-            return self.showCertifications(message, tools, certifications)
+        team_name = self.engine.run_async(
+            self.engine.teams.team_name_from_id(team_id))
+        message = f"Certifications for team: {team_name}"
+        self.engine.teams.team_name_from_id(team_id)
+        tools = self.engine.run_async(
+            self.engine.certifications.get_all_tools())
+        certifications = self.engine.run_async(
+            self.engine.certifications.get_team_user_list(team_id))
+        return self.showCertifications(message, tools, certifications)
 
     @cherrypy.expose
     def user(self, barcode):
@@ -94,10 +93,7 @@ class WebCertifications(WebBase):
         return self.showCertifications(message, tools, certifications)
 
     def getBoolean(self, term):
-        if term == '0' or term.upper() == 'FALSE':
-            return False
-
-        return True
+        return term != '0' and term.upper() != 'FALSE'
 
     @cherrypy.expose
     def monitor(self, tools, start_row=0, show_left_names='True',
@@ -128,9 +124,8 @@ class WebCertifications(WebBase):
 
     @cherrypy.expose
     def all(self):
-        message = ''
         tools = self.engine.run_async(
             self.engine.certifications.get_all_tools())
         certifications = self.engine.run_async(
             self.engine.certifications.get_all_user_list())
-        return self.showCertifications(message, tools, certifications)
+        return self.showCertifications("", tools, certifications)
