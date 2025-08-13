@@ -120,9 +120,8 @@ class CheckMeIn(WebBase):
                 activeMembers = {}
 
                 if role.isCoach():
-                    activeTeamsCoached = (self.engine.teams.
-                                          getActiveTeamsCoached(dbConnection,
-                                                                barcode))
+                    activeTeamsCoached = self.engine.run_async(
+                        self.engine.teams.get_active_teams_coached(barcode))
             else:
                 displayName = ""
                 activeMembers = self.engine.members.get_active()

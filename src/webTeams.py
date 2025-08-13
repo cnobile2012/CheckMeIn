@@ -73,21 +73,20 @@ class WebTeams(WebBase):
         if not team_id:
             raise cherrypy.HTTPRedirect("/admin/teams")
 
-        with self.dbConnect() as dbConnection:
-            team_info = self.engine.run_async(
-                self.engine.teams.from_team_id(team_id))
-            firstDate = teamInfo.start_date
-            todayDate = datetime.date.today().isoformat()
-            members = self.engine.teams.getTeamMembers(dbConnection, team_id)
-            activeMembers = self.engine.members.get_active()
-            seasons = self.engine.run_async(
-                self.engine.teams.get_all_seasons(team_info))
-
-        return self.template('team.mako', firstDate=firstDate, team_id=team_id,
-                             seasons=seasons,
+        team_info = self.engine.run_async(
+            self.engine.teams.from_team_id(team_id))
+        first_date = teamInfo.start_date
+        today_date = datetime.date.today().isoformat()
+        members = self.engine.run_async(
+            self.engine.teams.get_team_members(team_id))
+        active_members = self.engine.members.get_active()
+        seasons = self.engine.run_async(
+            self.engine.teams.get_all_seasons(team_info))
+        return self.template('team.mako', firstDate=first_date,
+                             team_id=team_id, seasons=seasons,
                              username=Cookie('username').get(''),
-                             todayDate=todayDate, team_name=teamInfo.name,
-                             members=members, activeMembers=activeMembers,
+                             todayDate=today_date, team_name=team_info.name,
+                             members=members, activeMembers=active_members,
                              TeamMemberType=TeamMemberType, error="")
 
     @cherrypy.expose
@@ -117,9 +116,11 @@ class WebTeams(WebBase):
         team_info = self.engine.run_async(
             self.engine.teams.from_team_id(team_id))
         season_start = self.dateFromString(start_date)
-        self.engine.run_async(self.engine.teams.create_team(
+        rowcount = self.engine.run_async(self.engine.teams.create_team(
             team_info.program_name, team_info.program_number, team_info.name,
             season_start))
+        error = "" if rowcount else f"Team name {program_name} already exists."
+        # *** TODO *** What to do with the error?
         team_info = self.engine.run_async(
             self.engine.teams.get_team_from_program_info(
                 team_info.program_name, team_info.program_number))

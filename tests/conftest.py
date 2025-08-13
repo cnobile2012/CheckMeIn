@@ -7,6 +7,7 @@
 #
 
 import os
+import time
 import pytest
 import cherrypy
 
@@ -14,6 +15,21 @@ import tracemalloc
 tracemalloc.start()
 
 from src import AppConfig
+
+
+@pytest.hookimpl(tryfirst=True, hookwrapper=True)
+def pytest_runtestloop(session):
+    # This hook is called once per test run, not per class.
+    yield  # run the tests
+
+
+@pytest.fixture(scope="module", autouse=True)
+def module_timer(request):
+    start = time.time()
+    yield
+    duration = time.time() - start
+    mod_name = request.module.__name__
+    print(f"\nModule {mod_name} took {duration:.3f} seconds")
 
 
 @pytest.fixture(scope="session", autouse=True)

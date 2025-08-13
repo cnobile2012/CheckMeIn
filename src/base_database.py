@@ -54,7 +54,7 @@ class BaseDatabase(Borg):
     _V_CURRENT_MEMBERS = 'current_members'
     _SCHEMA = {
         _T_ACCOUNTS: (
-            'user TEXT PRIMARY KEY COLLATE NOCASE',
+            'user TEXT NOT NULL PRIMARY KEY COLLATE NOCASE',
             'password TEXT NOT NULL',
             'forgot TEXT',  # Hashed token used in URL.
             'forgotTime DATETIME',
@@ -68,7 +68,7 @@ class BaseDatabase(Borg):
             'date DATETIME',
             'level INTEGER default 0'),
         _T_CONFIG: (
-            'key TEXT PRIMARY KEY',
+            'key TEXT NOT NULL PRIMARY KEY',
             'value TEXT'),
         _T_DEVICES: (
             'mac TEXT PRIMARY KEY',
@@ -95,7 +95,7 @@ class BaseDatabase(Borg):
             'email TEXT',
             'membershipExpires DATETIME'),
         _T_REPORTS: (
-            'report_id INTEGER PRIMARY KEY',
+            'report_id INTEGER NOT NULL PRIMARY KEY',
             'name TEXT UNIQUE',
             'sql_text TEXT',
             'parameters TEXT',
@@ -104,12 +104,12 @@ class BaseDatabase(Borg):
             'id INTEGER PRIMARY KEY',
             'descr TEXT'),
         _T_TEAM_MEMBERS: (
-            'team_id TEXT',
+            'team_id INTEGER',
             'barcode TEXT',
             'type INTEGER default 0',
             'CONSTRAINT unq UNIQUE (team_id, barcode)'),
         _T_TEAMS: (
-            'team_id INTEGER PRIMARY KEY',
+            'team_id INTEGER NOT NULL PRIMARY KEY',
             'program_name TEXT NOT NULL',
             'program_number INTEGER NOT NULL',
             'team_name TEXT',
@@ -118,7 +118,7 @@ class BaseDatabase(Borg):
             'CONSTRAINT unq UNIQUE (program_name, program_number, start_date)'
             ),
         _T_TOOLS: (
-            'id INTEGER PRIMARY KEY',
+            'id INTEGER NOT NULL PRIMARY KEY',
             'grouping INTEGER',
             'name TEXT',
             'restriction INTEGER DEFAULT 0',
@@ -340,17 +340,23 @@ class BaseDatabase(Borg):
                   exception was raised.
         :rtype: int or None
         """
+        # Normalize: single row -> list of one row
+        if data and (isinstance(data, dict) or
+                     not isinstance(data, (list, tuple)) or
+                     (isinstance(data, (list, tuple)) and data and
+                      not isinstance(data[0], (list, tuple, dict)))):
+            data = [data]
+
         async with aiosqlite.connect(self.db_fullpath,
                                      detect_types=self._DETECT_TYPES) as db:
-            if data and (isinstance(data, dict) or not
-                         isinstance(data[0], (tuple, list, dict))):
-                data = [data]
-
             try:
                 cursor = await db.executemany(query, data)
             except Exception as e:
                 self._log.error("Error with data %s, %s", data, e,
                                 exc_info=True)
+                rowcount = 0
             else:
                 await db.commit()
-                return cursor.rowcount
+                rowcount = cursor.rowcount
+
+        return rowcount

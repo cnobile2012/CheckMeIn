@@ -97,6 +97,19 @@ class TestTeamMembers(unittest.TestCase):
         expected = f"{data[0]}({data[1]})"
         self.assertEqual(expected, result)
 
+    #@unittest.skip("Temporarily skipped")
+    def test___repr__(self):
+        """
+        Test that the _repr__ method returns a string of the
+        instantiated values.
+        """
+        # displayName, barcode, type, status=='In' (boolean)
+        data = ('Member N', '100091', 2, True)
+        expected = "<Member N, 100091, 2, True, (Coach), Member N(100091)>"
+        tm = TeamMember(*data)
+        result = repr(tm)
+        self.assertEqual(expected, result)
+
 
 class TestTeamInfo(unittest.TestCase):
 
@@ -194,7 +207,7 @@ class TestTeamInfo(unittest.TestCase):
         # team_id, program_name, program_number, team_name, start_date
         data = (1, 'TFI', 100, 'Crazy Contraptions',
                 datetime.datetime(year=2021, month=5, day=1))
-        expected = "1 TFI100 - Crazy Contraptions:2021-05-01 00:00:00"
+        expected = "<1 TFI100 - Crazy Contraptions:2021-05-01 00:00:00>"
         ti = TeamInfo(*data)
         result = repr(ti)
         self.assertEqual(expected, result)
@@ -225,7 +238,7 @@ class TestTeams(BaseAsyncTests):
         self._visits = Visits()
         await self._members.add_members(TEST_DATA[self.bd._T_MEMBERS])
         await self._teams.add_teams(TEST_DATA[self.bd._T_TEAMS])
-        await self._teams.add_team_members(
+        await self._teams.add_bulk_team_members(
             TEST_DATA[self.bd._T_TEAM_MEMBERS])
         await self._visits.add_visits(TEST_DATA[self.bd._T_VISITS])
 
@@ -244,14 +257,14 @@ class TestTeams(BaseAsyncTests):
         elif module == self.bd._T_TEAMS:
             result = await self._teams.get_teams()
         elif module == self.bd._T_TEAM_MEMBERS:
-            result = await self._teams.get_team_members()
+            result = await self._teams.get_bulk_team_members()
         elif module == self.bd._T_VISITS:
             result = await self._visits.get_visits()
         else:
             result = {self.bd._T_MEMBERS: await self._members.get_members(),
                       self.bd._T_TEAMS: await self._teams.get_teams(),
                       self.bd._T_TEAM_MEMBERS:
-                      await self._teams.get_team_members(),
+                      await self._teams.get_bulk_team_members(),
                       self.bd._T_VISITS: await self._visits.get_visits()}
 
         return result
@@ -262,17 +275,17 @@ class TestTeams(BaseAsyncTests):
         Test that the create_team method inserts a new team or returns
         an error message.
         """
-        err_msg0 = "Team name already exists."
         # program_name, program_number, team_name, start_date
         data = (
             ('NOTEAM', 200, 'A Big Nothing Team',
-             datetime.datetime(year=2030, month=5, day=17), ''),
+             datetime.datetime(year=2030, month=5, day=17), 1),
             ('TFI', 100, 'Crazy Contraptions',
-             datetime.datetime(year=2021, month=5, day=1), err_msg0)
+             datetime.datetime(year=2021, month=5, day=1), 0)
             )
         msg = "Expected {}, found {}."
 
-        for program_name, program_number, team_name, start_date, error in data:
+        for (program_name, program_number,
+             team_name, start_date, expected) in data:
             result = await self._teams.create_team(
                 program_name, program_number, team_name, start_date)
             teams = await self.get_data('teams')
@@ -281,7 +294,8 @@ class TestTeams(BaseAsyncTests):
                 if program_name in team:
                     self.assertTrue(True)
                 else:
-                    self.assertEqual(error, result, msg.format(error, result))
+                    self.assertEqual(expected, result, msg.format(
+                        expected, result))
 
     #@unittest.skip("Temporarily skipped")
     async def test_from_team_id(self):
@@ -289,7 +303,7 @@ class TestTeams(BaseAsyncTests):
         Test that the from_team_id method returns a TeamInfo object or None.
         """
         team_id = 1
-        expected = "1 TFI100 - Crazy Contraptions:2021-05-01 00:00:00"
+        expected = "<1 TFI100 - Crazy Contraptions:2021-05-01 00:00:00>"
         result = await self._teams.from_team_id(team_id)
         self.assertEqual(expected, str(result))
 
@@ -300,8 +314,10 @@ class TestTeams(BaseAsyncTests):
         """
         team_id = 1
         rowcounts = await self._teams.delete_team(team_id)
+        # Test the number of members that got deleted from the team
+        # when the team is deleted.
         self.assertEqual(1, rowcounts[0])
-        self.assertEqual(2, rowcounts[1])
+        self.assertEqual(3, rowcounts[1])
 
     #@unittest.skip("Temporarily skipped")
     async def test_edit_team(self):
@@ -381,23 +397,6 @@ class TestTeams(BaseAsyncTests):
         self.assertEqual(data[1], team.program_number)
 
     #@unittest.skip("Temporarily skipped")
-    async def test_is_coach_of_team(self):
-        """
-        Test that the is_coach_of_team method returns 'True' if the barcode
-        is for the correct coach or 'Fales' if it is not.
-        """
-        data = (
-            (1, '100091', True),
-            (1, '100032', False)
-            )
-        msg = "Expected {}, with barcode {}, found {}."
-
-        for team_id, barcode, expected in data:
-            is_coach = await self._teams.is_coach_of_team(team_id, barcode)
-            self.assertEqual(expected, is_coach, msg.format(
-                expected, barcode, is_coach))
-
-    #@unittest.skip("Temporarily skipped")
     async def test_team_name_from_id(self):
         """
         Test that the team_name_from_id method returns the team name
@@ -461,7 +460,106 @@ class TestTeams(BaseAsyncTests):
         data = (1, "Contraptions that never work.", 1)
         msg = "Expected {}, found {}."
         rowcount = await self._teams.rename_team(data[0], data[1])
-        teams = await self.get_data('teams')
-
         self.assertEqual(data[2], rowcount, msg.format(data[2], rowcount))
 
+    #@unittest.skip("Temporarily skipped")
+    async def test_get_team_members(self):
+        """
+        Test that the get_team_members method returns a list of team members.
+        """
+        data = (
+            ('Member N', '100091', 2),
+            ('Average J', '100032', 0),
+            )
+        msg = "Expected {}, barcode {}, found {}."
+        team_id = 1
+        members = await self._teams.get_team_members(team_id)
+
+        for member in members:
+            for d_name, barcode, str_type in data:
+                if member.barcode == barcode:
+                    self.assertEqual(d_name, member.name, msg.format(
+                        d_name, barcode, member.name))
+                    self.assertEqual(str_type, member.str_type, msg.format(
+                        str_type, barcode, member.str_type))
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_deactivate_team(self):
+        """
+        Test that the deactivate_team method does indeed deactivate a team.
+        """
+        team_id = 1
+        rowcount = await self._teams.deactivate_team(team_id)
+        teams = await self.get_data('teams')
+        self.assertEqual(1, rowcount)
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_activate_team(self):
+        """
+        Test that the activate_team method does indeed activate a team.
+        """
+        data = (
+            (3, 1),
+            (4, 0),
+            )
+        msg = "Expected {}, with team_id {}, found {}."
+
+        for team_id, expected in data:
+            rowcount = await self._teams.activate_team(team_id)
+            self.assertEqual(expected, rowcount, msg.format(
+                expected, team_id, rowcount))
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_is_coach_of_team(self):
+        """
+        Test that the is_coach_of_team method returns 'True' if the barcode
+        is for the correct coach or 'Fales' if it is not.
+        """
+        data = (
+            (1, '100091', True),
+            (1, '100032', False)
+            )
+        msg = "Expected {}, with barcode {}, found {}."
+
+        for team_id, barcode, expected in data:
+            is_coach = await self._teams.is_coach_of_team(team_id, barcode)
+            self.assertEqual(expected, is_coach, msg.format(
+                expected, barcode, is_coach))
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_get_coaches(self):
+        """
+        Test that the get_coaches method returns the number of TeamMember
+        objects that belong to coaches relating to the team ID.
+        """
+        # team_id, 'number of coaches in team'
+        data = (
+            (1, 2),
+            )
+        msg = "Expected {}, with team_id {}, found {}."
+        active_teams = await self._teams.get_active_team_list()
+
+        for team_id, expected in data:
+            coaches = await self._teams.get_coaches(active_teams)
+            c_size = len(coaches[team_id])
+            self.assertEqual(expected, c_size, msg.format(
+                expected, team_id, c_size))
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_get_active_teams_coached(self):
+        """
+        Test that the get_active_teams_coached method returns the teams
+        that have coaches.
+        """
+        # coach barcode, team_name
+        data = (
+            ('100091', 'Crazy Contraptions'),
+            ('100015', 'Crazy Contraptions'),
+            )
+
+        for barcode, d_name in data:
+            teams = await self._teams.get_active_teams_coached(barcode)
+            team_size = len(teams)
+
+            for team in teams:
+                self.assertIn(team.name, data[1])

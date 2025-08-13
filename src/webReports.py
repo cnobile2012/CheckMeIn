@@ -117,13 +117,10 @@ class WebReports(WebBase):
     @cherrypy.expose
     def teamList(self):
         self.checkPermissions()
+        teams = self.engine.run_async(self.engine.teams.get_active_team_list())
 
-        with self.dbConnect() as dbConnection:
-            teams = self.engine.run_async(
-                self.engine.teams.get_active_team_list())
-
-            for team in teams:
-                team.members = self.engine.teams.getTeamMembers(
-                    dbConnection, team.team_id)
+        for team in teams:
+            team.members = self.engine.run_async(
+                self.engine.teams.get_team_members(team.team_id))
 
         return self.template('teamReport.mako', teams=teams)

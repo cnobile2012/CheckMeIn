@@ -121,18 +121,15 @@ class WebAdminStation(WebBase):
     @cherrypy.expose
     async def teams(self, error=""):
         self.checkPermissions()
-
-        with self.dbConnect() as dbConnection:
-            active_teams = self.engine.run_async(
-                self.engine.teams.get_active_team_list())
-            inactive_teams = self.engine.run_async(
-                self.engine.teams.get_inactive_team_list())
-            active_coaches = await self.engine.accounts.get_members_with_role(
-                Role.COACH)
-            coaches = self.engine.teams.getCoachesList(
-                dbConnection, activeTeams)
-            today_date = datetime.date.today().isoformat()
-
+        active_teams = self.engine.run_async(
+            self.engine.teams.get_active_team_list())
+        inactive_teams = self.engine.run_async(
+            self.engine.teams.get_inactive_team_list())
+        active_coaches = await self.engine.accounts.get_members_with_role(
+            Role.COACH)
+        coaches = self.engine.run_async(self.engine.teams.get_coaches(
+            active_teams))
+        today_date = datetime.date.today().isoformat()
         return self.template(
             'adminTeams.mako', error=error, todayDate=today_date,
             username=Cookie('username').get(''),
@@ -148,10 +145,11 @@ class WebAdminStation(WebBase):
             teamName = f"TBD:{program_name}{program_number}"
 
         season_start = self.dateFromString(start_date)
-        error = self.engine.run_async(self.engine.teams.create_team(
+        rowcount = self.engine.run_async(self.engine.teams.create_team(
             program_name, program_number, team_name, season_start))
+        error = "" if rowcount else f"Team name {program_name} already exists."
 
-        if not error:
+        if error == "":
             team_info = self.engine.run_async(
                 self.engine.teams.get_team_from_program_info(
                     program_name, program_number))
@@ -215,19 +213,13 @@ class WebAdminStation(WebBase):
     @cherrypy.expose
     def deactivateTeam(self, teamId):
         self.checkPermissions()
-
-        with self.dbConnect() as dbConnection:
-            self.engine.teams.deactivateTeam(dbConnection, teamId)
-
+        self.engine.run_async(self.engine.teams.deactivate_team(teamId))
         raise cherrypy.HTTPRedirect("/admin/teams")
 
     @cherrypy.expose
     def activateTeam(self, teamId):
         self.checkPermissions()
-
-        with self.dbConnect() as dbConnection:
-            self.engine.teams.activateTeam(dbConnection, teamId)
-
+        self.engine.run_async(self.engine.teams.activate_team(teamId))
         raise cherrypy.HTTPRedirect("/admin/teams")
 
     @cherrypy.expose

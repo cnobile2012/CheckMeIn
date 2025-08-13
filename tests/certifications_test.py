@@ -148,7 +148,8 @@ class TestCertifications(BaseAsyncTests):
         await self._config.add_config(TEST_DATA[self.bd._T_CONFIG])
         await self._members.add_members(TEST_DATA[self.bd._T_MEMBERS])
         await self._teams.add_teams(TEST_DATA[self.bd._T_TEAMS])
-        await self._teams.add_team_members(TEST_DATA[self.bd._T_TEAM_MEMBERS])
+        await self._teams.add_bulk_team_members(
+            TEST_DATA[self.bd._T_TEAM_MEMBERS])
         await self._certs.add_tools(TOOLS)
         await self._visits.add_visits(TEST_DATA[self.bd._T_VISITS])
 
