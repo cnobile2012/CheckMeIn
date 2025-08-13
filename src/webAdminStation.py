@@ -251,26 +251,24 @@ class WebAdminStation(WebBase):
 
     @cherrypy.expose
     def getKeyholderJSON(self):
-        jsonData = ''
+        json_data = ''
+        keyholders = self.engine.accounts.get_key_holders()
 
-        with self.dbConnect() as dbConnection:
-            keyholders = self.engine.accounts.get_key_holders()
+        for keyholder in keyholders:
+            keyholder['devices'] = []
+            devices = self.engine.run_async(
+                self.engine.devices.get_device_list(keyholder['barcode']))
 
-            for keyholder in keyholders:
-                keyholder['devices'] = []
-                devices = self.engine.devices.getList(
-                    dbConnection, keyholder['barcode'])
+            for device in devices:
+                if device.mac:
+                    keyholder['devices'].append(
+                        {'name': device.name, 'mac': device.mac})
 
-                for device in devices:
-                    if device.mac:
-                        keyholder['devices'].append(
-                            {'name': device.name, 'mac': device.mac})
-
-            jsonData = json.dumps(keyholders)
+            json_data = json.dumps(keyholders)
             key = os.path.join(self.engine.data_path, 'checkmein.key')
 
-            with open(key, 'rb') as key_file:
-                key = key_file.read()
+            with open(key, 'rb') as f:
+                key = f.read()
 
-            f = Fernet(key)
-            return f.encrypt(jsonData.encode('utf-8'))
+            fn = Fernet(key)
+            return fn.encrypt(json_data.encode('utf-8'))

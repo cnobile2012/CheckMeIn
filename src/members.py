@@ -35,8 +35,12 @@ class Members:
                  "lastName, email, membershipExpires) "
                  "VALUES (:barcode, :displayName, :firstName, :lastName, "
                  "        :email, :membershipExpires);")
+        rowcount = await self.BD._do_insert_query(query, data)
 
-        await self.BD._do_insert_query(query, data)
+        if rowcount < 1:  # pragma: no cover
+            self._log.error("Member already exists.")
+
+        return rowcount
 
     async def bulk_add(self, csv_file):
         """

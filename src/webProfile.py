@@ -41,10 +41,8 @@ class WebProfile(WebBase):
     @cherrypy.expose
     def index(self, error=""):
         barcode = self.getBarcode('/profile')
-
-        with self.dbConnect() as dbConnection:
-            devices = self.engine.devices.getList(dbConnection, barcode)
-
+        devices = self.engine.run_async(
+            self.engine.devices.get_device_list(barcode))
         return self.template('profile.mako', error='',
                              username=Cookie('username').get(''),
                              devices=devices)
@@ -99,17 +97,12 @@ class WebProfile(WebBase):
     @cherrypy.expose
     def addDevice(self, mac, name):
         barcode = self.getBarcode('/profile')
-
-        with self.dbConnect() as dbConnection:
-            self.engine.devices.add(dbConnection, mac, name, barcode)
-
+        self.engine.run_async(
+            self.engine.devices.add_device(mac, barcode, name))
         raise cherrypy.HTTPRedirect("/profile")
 
     @cherrypy.expose
     def delDevice(self, mac):
         barcode = self.getBarcode('/profile')
-
-        with self.dbConnect() as dbConnection:
-            self.engine.devices.delete(dbConnection, mac, barcode)
-
+        self.engine.run_async(self.engine.devices.delete_device(mac, barcode))
         raise cherrypy.HTTPRedirect("/profile")

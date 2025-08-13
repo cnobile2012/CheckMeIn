@@ -140,7 +140,7 @@ class Teams:
                   'team_name': team_name, 'season_start': season_start}
         rowcount = await self.BD._do_insert_query(query, params)
 
-        if rowcount < 1:
+        if rowcount < 1:  # pragma: no cover
             self._log.error("Team name %s already exists.", pro_name)
 
         return rowcount

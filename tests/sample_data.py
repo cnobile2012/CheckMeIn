@@ -161,9 +161,9 @@ TEST_DATA = {
                 "whereFound": "invited",
                 "status": 1,
                 "newsletter": 0}],
-    "devices": [{"mac": "87:65:43:21",
-                 "name": "Phone",
-                 "barcode": "100091"}],
+    "devices": [{"mac": "87:65:43:21:00:54",
+                 "barcode": "100091",
+                 "name": "Phone"}],
     "config": [{"key": "grace_period",
                 "value": "15"}]
     }
