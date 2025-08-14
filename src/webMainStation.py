@@ -14,14 +14,15 @@ KEYHOLDER_BARCODE = '999901'
 class WebMainStation(WebBase):
 
     @cherrypy.expose
-    async def index(self, error=''):
+    def index(self, error=''):
         with self.dbConnect() as dbConnection:
-            _, keyholder_name = self.engine.accounts.get_active_key_holder()
+            _, keyholder_name = self.engine.run_async(
+                self.engine.accounts.get_active_key_holder())
             todaysTrans = self.engine.reports.transactionsToday(dbConnection)
             numberPresent = self.engine.reports.numberPresent(dbConnection)
             unqVisitTdy = self.engine.reports.uniqueVisitorsToday(dbConnection)
-            stewards = await self.engine.accounts.get_present_with_role(
-                Role.SHOP_STEWARD)
+            stewards = self.engine.run_async(
+                self.engine.accounts.get_present_with_role(Role.SHOP_STEWARD))
             return self.template('station.mako',
                                  todaysTransactions=todaysTrans,
                                  numberPresent=numberPresent,
@@ -38,7 +39,8 @@ class WebMainStation(WebBase):
         barcodes = barcode.split()
 
         with self.dbConnect() as dbConnection:
-            current_keyholder_bc, _ = self.engine.accounts.get_active_key_holder()
+            current_keyholder_bc, _ = self.engine.run_async(
+                self.engine.accounts.get_active_key_holder())
 
             for bc in barcodes:
                 if bc == KEYHOLDER_BARCODE or bc == current_keyholder_bc:
@@ -53,7 +55,8 @@ class WebMainStation(WebBase):
                     error = self.engine.visits.scannedMember(dbConnection, bc)
 
                     if not current_keyholder_bc:
-                        self.engine.accounts.set_key_holder_active(bc)
+                        self.engine.run_async(
+                            self.engine.accounts.set_key_holder_active(bc))
 
                     if error:
                         cherrypy.log(error)
@@ -62,31 +65,30 @@ class WebMainStation(WebBase):
 
     @cherrypy.expose
     def checkin(self, barcode, called=False):
-        inBarcodeList = barcode.split()
-
-        with self.dbConnect() as dbConnection:
-            self.engine.checkin(dbConnection, inBarcodeList)
+        in_barcode_list = barcode.split()
+        self.engine.run_async(self.engine.checkin(in_barcode_list))
 
         if not called:
-            raise cherrypy.HTTPRedirect(f"/links?barcode={inBarcodeList[0]}")
+            raise cherrypy.HTTPRedirect(f"/links?barcode={in_barcode_list[0]}")
 
     @cherrypy.expose
     def checkout(self, barcode, called=False):
-        outBarcodeList = barcode.split()
-
-        with self.dbConnect() as dbConnection:
-            current_keyholder_bc, _ = self.engine.accounts.get_active_key_holder()
-            leaving_keyholder_bc = self.engine.checkout(current_keyholder_bc,
-                                                        outBarcodeList)
+        out_barcode_list = barcode.split()
+        current_keyholder_bc, _ = self.engine.run_async(
+            self.engine.accounts.get_active_key_holder())
+        leaving_keyholder_bc = self.engine.run_async(
+            self.engine.checkout(current_keyholder_bc, out_barcode_list))
 
         with self.dbConnect() as dbConnection:
             if leaving_keyholder_bc:
                 self.engine.visits.emptyBuilding(
                     dbConnection, leaving_keyholder_bc)
-                self.engine.accounts.inactivate_all_key_holders()
+                self.engine.run_async(
+                    self.engine.accounts.inactivate_all_key_holders())
 
         if not called:
-            raise cherrypy.HTTPRedirect(f"/links?barcode={outBarcodeList[0]}")
+            raise cherrypy.HTTPRedirect(
+                f"/links?barcode={out_barcode_list[0]}")
 
     @cherrypy.expose
     def bulkUpdate(self, inBarcodes="", outBarcodes=""):
@@ -101,7 +103,8 @@ class WebMainStation(WebBase):
         with self.dbConnect() as dbConnection:
             # make sure checked in
             self.engine.visits.checkInMember(dbConnection, barcode)
-            result = self.engine.accounts.set_key_holder_active(barcode)
+            result = self.engine.run_async(
+                self.engine.accounts.set_key_holder_active(barcode))
             whoIsHere = self.engine.reports.whoIsHere(dbConnection)
 
             if not result:
@@ -114,12 +117,14 @@ class WebMainStation(WebBase):
         bc = barcode.strip()
 
         with self.dbConnect() as dbConnection:
-            current_keyholder_bc, _ = self.engine.accounts.get_active_key_holder()
+            current_keyholder_bc, _ = self.engine.run_async(
+                self.engine.accounts.get_active_key_holder())
 
             if bc == KEYHOLDER_BARCODE or bc == current_keyholder_bc:
                 self.engine.visits.emptyBuilding(dbConnection,
                                                  current_keyholder_bc)
-                self.engine.accounts.inactivate_all_key_holders()
+                self.engine.run_async(
+                    self.engine.accounts.inactivate_all_key_holders())
             else:
                 return self.makeKeyholder(barcode)
 

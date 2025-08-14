@@ -15,10 +15,8 @@ class WebGuestStation(Utilities, WebBase):
         super().__init__(*args, **kwargs)
 
     def showGuestPage(self, message=''):
-        with self.dbConnect() as dbConnection:
-            building_guests, recent_guests = self.engine.getGuestLists(
-                dbConnection)
-
+        building_guests, recent_guests = self.engine.run_async(
+            self.guests.get_guest_lists())
         return self.template('guests.mako', message=message,
                              inBuilding=building_guests,
                              guestList=recent_guests)
@@ -54,10 +52,9 @@ class WebGuestStation(Utilities, WebBase):
 
     @cherrypy.expose
     def leaveGuest(self, guest_id, comments=""):
-        with self.dbConnect() as dbConnection:
-            self.engine.visits.leaveGuest(dbConnection, guest_id)
-            name, error = self.engine.run_async(
-                self.engine.guests.get_name(guest_id))
+        self.engine.run_async(self.engine.visits.leave_guest(guest_id))
+        name, error = self.engine.run_async(
+            self.engine.guests.get_name(guest_id))
 
         if error:
             return self.showGuestPage(error)

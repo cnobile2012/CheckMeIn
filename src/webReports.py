@@ -32,7 +32,7 @@ class WebReports(WebBase):
                 dbConnection)
             activeMembers = self.engine.members.get_active()
             guests = self.engine.run_async(
-                self.engine.guests.get_guests_in_building(30))
+                self.engine.guests.guests_last_in_building(30))
 
         return self.template('reports.mako',
                              firstDate=firstDate, todayDate=todayDate,

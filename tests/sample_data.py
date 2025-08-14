@@ -39,7 +39,7 @@ TEST_DATA = {
                 "status": "In"},
                {"enter_time": timeAgo(days=32),  # Artie (Visitor)
                 "barcode": "202107310002",
-                "status": "In"}],
+                "status": "Out"}],
     "members": [{"barcode": "100090",
                  "displayName": "Daughter N",
                  "firstName": "Daughter",

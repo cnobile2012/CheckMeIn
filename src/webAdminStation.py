@@ -142,7 +142,7 @@ class WebAdminStation(WebBase):
         self.checkPermissions()
 
         if not team_name:
-            teamName = f"TBD:{program_name}{program_number}"
+            team_name = f"TBD:{program_name}{program_number}"
 
         season_start = self.dateFromString(start_date)
         rowcount = self.engine.run_async(self.engine.teams.create_team(
@@ -173,7 +173,7 @@ class WebAdminStation(WebBase):
 
     @cherrypy.expose
     async def addUser(self, user, barcode, keyholder=0, admin=0, certifier=0,
-                coach=0, steward=0):
+                      coach=0, steward=0):
         error = ""
         self.checkPermissions()
 

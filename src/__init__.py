@@ -13,7 +13,6 @@ __all__ = ('BASE_DIR', 'Borg', 'AppConfig')
 
 PWD = os.path.dirname(os.path.abspath(__file__))
 BASE_DIR = os.path.dirname(PWD)
-APP_RUNNING = False
 
 
 class Borg:

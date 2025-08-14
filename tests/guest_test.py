@@ -140,10 +140,10 @@ class TestGuests(BaseAsyncTests):
             self.assertIn(guest, data)
 
     #@unittest.skip("Temporarily skipped")
-    async def test_get_guests_in_building(self):
+    async def test_guests_last_in_building(self):
         """
-        Test that the get_guests_in_building method returns the guests in
-        the building.
+        Test that the guests_last_in_building method returns the guests who
+        have not been in the building since a specific number of days.
         """
         data = (
             (30, Guest('202107310001', 'Random G')),
@@ -152,7 +152,36 @@ class TestGuests(BaseAsyncTests):
             )
 
         for num_days, expected in data:
-            guests = await self._guests.get_guests_in_building(num_days)
+            guests = await self._guests.guests_last_in_building(num_days)
 
             for guest in guests:
                 self.assertIn((num_days, guest), data)
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_guests_in_building(self):
+        """
+        Test that the guests_in_building method returns the guests currently
+        in the building.
+        """
+        data = ('202107310001', 'Random G')
+        guests = await self._guests.guests_in_building()
+
+        for idx, guest in enumerate(guests):
+            self.assertEqual(guest.guest_id, data[0])
+            self.assertEqual(guest.displayName, data[1])
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_get_guest_lists(self):
+        """
+        """
+        data0 = ('202107310001', 'Random G')
+        data1 = ('202107310002', 'Artie N')
+        building_guests, guests_not_here = await self._guests.get_guest_lists()
+
+        for guest in building_guests:
+            self.assertEqual(guest.guest_id, data0[0])
+            self.assertEqual(guest.displayName, data0[1])
+
+        for guest in guests_not_here:
+            self.assertEqual(guest.guest_id, data1[0])
+            self.assertEqual(guest.displayName, data1[1])

@@ -102,10 +102,9 @@ class Guests:
         rows = await self.BD._do_select_all_query(query, (Status.inactive,))
         return [Guest(guest_id, d_name) for guest_id, d_name in rows]
 
-    async def get_guests_in_building(self, num_days):
+    async def guests_last_in_building(self, num_days):
         """
-        Get the guests who are in the building or why have not checked out
-        for up to num_days.
+        Get the guests who have not returned for more than num_days.
 
         :param int num_days: The max number of days before today.
         :returns: A list of namedtuple in the form of:
@@ -118,3 +117,17 @@ class Guests:
         time = datetime.datetime.now() - datetime.timedelta(num_days)
         rows = await self.BD._do_select_all_query(query, (time,))
         return [Guest(guest_id, d_name) for guest_id, d_name in rows]
+
+    async def guests_in_building(self):
+        query = ("SELECT g.guest_id, g.displayName FROM visits v "
+                 "INNER JOIN guests g ON g.guest_id = v.barcode "
+                 "WHERE v.status = 'In' ORDER BY g.displayName;")
+        rows = await self.BD._do_select_all_query(query)
+        return [Guest(guest_id, d_name) for guest_id, d_name in rows]
+
+    async def get_guest_lists(self):
+        all_guests = await self.get_all_guests()
+        building_guests = await self.guests_in_building()
+        guests_not_here = [guest for guest in all_guests
+                           if guest not in building_guests]
+        return building_guests, guests_not_here

@@ -6,6 +6,8 @@ import sqlite3
 class CustomReports:
 
     def __init__(self, db_fullpath):
+        # *** TODO *** The db_fullpath  doesn't work correctly in this
+        #              constructor.
         self.db_fullpath = db_fullpath
 
     def migrate(self, dbConnection, db_schema_version):

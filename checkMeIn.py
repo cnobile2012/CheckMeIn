@@ -82,11 +82,10 @@ class CheckMeIn(WebBase):
             check_outs.append(param)
 
         if self.hasPermissionsNologin(Role.KEYHOLDER):
-            with self.dbConnect() as dbConnection:
-                (current_keyholder_bc, _
-                 ) = self.engine.accounts.get_allactive_key_holders()
-                self.engine.checkout(dbConnection, current_keyholder_bc,
-                                     check_outs)
+            current_keyholder_bc, _ = self.engine.run_async(
+                self.engine.accounts.get_allactive_key_holders())
+            self.engine.run_async(
+                self.engine.checkout(current_keyholder_bc, check_outs))
 
         return self.whoishere()
 

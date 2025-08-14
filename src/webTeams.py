@@ -47,17 +47,20 @@ class WebTeams(WebBase):
             team_name = self.engine.run_async(
                 self.engine.teams.team_name_from_id(team_id))
             date_pieces = date.split('-')
-            start_time_pieces = startTime.split(':')
-            end_time_pieces = endTime.split(':')
+            start_time_pieces = start_time.split(':')
+            end_time_pieces = end_time.split(':')
             begin_meeting_time = datetime.datetime.combine(
-                datetime.date(int(datePieces[0]),
-                              int(datePieces[1]), int(datePieces[2])),
-                datetime.time(int(startTimePieces[0]),
-                              int(startTimePieces[1])))
+                datetime.date(int(date_pieces[0]), int(date_pieces[1]),
+                              int(date_pieces[2])),
+                datetime.time(int(start_time_pieces[0]),
+                              int(start_time_pieces[1]))
+                )
             end_meeting_time = datetime.datetime.combine(
-                datetime.date(int(datePieces[0]), int(
-                    datePieces[1]), int(datePieces[2])),
-                datetime.time(int(endTimePieces[0]), int(endTimePieces[1])))
+                datetime.date(int(date_pieces[0]), int(date_pieces[1]),
+                              int(date_pieces[2])),
+                datetime.time(int(end_time_pieces[0]),
+                              int(end_time_pieces[1]))
+                )
             members_here = self.engine.reports.whichTeamMembersHere(
                 dbConnection, team_id, begin_meeting_time, end_meeting_time)
 
@@ -75,7 +78,7 @@ class WebTeams(WebBase):
 
         team_info = self.engine.run_async(
             self.engine.teams.from_team_id(team_id))
-        first_date = teamInfo.start_date
+        first_date = team_info.start_date
         today_date = datetime.date.today().isoformat()
         members = self.engine.run_async(
             self.engine.teams.get_team_members(team_id))
@@ -119,7 +122,8 @@ class WebTeams(WebBase):
         rowcount = self.engine.run_async(self.engine.teams.create_team(
             team_info.program_name, team_info.program_number, team_info.name,
             season_start))
-        error = "" if rowcount else f"Team name {program_name} already exists."
+        error = "" if rowcount else (f"Team name {team_info.program_name} "
+                                     "already exists.")
         # *** TODO *** What to do with the error?
         team_info = self.engine.run_async(
             self.engine.teams.get_team_from_program_info(
@@ -143,9 +147,8 @@ class WebTeams(WebBase):
             else:
                 checkOut.append(param)
 
-        with self.dbConnect() as dbConnection:
-            leaving_keyholder_bc = self.engine.bulkUpdate(dbConnection,
-                                                          checkIn, checkOut)
+        leaving_keyholder_bc = self.engine.run_async(
+            self.engine.bulk_update(checkIn, checkOut))
 
         with self.dbConnect() as dbConnection:
             if leaving_keyholder_bc:
@@ -156,8 +159,9 @@ class WebTeams(WebBase):
                                          barcode=leaving_keyholder_bc,
                                          whoIsHere=whoIsHere)
 
-                self.engine.accounts.inactivate_all_key_holders()
-                self.engine.visits.checkOutMember(dbConnection,
-                                                  leaving_keyholder_bc)
+                self.engine.run_async(
+                    self.engine.accounts.inactivate_all_key_holders())
+                self.engine.run_async(
+                    self.engine.visits.check_out_member(leaving_keyholder_bc))
 
         raise cherrypy.HTTPRedirect(f"/teams?team_id={team_id}")

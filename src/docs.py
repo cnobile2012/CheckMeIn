@@ -1,4 +1,10 @@
+# -*- coding: utf-8 -*-
+#
+# src/docs.py
+#
+
 class Doc:
+
     def __init__(self, summary, code, returns, notes):
         self.summary = summary
         self.code = code

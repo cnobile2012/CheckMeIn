@@ -37,7 +37,6 @@ class TestDevice(unittest.TestCase):
         d = Device(*data)
         self.assertEqual(data[1], d.barcode)
 
-
     #@unittest.skip("Temporarily skipped")
     def test_name(self):
         """

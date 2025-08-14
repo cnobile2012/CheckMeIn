@@ -14,7 +14,8 @@ matplotlib.use('Agg')
 
 import matplotlib.pyplot as plt
 
-from .guests import Guest
+from . import AppConfig
+from .base_database import BaseDatabase
 
 
 Transaction = namedtuple('Transaction', ['name', 'time', 'description'])
@@ -181,9 +182,11 @@ class Statistics:
 
 
 class Reports:
+    BD = BaseDatabase()
 
     def __init__(self, engine):
         self.engine = engine
+        self._log = AppConfig().log
 
     def whoIsHere(self, dbConnection):
         keyholders = self.engine.accounts.get_key_holder_barcodes()
@@ -222,13 +225,6 @@ class Reports:
             listPresent.append(row[0])
 
         return listPresent
-
-    async def guests_in_building(self):
-        query = ("SELECT g.displayName, g.guest_id FROM visits v "
-                 "INNER JOIN guests g ON g.guest_id = v.barcode "
-                 "WHERE v.status = 'In' ORDER BY g.displayName;")
-        rows = await self.BD._do_select_all_query(query, (Status.inactive,))
-        return [Guest(guest_id, d_name) for d_name, guest_id in rows]
 
     def numberPresent(self, dbConnection):
         query = "SELECT count(*) FROM visits WHERE status = 'In';"

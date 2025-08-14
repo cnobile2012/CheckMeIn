@@ -3,7 +3,6 @@
 # src/teams.py
 #
 
-import sqlite3
 from enum import IntEnum
 
 from . import AppConfig
@@ -149,7 +148,7 @@ class Teams:
         query = ("SELECT team_id, program_name, program_number, team_name, "
                  "start_date FROM teams WHERE team_id = ? "
                  "ORDER BY program_name, program_number;")
-        data =  await self.BD._do_select_one_query(query, (team_id,))
+        data = await self.BD._do_select_one_query(query, (team_id,))
         return (TeamInfo(data[0], data[1], data[2], data[3], data[4])
                 if data else None)
 

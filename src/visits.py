@@ -56,19 +56,24 @@ class Visits:
                  "AND status = 'In');")
         dbConnection.execute(query, (now, now, guest_id, guest_id))
 
-    def leaveGuest(self, dbConnection, guest_id):
+    async def leave_guest(self, guest_id):
         now = datetime.datetime.now()
         query = ("UPDATE visits SET exit_time = ?, status = 'Out' "
                  "WHERE barcode = ? AND status = 'In';")
-        dbConnection.execute(query, (now, guest_id))
+        rowcount = await self.BD._do_update_query(query, (now, guest_id))
+
+        if rowcount < 1:  # pragma: no cover
+            self._log.warning("Guest ID %s was not updated.", guest_id)
+
+        return rowcount
 
     def checkInMember(self, dbConnection, barcode):
         # For now members and guests are the same
         return self.enterGuest(dbConnection, barcode)
 
-    def checkOutMember(self, dbConnection, barcode):
+    async def check_out_member(self, barcode):
         # For now members and guests are the same
-        return self.leaveGuest(dbConnection, barcode)
+        return await self.leave_guest(barcode)
 
     def scannedMember(self, dbConnection, barcode):
         now = datetime.datetime.now()

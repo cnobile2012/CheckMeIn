@@ -490,7 +490,6 @@ class TestTeams(BaseAsyncTests):
         """
         team_id = 1
         rowcount = await self._teams.deactivate_team(team_id)
-        teams = await self.get_data('teams')
         self.assertEqual(1, rowcount)
 
     #@unittest.skip("Temporarily skipped")
@@ -559,7 +558,6 @@ class TestTeams(BaseAsyncTests):
 
         for barcode, d_name in data:
             teams = await self._teams.get_active_teams_coached(barcode)
-            team_size = len(teams)
 
             for team in teams:
                 self.assertIn(team.name, data[1])

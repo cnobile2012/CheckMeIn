@@ -69,6 +69,7 @@ class TestMembers(BaseAsyncTests):
             with open(os.path.join(BASE_DIR, 'tests', fo.filename), 'rb') as f:
                 fo.file = f
                 msg = await self._members.bulk_add(fo)
+                # *** TODO *** We need to test the msg variable.
 
         class File:
             file = None
