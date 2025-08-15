@@ -6,6 +6,7 @@
 import datetime
 from dateutil import parser
 
+from . import AppConfig
 from .base_database import BaseDatabase
 
 
@@ -15,6 +16,7 @@ class Visits:
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._log = AppConfig().log
 
     async def add_visits(self, data: list) -> None:
         """
@@ -43,18 +45,24 @@ class Visits:
         query = "SELECT * FROM visits;"
         return await self.BD._do_select_all_query(query)
 
-    def inBuilding(self, dbConnection, barcode):
+    async def in_building(self, barcode):
         query = "SELECT * FROM visits WHERE barcode = ? and status = 'In';"
-        data = dbConnection.execute(query, (barcode, )).fetchone()
+        data = await self.BD._do_select_one_query(query, (barcode, ))
         return data is not None
 
-    def enterGuest(self, dbConnection, guest_id):
+    async def enter_guest(self, guest_id):
         now = datetime.datetime.now()
         query = ("INSERT INTO visits(enter_time, exit_time, barcode, status) "
-                 "SELECT ?, ?, ?, 'In' "
-                 "WHERE NOT EXISTS (SELECT 1 FROM visits WHERE barcode = ? "
-                 "AND status = 'In');")
-        dbConnection.execute(query, (now, now, guest_id, guest_id))
+                 "SELECT :enter_time, :exit_time, :barcode, 'In' "
+                 "WHERE NOT EXISTS (SELECT 1 FROM visits "
+                 "WHERE barcode = :barcode AND status = 'In');")
+        rowcount = await self.BD._do_insert_query(
+            query, {'enter_time': now, 'exit_time': now, 'barcode': guest_id})
+
+        if rowcount < 1:  # pragma: no cover
+            self._log.error("Guest barcode %s already exists.", guest_id)
+
+        return rowcount
 
     async def leave_guest(self, guest_id):
         now = datetime.datetime.now()
@@ -67,47 +75,69 @@ class Visits:
 
         return rowcount
 
-    def checkInMember(self, dbConnection, barcode):
-        # For now members and guests are the same
-        return self.enterGuest(dbConnection, barcode)
+    async def check_in_member(self, barcode):
+        # For now members and guests are the same.
+        return await self.enter_guest(barcode)
 
     async def check_out_member(self, barcode):
-        # For now members and guests are the same
+        # For now members and guests are the same.
         return await self.leave_guest(barcode)
 
-    def scannedMember(self, dbConnection, barcode):
+    async def scanned_member(self, barcode):
+        ret = ''
         now = datetime.datetime.now()
         query = "SELECT displayName FROM members WHERE barcode = ?;"
+        # See if the barcode is valid.
+        data = await self.BD._do_select_one_query(query, (barcode,))
 
-        # See if it is a valid input
-        data = dbConnection.execute(query, (barcode,)).fetchone()
+        if data:  # The visitor exists, see if they are in the building.
+            query = "SELECT * FROM visits WHERE barcode =? and status = 'In';"
+            data = await self.BD._do_select_one_query(query, (barcode,))
 
-        if data is None:
-            return 'Invalid barcode: ' + barcode
+            if data:  # The visitor is in the building, so check them out.
+                query = ("UPDATE visits SET exit_time = ?, status = 'Out' "
+                         "WHERE barcode = ? AND status = 'In';")
+                rowcount = await self.BD._do_update_query(
+                    query, (now, barcode))
 
-        query = "SELECT * FROM visits WHERE barcode =? and status = 'In';"
-        data = dbConnection.execute(query, (barcode, )).fetchone()
+                if rowcount < 1:  # pragma: no cover
+                    self._log.warning("Visit ID %s was not updated.", barcode)
+            else:  # The visitor is not checked in, so we check them in.
+                query = "INSERT INTO visits VALUES (?, ?, ?, 'In');"
+                rowcount = await self.BD._do_insert_query(
+                    query, (now, now, barcode))
 
-        if data is None:
-            query = "INSERT INTO visits VALUES (?, ?, ?, 'In');"
-            dbConnection.execute(query, (now, now, barcode))
+                if rowcount < 1:  # pragma: no cover
+                    self._log.warning("Visit ID %s was not inserted.", barcode)
         else:
-            query = ("UPDATE visits SET exit_time = ?, status = 'Out' "
-                     "WHERE barcode = ? AND status = 'In';")
-            dbConnection.execute(query, (now, barcode))
+            ret = f"Invalid barcode: '{barcode}'."
 
-        return ''
+        return ret
 
-    def emptyBuilding(self, dbConnection, keyholder_barcode):
+    async def empty_building(self, kh_barcode):
+        """
+        Change the status to 'Forgot' for any visitor that left without
+        checking out. If the keyholder barcode is passed in set their
+        status to 'Out'.
+        """
         now = datetime.datetime.now()
         query = ("UPDATE visits SET exit_time = ?, status = 'Forgot' "
                  "WHERE status = 'In';")
-        dbConnection.execute(query, (now,))
+        rowcount = await self.BD._do_update_query(query, (now,))
 
-        if keyholder_barcode:
+        if rowcount < 1:  # pragma: no cover
+            self._log.warning("Visit keyholder ID %s was not updated.",
+                              kh_barcode)
+
+        if kh_barcode:  # If kh_barcode is not an empty string.
             query = ("UPDATE visits SET status = 'Out' "
                      "WHERE barcode = ? AND exit_time = ?;")
-            dbConnection.execute(query, (keyholder_barcode, now))
+            rowcount = await self.BD._do_update_query(query, (kh_barcode, now))
+
+            if rowcount < 1:  # pragma: no cover
+                self._log.warning("Visit keyholder ID %s was not updated.",
+                                  kh_barcode)
+        return rowcount
 
     def oopsForgot(self, dbConnection):
         now = datetime.datetime.now()

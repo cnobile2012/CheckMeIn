@@ -106,6 +106,6 @@ class Engine(BaseDatabase):
 
         return barcode_kh_leaving
 
-    async def bulk_update(self, dbConnection, check_ins, check_outs):
+    async def bulk_checkout(self, check_ins, check_outs):
         current_keyholder_bc = await self.checkin(check_ins)
         return await self.checkout(current_keyholder_bc, check_outs)

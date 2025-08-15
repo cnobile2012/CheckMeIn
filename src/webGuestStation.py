@@ -29,22 +29,21 @@ class WebGuestStation(Utilities, WebBase):
         if len(first) > 32:
             return self.showGuestPage('First name limited to 32 characters')
 
-        displayName = first + ' ' + last[0] + '.'
+        display_name = f"{first} {last[0]}."
 
-        with self.dbConnect() as dbConnection:
-            if reason != '':
-                guest_id = self.engine.run_async(
-                    self.engine.guests.add_guest(displayName, first, last,
-                                                 email, reason, newsletter))
-            else:
-                reason = f"Other: {other_reason}"
-                guest_id = self.engine.run_async(
-                    self.engine.guests.add_guest(displayName, first, last,
-                                                 email, reason, newsletter))
+        if reason != '':
+            guest_id = self.engine.run_async(
+                self.engine.guests.add_guest(display_name, first, last,
+                                             email, reason, newsletter))
+        else:
+            reason = f"Other: {other_reason}"
+            guest_id = self.engine.run_async(
+                self.engine.guests.add_guest(display_name, first, last,
+                                             email, reason, newsletter))
 
-            self.engine.visits.enterGuest(dbConnection, guest_id)
-            welcome_msg = f"Welcome {displayName} We are glad you are here!"
-            return self.showGuestPage(welcome_msg)
+        self.engine.run_async(self.engine.visits.enter_guest(guest_id))
+        welcome_msg = f"Welcome {display_name} We are glad you are here!"
+        return self.showGuestPage(welcome_msg)
 
     @cherrypy.expose
     def index(self):
@@ -71,13 +70,15 @@ class WebGuestStation(Utilities, WebBase):
 
     @cherrypy.expose
     def returnGuest(self, guest_id):
-        with self.dbConnect() as dbConnection:
-            self.engine.visits.enterGuest(dbConnection, guest_id)
-            name, error = self.engine.run_async(
-                self.engine.guests.get_name(guest_id))
+        self.engine.run_async(self.engine.visits.enter_guest(guest_id))
+        name, error = self.engine.run_async(
+            self.engine.guests.get_name(guest_id))
 
-            if error:
-                return self.showGuestPage(error)
+        if error:
+            ret = self.showGuestPage(error)
+        else:
+            welcome_back_msg = (f"Welcome back, {name} we are glad "
+                                "you are here!")
+            ret = self.showGuestPage(welcome_back_msg)
 
-        welcome_back_msg = f"Welcome back, {name} We are glad you are here!"
-        return self.showGuestPage(welcome_back_msg)
+        return ret

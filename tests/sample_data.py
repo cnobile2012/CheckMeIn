@@ -12,6 +12,8 @@ def timeAgo(days=0, hours=0):
     return datetime.datetime.now() - datetime.timedelta(days=days, hours=hours)
 
 
+# DO NOT add, change, or remove any values below. If you do it is
+# guaranteed to break tests.
 TEST_DATA = {
     "visits": [{"enter_time": timeAgo(days=7, hours=1),  # admin
                 "exit_time": timeAgo(days=7, hours=0),
@@ -36,7 +38,7 @@ TEST_DATA = {
                 "status": "In"},
                {"enter_time": timeAgo(hours=1),  # Paul
                 "barcode": "100015",
-                "status": "In"},
+                "status": "Out"},
                {"enter_time": timeAgo(days=32),  # Artie (Visitor)
                 "barcode": "202107310002",
                 "status": "Out"}],

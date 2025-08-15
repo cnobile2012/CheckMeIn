@@ -53,10 +53,9 @@ class WebAdminStation(WebBase):
 
     @cherrypy.expose
     def emptyBuilding(self):
-        with self.dbConnect() as dbConnection:
-            self.engine.visits.emptyBuilding(dbConnection, "")
-            self.engine.accounts.inactivate_all_key_holders()
-
+        self.engine.run_async(self.engine.visits.empty_building(""))
+        self.engine.run_async(
+            self.engine.accounts.inactivate_all_key_holders())
         return "Building Empty"
 
     @cherrypy.expose
@@ -76,7 +75,8 @@ class WebAdminStation(WebBase):
         self.checkPermissions()
 
         with self.dbConnect() as dbConnection:
-            error = self.engine.members.bulk_add(csvfile)
+            error = self.engine.run_async(
+                self.engine.members.bulk_add(csvfile))
             self.engine.logEvents.addEvent(
                 dbConnection, 'Bulk Add', self.getBarcode('/admin'))
 

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# tests/engine_tests.py
+# tests/engine_test.py
 #
 
 import os
@@ -26,7 +26,6 @@ class TestEngine(BaseAsyncTests):
     async def asyncSetUp(self):
         self.bd = BaseDatabase()
         self._path = os.path.join(BASE_DIR, 'data', 'tests')
-        #self.bd.db_fullpath = (self._path, self.TEST_DB, False)
         self._engine = Engine(self._path, self.TEST_DB, testing=True)
         # Create tables and views.
         self.tables_and_views = {
@@ -45,6 +44,8 @@ class TestEngine(BaseAsyncTests):
 
     async def asyncTearDown(self):
         self._accounts = None
+        self._members = None
+        self._visits = None
         self._path = ''
         self._db_name = ''
         await self.truncate_all_tables()
@@ -99,7 +100,8 @@ class TestEngine(BaseAsyncTests):
             )
         msg = "Expected {}, with barcode {}, found {}."
         visits = await self.get_data('visits')
-        print(visits)
+        ins = len([visit[-1] for visit in visits if visit[-1] == 'In'])
+        self.assertEqual(3, ins)
 
         for barcode, check_outs, expected in data:
             result = await self._engine.checkout(barcode, check_outs)
@@ -107,4 +109,16 @@ class TestEngine(BaseAsyncTests):
                 expected, barcode, result))
 
         visits = await self.get_data('visits')
-        print(visits)
+        ins = len([visit[-1] for visit in visits if visit[-1] == 'In'])
+        self.assertEqual(0, ins)
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_bulk_update(self):
+        """
+        """
+        data = ('100091', '202107310001', '100032', '100015')
+        keyholder = await self._engine.bulk_checkout(data, data)
+        visits = await self.get_data('visits')
+        ins = len([visit[-1] for visit in visits if visit[-1] == 'In'])
+        self.assertEqual(data[0], keyholder)
+        self.assertEqual(1, ins)

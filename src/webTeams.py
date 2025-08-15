@@ -148,7 +148,7 @@ class WebTeams(WebBase):
                 checkOut.append(param)
 
         leaving_keyholder_bc = self.engine.run_async(
-            self.engine.bulk_update(checkIn, checkOut))
+            self.engine.bulk_checkout(checkIn, checkOut))
 
         with self.dbConnect() as dbConnection:
             if leaving_keyholder_bc:

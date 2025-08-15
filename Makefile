@@ -11,7 +11,7 @@ LOGS_DIR	= $(PREFIX)/logs
 TODAY		= $(shell date +"%Y-%m-%dT%H:%M:%S.%N%:z")
 RM_REGEX	= '(^.*.pyc$$)|(^.*.wsgic$$)|(^.*~$$)|(.*\#$$)|(^.*,cover$$)|(^.*__pycache__$$)'
 RM_CMD		= find $(PREFIX) -regextype posix-egrep -regex $(RM_REGEX) \
-                  -exec rm -rf {} \;
+                  -exec rm -rf {} +
 COVERAGE_FILE	= $(PREFIX)/.coveragerc
 TEST_TAG	=
 PIP_ARGS	= # Pass variables for pip install.

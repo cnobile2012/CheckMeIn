@@ -462,7 +462,7 @@ class TestAccounts(BaseAsyncTests):
         data = (
             (Role.COACH, 1),           # Role 0x04
             (Role.SHOP_CERTIFIER, 1),  # Role 0x08
-            (Role.KEYHOLDER, 2),       # Role 0x10
+            (Role.KEYHOLDER, 1),       # Role 0x10
             (Role.ADMIN, 1),           # Role 0x20
             (Role.SHOP_STEWARD, 2),    # Role 0x40
             )

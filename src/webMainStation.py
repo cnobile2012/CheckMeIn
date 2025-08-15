@@ -44,15 +44,16 @@ class WebMainStation(WebBase):
 
             for bc in barcodes:
                 if bc == KEYHOLDER_BARCODE or bc == current_keyholder_bc:
-                    whoIsHere = self.engine.reports.whoIsHere(dbConnection)
+                    who_is_here = self.engine.reports.whoIsHere(dbConnection)
 
-                    if bc == current_keyholder_bc and len(whoIsHere) == 1:
+                    if bc == current_keyholder_bc and len(who_is_here) == 1:
                         self.checkout(bc, called=True)
                     else:
                         return self.template('keyholder.mako',
-                                             whoIsHere=whoIsHere)
+                                             whoIsHere=who_is_here)
                 else:
-                    error = self.engine.visits.scannedMember(dbConnection, bc)
+                    error = self.engine.run_async(
+                        self.engine.visits.scanned_member(bc))
 
                     if not current_keyholder_bc:
                         self.engine.run_async(
@@ -79,12 +80,11 @@ class WebMainStation(WebBase):
         leaving_keyholder_bc = self.engine.run_async(
             self.engine.checkout(current_keyholder_bc, out_barcode_list))
 
-        with self.dbConnect() as dbConnection:
-            if leaving_keyholder_bc:
-                self.engine.visits.emptyBuilding(
-                    dbConnection, leaving_keyholder_bc)
-                self.engine.run_async(
-                    self.engine.accounts.inactivate_all_key_holders())
+        if leaving_keyholder_bc:
+            self.engine.run_async(
+                self.engine.visits.empty_building(leaving_keyholder_bc))
+            self.engine.run_async(
+                self.engine.accounts.inactivate_all_key_holders())
 
         if not called:
             raise cherrypy.HTTPRedirect(
@@ -102,30 +102,28 @@ class WebMainStation(WebBase):
 
         with self.dbConnect() as dbConnection:
             # make sure checked in
-            self.engine.visits.checkInMember(dbConnection, barcode)
+            self.engine.run_async(self.engine.visits.check_in_member(barcode))
             result = self.engine.run_async(
                 self.engine.accounts.set_key_holder_active(barcode))
-            whoIsHere = self.engine.reports.whoIsHere(dbConnection)
+            who_is_here = self.engine.reports.whoIsHere(dbConnection)
 
             if not result:
-                return self.template('keyholder.mako', whoIsHere=whoIsHere)
+                return self.template('keyholder.mako', whoIsHere=who_is_here)
 
         raise cherrypy.HTTPRedirect(f"/links?barcode={bc}")
 
     @cherrypy.expose
     def keyholder(self, barcode):
         bc = barcode.strip()
+        current_keyholder_bc, _ = self.engine.run_async(
+            self.engine.accounts.get_active_key_holder())
 
-        with self.dbConnect() as dbConnection:
-            current_keyholder_bc, _ = self.engine.run_async(
-                self.engine.accounts.get_active_key_holder())
-
-            if bc == KEYHOLDER_BARCODE or bc == current_keyholder_bc:
-                self.engine.visits.emptyBuilding(dbConnection,
-                                                 current_keyholder_bc)
-                self.engine.run_async(
-                    self.engine.accounts.inactivate_all_key_holders())
-            else:
-                return self.makeKeyholder(barcode)
+        if bc == KEYHOLDER_BARCODE or bc == current_keyholder_bc:
+            self.engine.run_async(
+                self.engine.visits.empty_building(current_keyholder_bc))
+            self.engine.run_async(
+                self.engine.accounts.inactivate_all_key_holders())
+        else:
+            return self.makeKeyholder(barcode)
 
         raise cherrypy.HTTPRedirect("/station")

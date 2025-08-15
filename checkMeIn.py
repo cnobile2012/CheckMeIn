@@ -103,34 +103,33 @@ class CheckMeIn(WebBase):
 
     @cherrypy.expose
     def links(self, barcode=None):
-        activeTeamsCoached = None
+        active_teams_coached = None
         role = Role(0)
-        loggedInBarcode = Cookie('barcode').get(None)
+        logged_in_barcode = Cookie('barcode').get(None)
 
         if not barcode:
-            barcode = loggedInBarcode
+            barcode = logged_in_barcode
 
-        with self.dbConnect() as dbConnection:
-            if barcode:
-                if barcode == loggedInBarcode:
-                    role = Role(Cookie('role').get(0))
+        if barcode:
+            if barcode == logged_in_barcode:
+                role = Role(Cookie('role').get(0))
 
-                displayName = self.engine.members.get_name(barcode)[1]
-                activeMembers = {}
+            display_name = self.engine.members.get_name(barcode)[1]
+            active_members = {}
 
-                if role.isCoach():
-                    activeTeamsCoached = self.engine.run_async(
-                        self.engine.teams.get_active_teams_coached(barcode))
-            else:
-                displayName = ""
-                activeMembers = self.engine.members.get_active()
+            if role.isCoach():
+                active_teams_coached = self.engine.run_async(
+                    self.engine.teams.get_active_teams_coached(barcode))
+        else:
+            display_name = ""
+            active_members = self.engine.members.get_active()
 
-            inBuilding = self.engine.visits.inBuilding(dbConnection, barcode)
-
+        in_building = self.engine.run_async(
+            self.engine.visits.in_building(barcode))
         return self.template('links.mako', barcode=barcode, role=role,
-                             activeTeamsCoached=activeTeamsCoached,
-                             inBuilding=inBuilding, displayName=displayName,
-                             activeMembers=activeMembers)
+                             activeTeamsCoached=active_teams_coached,
+                             inBuilding=in_building, displayName=display_name,
+                             activeMembers=active_members)
 
     @cherrypy.expose
     def updateSSE(self):
