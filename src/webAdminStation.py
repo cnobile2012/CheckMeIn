@@ -94,28 +94,19 @@ class WebAdminStation(WebBase):
     @cherrypy.expose
     def oops(self):
         super().checkPermissions(Role.KEYHOLDER, "/")
-
-        with self.dbConnect() as dbConnection:
-            self.engine.visits.oopsForgot(dbConnection)
-
+        self.engine.run_async(self.engine.visits.oops_forgot())
         return self.index('Oops is fixed. :-)')
 
     @cherrypy.expose
     def updatePresent(self, checked_out):
         super().checkPermissions(Role.KEYHOLDER, "/")
-
-        with self.dbConnect() as dbConnection:
-            self.engine.visits.oopsForgot(dbConnection)
-
+        self.engine.run_async(self.engine.visits.oops_forgot())
         return self.index('Oops is fixed. :-)')
 
     @cherrypy.expose
     def fixed(self, output):
         self.checkPermissions()
-
-        with self.dbConnect() as dbConnection:
-            self.engine.visits.fix(dbConnection, output)
-
+        self.engine.run_async(self.engine.visits.fix(output))
         return self.index()
 
     @cherrypy.expose

@@ -32,34 +32,39 @@ ${self.logo()}<br/>
 % endfor
 </TABLE>
 <form id="formID" action="fixed">
-   <input id="output" hidden name="output" type="textarea"/><br/> <!-- This is just for debugging! -->
+   <!-- This is just for debugging! -->
+   <input id="output" hidden name="output" type="textarea"/><br/>
    <input type="button" value="Submit" onclick="submitPressed()")/>
 </form>
 
 <script>
-function itemChanged(item){
-    $( '.updateCheck', item.closest('tr')).prop("checked", true);
+function itemChanged(item) {
+    $('.updateCheck', item.closest('tr')).prop("checked", true);
 }
 
-function returnTime(el){
-    return '${date} ' + $('.hour', el).val() + ':' +
-           $('.minute', el).val() + $('.period', el).val();
+function returnTime(el) {
+    return '${date} ' + $('.hour', el).val() + ':' + $('.minute', el).val() +
+           $('.period', el).val();
 }
 
-function submitPressed(){
-    var dataItems = $( '.dataRow' );
+function submitPressed() {
+    var dataItems = $('.dataRow');
     var dataString = "";
-    $( '.dataRow' ).each(function( index, elem ) {
-      var update = $( '.updateCheck', this).prop('checked');
-      if(update){
-         dataString += this.id.substring(4) + '!' + returnTime($('.start', this)) + '!' +
-                                       returnTime($('.leave', this)) + ',';
-      }
+
+    $('.dataRow').each(function(index, elem) {
+        var update = $('.updateCheck', this).prop('checked');
+
+        if (update) {
+            dataString += this.id.substring(4) + '!' +
+                          returnTime($('.start', this)) + '!' +
+                          returnTime($('.leave', this)) + ',';
+        }
+
   // this: the current, raw DOM element
   // index: the current element's index in the selection
   // elem: the current, raw DOM element (same as this)
-});
-  $( '#output').val(dataString);
+  });
+  $('#output').val(dataString);
   $("form#formID").submit();
 }
 </script>

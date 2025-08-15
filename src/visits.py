@@ -52,7 +52,7 @@ class Visits:
 
     async def enter_guest(self, guest_id):
         now = datetime.datetime.now()
-        query = ("INSERT INTO visits(enter_time, exit_time, barcode, status) "
+        query = ("INSERT INTO visits (enter_time, exit_time, barcode, status) "
                  "SELECT :enter_time, :exit_time, :barcode, 'In' "
                  "WHERE NOT EXISTS (SELECT 1 FROM visits "
                  "WHERE barcode = :barcode AND status = 'In');")
@@ -139,40 +139,53 @@ class Visits:
                                   kh_barcode)
         return rowcount
 
-    def oopsForgot(self, dbConnection):
+    async def oops_forgot(self):
+        """
+        This method sets the status = 'In' if the status = 'Forgot' and the
+        exit_time > than midnight of the same day.
+        """
         now = datetime.datetime.now()
-        startDate = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
         query = ("UPDATE visits SET status = 'In' "
                  "WHERE status = 'Forgot' AND exit_time > ?;")
-        dbConnection.execute(query, (startDate,))
+        rowcount = await self.BD._do_update_query(query, (start_date,))
 
-    def getMembersInBuilding(self, dbConnection):
-        listPresent = []
+        if rowcount < 1:  # pragma: no cover
+            self._log.warning("Visitor status was not updated.")
+
+        return rowcount
+
+    async def get_members_in_building(self):
         query = ("SELECT m.displayName, v.barcode "
                  "FROM visits v "
                  "INNER JOIN members m ON m.barcode = v.barcode "
-                 "WHERE visits.status = 'In' ORDER BY displayName;")
+                 "WHERE v.status = 'In' ORDER BY displayName;")
+        rows = await self.BD._do_select_all_query(query)
+        return [(row[0], row[1]) for row in rows]
 
-        for row in dbConnection.execute(query):
-            listPresent.append([row[0], row[1]])
-
-        return listPresent
-
-    def fix(self, dbConnection, fixData):
-        entries = fixData.split(',')
+    async def fix(self, fix_data):
+        entries = fix_data.split(',')
+        rowcount = 0
 
         for entry in entries:
             tokens = entry.split('!')
 
             if len(tokens) == 3:
-                rowID = tokens[0]
-                newStart = parser.parse(tokens[1])
-                newLeave = parser.parse(tokens[2])
+                row_id = tokens[0]
+                new_enter_time = parser.parse(tokens[1])
+                new_exit_time = parser.parse(tokens[2])
 
-                # if crossed over midnight....
-                if newLeave < newStart:
-                    newLeave += datetime.timedelta(days=1)
+                # If crossed over midnight....
+                if new_exit_time < new_enter_time:
+                    new_exit_time += datetime.timedelta(days=1)
 
                 query = ("UPDATE visits SET enter_time = ?, exit_time = ?, "
                          "status = 'Out' WHERE visits.rowid = ?;")
-                dbConnection.execute(query, (newStart, newLeave, rowID))
+                rowcount = await self.BD._do_update_query(
+                    query, (new_enter_time, new_exit_time, row_id))
+
+                if rowcount < 1:  # pragma: no cover
+                    self._log.warning("Visit row ID %s was not updated.",
+                                      row_id)
+
+        return rowcount

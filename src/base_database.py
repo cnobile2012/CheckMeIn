@@ -135,14 +135,23 @@ class BaseDatabase(Borg):
         _V_CURRENT_MEMBERS: (
             'barcode',
             'displayName',
-            'membershipExpires'),
+            'membershipExpires',
+            ),
         }
     _SCHEMA_EXTRA = {
         _V_CURRENT_MEMBERS: (
             'AS SELECT m.barcode, m.displayName, m.membershipExpires '
             "FROM members m WHERE m.membershipExpires > date('now', '-' || ("
-            "SELECT value FROM config WHERE key = 'grace_period') || ' days')")
+            "SELECT value FROM config WHERE key = 'grace_period') || ' days')"
+            ),
         }
+    _SCHEMA_INDEXES = (
+        #'CREATE INDEX idx_accounts_role ON accounts(role);',
+        #('CREATE INDEX idx_accounts_activeKeyholder '
+        # 'ON accounts(activeKeyholder);'),
+        'CREATE INDEX idx_visits_barcode ON visits(barcode);'
+        'CREATE INDEX idx_members_barcode ON members(barcode);'
+        )
     _DETECT_TYPES = sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES
 
     def __init__(self, *args, **kwargs):
@@ -249,6 +258,11 @@ class BaseDatabase(Borg):
                     extra = self._SCHEMA_EXTRA.get(table)
                     query += f' {extra};' if extra else ';'
                     self._log.info("Created table: %s", query)
+                    await db.execute(query)
+                    await db.commit()
+
+                for query in self._SCHEMA_INDEXES:
+                    self._log.info("Created index: %s", query)
                     await db.execute(query)
                     await db.commit()
 

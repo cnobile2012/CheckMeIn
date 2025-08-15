@@ -27,20 +27,20 @@ class WebCertifications(WebBase):
         certifier_id = self.getBarcode("/certifications/certify")
         message = ''
 
-        with self.dbConnect() as dbConnection:
-            if all:
-                members = self.engine.members.get_active()
-            else:
-                members = self.engine.visits.getMembersInBuilding(dbConnection)
+        if all:
+            members = self.engine.members.get_active()
+        else:
+            members = self.engine.run_async(
+                self.engine.visits.get_members_in_building())
 
-            return self.template(
-                'certify.mako', message=message,
-                certifier=self.engine.members.get_name(certifier_id),
-                certifier_id=certifier_id, members_in_building=members,
-                tools=self.engine.run_async(
-                    self.engine.certifications.get_list_certify_tools(
-                        certifier_id))
-                )
+        return self.template(
+            'certify.mako', message=message,
+            certifier=self.engine.members.get_name(certifier_id),
+            certifier_id=certifier_id, members_in_building=members,
+            tools=self.engine.run_async(
+                self.engine.certifications.get_list_certify_tools(
+                    certifier_id))
+            )
 
     @cherrypy.expose
     def addCertification(self, member_id, tool_id, level):

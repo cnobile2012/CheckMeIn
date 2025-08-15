@@ -124,12 +124,45 @@ class TestVisits(BaseAsyncTests):
         """
         Test that the empty_building method correctly updates a visits record.
         """
+        rowcount = await self._visits.empty_building('')
+        visits = await self.get_data('visits')
+        forgot = [visit for visit in visits if 'Forgot' in visit]
+        self.assertEqual(3, len(forgot))
         rowcount = await self._visits.empty_building('100091')
-        self.assertEqual(1, rowcount)
+        self.assertEqual(0, rowcount)
 
     #@unittest.skip("Temporarily skipped")
     async def test_oops_forgot(self):
         """
-        Test that the oops_forgot method 
+        Test that the oops_forgot method resets the status to 'In'.
         """
-        
+        await self._visits.empty_building('')
+        visits = await self.get_data('visits')
+        forgot = [visit for visit in visits if 'Forgot' in visit]
+        self.assertEqual(3, len(forgot))
+        await self._visits.oops_forgot()
+        visits = await self.get_data('visits')
+        forgot = [visit for visit in visits if 'Forgot' in visit]
+        self.assertEqual(0, len(forgot))
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_get_members_in_building(self):
+        """
+        Test that the get_members_in_building method returns the members
+        in the building.
+        """
+        members = await self._visits.get_members_in_building()
+        self.assertEqual(2, len(members))
+
+    @unittest.skip("Temporarily skipped")
+    async def test_fix(self):
+        """
+        Test that the fix method updates the visits table where the
+        visits.rowid is equal to some value.
+        This method seems to only be used for debugging with input coming
+        from the frontend fixData.mako file, thus making it difficult to test,
+        because the output variable is hand entered. The code gives no sign
+        as to what to enter except that there are three fields.
+        """
+        output = ''
+        rowcount = await self._visits.fix(output)

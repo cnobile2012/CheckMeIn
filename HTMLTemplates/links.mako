@@ -23,9 +23,9 @@ ${self.logo()}<br/>
    <fieldset><legend>Personal</legend>
    <UL>
    % if inBuilding:
-      <LI><A HREF="/station/checkout?barcode=${barcode}">Check out of the The Forge</A>
+      <LI><A HREF="/station/checkout?barcode=${barcode}">Check out of the Forge</A>
    % else:
-      <LI><A HREF="/station/checkin?barcode=${barcode}">Check into the The Forge</A>
+      <LI><A HREF="/station/checkin?barcode=${barcode}">Check into the Forge</A>
    % endif
    <LI><A HREF="/certifications/user?barcode=${barcode}">My Shop Certifications</A>
    % if role.cookie_value != 0:
@@ -49,8 +49,8 @@ ${self.logo()}<br/>
    <UL>
       <LI><A HREF="http://192.168.1.10">Suite 205 Door (Works ONLY when at the The Forge)</A></LI>
       <LI><A HREF="/station/makeKeyholder?barcode=${barcode}">Make ME Keyholder</A></LI>
-      <LI><A HREF="/station/updatePresent">Update who is in building</A></LI>
-      <LI><A HREF="/admin/oops">Oops (Didn't meant to close building)</A></LI>
+      <LI><A HREF="/station/updatePresent">Update who is in the building.</A></LI>
+      <LI><A HREF="/admin/oops">Oops, didn't mean to close the building.</A></LI>
    </fieldset><br/>
    % endif
 
