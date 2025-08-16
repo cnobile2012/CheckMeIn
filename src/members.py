@@ -121,12 +121,12 @@ class Members:
         query = "SELECT displayName FROM members WHERE barcode = ?;"
         data = await self.BD._do_select_one_query(query, (barcode,))
 
-        if not data:
-            d_name = None
-            error = f"Member name not found with invalid barcode: {barcode}."
-            self._log.warning(error)
-        else:
+        if data:
             d_name = data[0]
             error = None
+        else:
+            d_name = None
+            error = f"Member name not found, invalid barcode: {barcode}."
+            self._log.warning(error)
 
         return d_name, error

@@ -13,18 +13,30 @@ from .base_database import BaseDatabase
 
 
 class Member:
-    BD = BaseDatabase()
 
-    def __init__(self, barcode, displayName, email):
-        self.barcode = barcode
-        self.displayName = displayName
-        self.email = email
+    def __init__(self, barcode, display_name, email):
+        self._barcode = barcode
+        self._display_name = display_name
+        self._email = email
+
+    @property
+    def barcode(self):
+        return self._barcode
+
+    @property
+    def display_name(self):
+        return self._display_name
+
+    @property
+    def email(self):
+        return self._email
 
     def __repr__(self):
-        return f"{self.displayName} ({self.barcode})"
+        return f"{self._display_name} ({self._barcode})"
 
 
 class Tracing:
+    BD = BaseDatabase()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -53,8 +65,7 @@ class Tracing:
         end_date.replace(hour=0, minute=0, second=0, microsecond=0)
         start_date = end_date - time_delta
         query = ("SELECT enter_time, exit_time FROM visits "
-                 "WHERE visits.enter_time <= ? AND visits.exit_time >= ? "
-                 "AND barcode = ?;")
+                 "WHERE enter_time <= ? AND exit_time >= ? AND barcode = ?;")
         rows = await self.BD._do_select_all_query(
             query, (end_date, start_date, barcode))
         return {row[0]: await self._who_else_was_here(barcode, row[0], row[1])

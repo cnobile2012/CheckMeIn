@@ -19,7 +19,7 @@ TEST_DATA = {
                 "exit_time": timeAgo(days=7, hours=0),
                 "barcode": "100091",
                 "status": "Out"},
-               {"enter_time": timeAgo(days=7, hours=1),  # Joe
+               {"enter_time": timeAgo(days=7, hours=1),  # Average Joe
                 "exit_time": timeAgo(days=7, hours=0),
                 "barcode": "100032",
                 "status": "Out"},
@@ -54,7 +54,7 @@ TEST_DATA = {
                  "lastName": "Name",
                  "email": "fake1@email.com",
                  "membershipExpires": timeAgo(days=-30)},
-                {"barcode": "100032",  # user: Joe
+                {"barcode": "100032",  # user: Average Joe
                  "displayName": "Average J",
                  "firstName": "Average",
                  "lastName": "Joe",
