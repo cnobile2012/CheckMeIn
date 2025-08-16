@@ -7,7 +7,6 @@ import os
 import datetime
 import cherrypy
 import random
-import sqlite3
 import json
 from cryptography.fernet import Fernet
 
@@ -31,7 +30,7 @@ class WebAdminStation(WebBase):
         with self.dbConnect() as dbConnection:
             forgot_dates = []
             for date in self.engine.reports.getForgottenDates(dbConnection):
-                forgotDates.append(date.isoformat())
+                forgot_dates.append(date.isoformat())
             team_list = self.engine.run_async(
                 self.engine.teams.get_active_team_list())
             last_bulk_update_name = None
@@ -47,7 +46,7 @@ class WebAdminStation(WebBase):
         return self.template('admin.mako', forgotDates=forgot_dates,
                              lastBulkUpdateDate=last_bulk_update_date,
                              lastBulkUpdateName=last_bulk_update_name,
-                             teamList=teamList, error=error,
+                             teamList=team_list, error=error,
                              grace_period=grace_period,
                              username=Cookie('username').get(''))
 

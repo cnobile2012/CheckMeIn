@@ -41,21 +41,19 @@ class WebReports(WebBase):
                              error=error)
 
     @cherrypy.expose
-    def tracing(self, numDays, barcode=None):
+    def tracing(self, num_days, barcode=None):
         if not barcode:
             return self.index(error="No member selected")
 
         self.checkPermissions()
+        dictVisits = self.engine.run_async(
+            Tracing().get_dict_visits(barcode, num_days))
+        display_name, error = self.engine.run_async(
+            self.engine.members.get_name(barcode))
 
-        with self.dbConnect() as dbConnection:
-            dictVisits = Tracing().getDictVisits(dbConnection, barcode,
-                                                 numDays)
+        if not display_name or error is not None:
             display_name, error = self.engine.run_async(
-                self.engine.members.get_name(barcode))
-
-            if not display_name or error is not None:
-                display_name, error = self.engine.run_async(
-                    self.engine.guests.get_name(barcode))
+                self.engine.guests.get_name(barcode))
 
         return self.template('tracing.mako', displayName=display_name,
                              dictVisits=dictVisits, error="")
@@ -68,11 +66,11 @@ class WebReports(WebBase):
                                  self.dbConnect(), startDate, endDate))
 
     @cherrypy.expose
-    def graph(self, startDate, endDate):
+    def graph(self, start_date, end_date):
         self.checkPermissions()
         cherrypy.response.headers['Content-Type'] = "image/png"
-        stats = self.engine.reports.getStats(self.dbConnect(), startDate,
-                                             endDate)
+        stats = self.engine.reports.getStats(self.dbConnect(), start_date,
+                                             end_date)
         return stats.getBuildingUsageGraph()
 
     @cherrypy.expose

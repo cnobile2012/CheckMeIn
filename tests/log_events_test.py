@@ -46,7 +46,7 @@ class TestLogEvents(BaseAsyncTests):
     #@unittest.skip("Temporarily skipped")
     async def test_add_event(self):
         """
-        Test that the add_event method 
+        Test that the add_event method does indeed add a new event record.
         """
         now = datetime.datetime.now()
 
@@ -58,14 +58,14 @@ class TestLogEvents(BaseAsyncTests):
 
         for what, barcode, date in data:
             rowcount = await self._log_events.add_event(what, barcode, date)
-            self.assertEqual(1, rowcount)
+            self.assertEqual(1, rowcount, msg.format(1, what, rowcount))
             has_event = any([what in event for event in await self.get_data()])
-            self.assertTrue(has_event)
+            self.assertTrue(has_event, msg.format(True, what, has_event))
 
     #@unittest.skip("Temporarily skipped")
     async def test_get_last_event(self):
         """
-        Test that the get_last_event method 
+        Test that the get_last_event method returns the last event.
         """
         data = (
             ('Bulk Add', '100091'),

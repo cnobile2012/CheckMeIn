@@ -164,5 +164,5 @@ class TestVisits(BaseAsyncTests):
         because the output variable is hand entered. The code gives no sign
         as to what to enter except that there are three fields.
         """
-        output = ''
-        rowcount = await self._visits.fix(output)
+        # output = ''
+        # rowcount = await self._visits.fix(output)

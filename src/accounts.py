@@ -141,16 +141,16 @@ class Accounts(Utilities):
             await self._send_email('TFI Ops', 'New User', msg,
                                    email='tfi-ops@googlegroups.com')
 
-        await self.BD._do_insert_query(query, params)
-
-    async def add_user(self, user, temp_password, barcode, role):
-        data = {'user': user, 'password': temp_password, 'barcode': barcode,
-                'role': role}
-        return await self.add_accounts([data])
+        return await self.BD._do_insert_query(query, params)
 
     async def get_accounts(self) -> list:
         query = "SELECT * FROM accounts;"
         return await self.BD._do_select_all_query(query)
+
+    async def add_user(self, user, password, barcode, role):
+        data = {'user': user, 'password': password, 'barcode': barcode,
+                'role': role}
+        return await self.add_accounts([data])
 
     async def get_barcode_and_role(self, user, password):
         query = ("SELECT password, barcode, role FROM accounts "

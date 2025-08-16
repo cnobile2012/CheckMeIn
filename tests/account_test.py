@@ -407,6 +407,19 @@ class TestAccounts(BaseAsyncTests):
         self.assertEqual(expected, result, msg)
 
     #@unittest.skip("Temporarily skipped")
+    async def test_add_user(self):
+        """
+        Test that the add_user method added a single user to the accounts
+        table.
+        """
+        data = ('some_person', 'bad_password', '100016', 0)
+        rowcount = await self._accounts.add_user(*data)
+        self.assertEqual(1, rowcount)
+        has_account = any([data[0] in account
+                           for account in await self.get_data('accounts')])
+        self.assertTrue(has_account)
+
+    #@unittest.skip("Temporarily skipped")
     async def test_get_barcode_and_role(self):
         """
         Test that the get_barcode_and_role method returns the correct data
