@@ -49,12 +49,10 @@ class WebProfile(WebBase):
 
     @cherrypy.expose
     async def forgotPassword(self, user):
-        with self.dbConnect() as dbConnection:
-            email = await self.engine.accounts.forgot_password(user)
-            self.engine.logEvents.addEvent(dbConnection,
-                                           "Forgot password request",
-                                           f"{email} for {user}")
-
+        email = await self.engine.accounts.forgot_password(user)
+        self.engine.run_async(
+            self.engine.log_events.add_event("Forgot password request",
+                                             f"{email} for {user}"))
         return ("You have been e-mailed instructions on how to reset your "
                 "password. The link will expire in 24 hours.")
 

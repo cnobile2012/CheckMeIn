@@ -308,7 +308,7 @@ class TestAccounts(BaseAsyncTests):
         self._config = Config()
         self._members = Members()
         self._visits = Visits()
-        await self._accounts.add_users(TEST_DATA[self.bd._T_ACCOUNTS])
+        await self._accounts.add_accounts(TEST_DATA[self.bd._T_ACCOUNTS])
         await self._config.add_config(TEST_DATA[self.bd._T_CONFIG])
         await self._members.add_members(TEST_DATA[self.bd._T_MEMBERS])
         await self._visits.add_visits(TEST_DATA[self.bd._T_VISITS])
@@ -368,9 +368,9 @@ class TestAccounts(BaseAsyncTests):
             self.assertTrue(result, msg.format(result))
 
     #@unittest.skip("Temporarily skipped")
-    async def test_add_users(self):
+    async def test_add_accounts(self):
         """
-        Test that the addUser method creates the accounts table.
+        Test that the add_accounts method creates the accounts table.
         """
         new_users = [{'user': 'Someone', 'password': 'poop',
                       'barcode': '200000', 'role': 0x20},
@@ -378,7 +378,7 @@ class TestAccounts(BaseAsyncTests):
                       'barcode': '200001', 'role': 0x40}]
 
         msg = "Expected {} for table 'accounts', found {}."
-        await self._accounts.add_users(new_users)
+        await self._accounts.add_accounts(new_users)
 
         for user in new_users:
             username = user['user']
@@ -414,7 +414,7 @@ class TestAccounts(BaseAsyncTests):
         """
         params = {'user': 'YuanJi', 'password': 'MyParty',
                   'barcode': '', 'role': 0x00}
-        await self._accounts.add_users([params])
+        await self._accounts.add_accounts([params])
         data = (
             ('admin', 'password', '100091', Role(0xFF).cookie_value),
             ('Joe', 'password', '100032', Role(0x40).cookie_value),

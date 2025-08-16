@@ -18,7 +18,7 @@ from .visits import Visits
 from .accounts import Accounts
 from .devices import Devices
 from .unlocks import Unlocks
-from .logEvents import LogEvents
+from .log_events import LogEvents
 from .config import Config
 
 

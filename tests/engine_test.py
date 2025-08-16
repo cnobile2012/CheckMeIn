@@ -37,7 +37,7 @@ class TestEngine(BaseAsyncTests):
         self._guests = Guests()
         self._members = Members()
         self._visits = Visits()
-        await self._accounts.add_users(TEST_DATA[self.bd._T_ACCOUNTS])
+        await self._accounts.add_accounts(TEST_DATA[self.bd._T_ACCOUNTS])
         await self._guests.add_guests(TEST_DATA[self.bd._T_GUESTS])
         await self._members.add_members(TEST_DATA[self.bd._T_MEMBERS])
         await self._visits.add_visits(TEST_DATA[self.bd._T_VISITS])

@@ -117,7 +117,7 @@ class Accounts(Utilities):
         super().__init__(*args, **kwargs)
         self._log = AppConfig().log
 
-    async def add_users(self, data: list) -> None:
+    async def add_accounts(self, data: list) -> None:
         """
         Add one or more users.
 
@@ -142,6 +142,11 @@ class Accounts(Utilities):
                                    email='tfi-ops@googlegroups.com')
 
         await self.BD._do_insert_query(query, params)
+
+    async def add_user(self, user, temp_password, barcode, role):
+        data = {'user': user, 'password': temp_password, 'barcode': barcode,
+                'role': role}
+        return await self.add_accounts([data])
 
     async def get_accounts(self) -> list:
         query = "SELECT * FROM accounts;"

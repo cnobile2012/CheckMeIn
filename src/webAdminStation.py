@@ -29,24 +29,24 @@ class WebAdminStation(WebBase):
         self.checkPermissions()
 
         with self.dbConnect() as dbConnection:
-            forgotDates = []
+            forgot_dates = []
             for date in self.engine.reports.getForgottenDates(dbConnection):
                 forgotDates.append(date.isoformat())
-            teamList = self.engine.run_async(
+            team_list = self.engine.run_async(
                 self.engine.teams.get_active_team_list())
-            lastBulkUpdateName = None
-            lastBulkUpdateDate, barcode = self.engine.logEvents.getLastEvent(
-                dbConnection, "Bulk Add")
+            last_bulk_update_name = None
+            last_bulk_update_date, barcode = self.engine.run_async(
+                self.engine.log_events.get_last_event("Bulk Add"))
 
             if barcode:
-                lastBulkUpdateName = self.engine.members.get_name(barcode)
+                last_bulk_update_name = self.engine.members.get_name(barcode)
 
             grace_period = self.engine.run_async(
                 self.engine.config.get('grace_period'))
 
-        return self.template('admin.mako', forgotDates=forgotDates,
-                             lastBulkUpdateDate=lastBulkUpdateDate,
-                             lastBulkUpdateName=lastBulkUpdateName,
+        return self.template('admin.mako', forgotDates=forgot_dates,
+                             lastBulkUpdateDate=last_bulk_update_date,
+                             lastBulkUpdateName=last_bulk_update_name,
                              teamList=teamList, error=error,
                              grace_period=grace_period,
                              username=Cookie('username').get(''))
@@ -61,25 +61,18 @@ class WebAdminStation(WebBase):
     @cherrypy.expose
     def setGracePeriod(self, grace):
         self.checkPermissions()
-
-        with self.dbConnect() as dbConnection:
-            self.engine.run_async(
-                self.engine.config.update('grace_period', grace))
-            self.engine.logEvents.addEvent(
-                dbConnection, 'Grace changed', self.getBarcode('/admin'))
-
+        self.engine.run_async(self.engine.config.update('grace_period', grace))
+        self.engine.run_async(
+            self.engine.log_events.add_event('Grace changed',
+                                             self.getBarcode('/admin')))
         return self.index()
 
     @cherrypy.expose
     def bulkAddMembers(self, csvfile):
         self.checkPermissions()
-
-        with self.dbConnect() as dbConnection:
-            error = self.engine.run_async(
-                self.engine.members.bulk_add(csvfile))
-            self.engine.logEvents.addEvent(
-                dbConnection, 'Bulk Add', self.getBarcode('/admin'))
-
+        error = self.engine.run_async(self.engine.members.bulk_add(csvfile))
+        self.engine.run_async(self.engine.log_events.add_event(
+            'Bulk Add', self.getBarcode('/admin')))
         return self.index(error)
 
     @cherrypy.expose
@@ -172,26 +165,23 @@ class WebAdminStation(WebBase):
             error = "Username must not be blank"
             return self.users(error)
 
-        with self.dbConnect() as dbConnection:
-            chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
-            tempPassword = ''.join(random.SystemRandom().choice(chars)
-                                   for _ in range(12))
-            role = Role()
-            role.setAdmin(admin)
-            role.setKeyholder(keyholder)
-            role.setShopCertifier(certifier)
-            role.setCoach(coach)
-            role.setShopSteward(steward)
+        chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
+        tempPassword = ''.join(random.SystemRandom().choice(chars)
+                               for _ in range(12))
+        role = Role()
+        role.setAdmin(admin)
+        role.setKeyholder(keyholder)
+        role.setShopCertifier(certifier)
+        role.setCoach(coach)
+        role.setShopSteward(steward)
+        rowcount = self.engine.run_async(self.engine.accounts.add_user(
+            user, tempPassword, barcode, role))
+        email = await self.engine.accounts.forgot_password(user)
+        self.engine.run_async(self.engine.log_events.add_event(
+            "Forgot password request", f"{email} for {user}"))
 
-            try:
-                self.engine.accounts.addUser(
-                    dbConnection, user, tempPassword, barcode, role)
-                email = await self.engine.accounts.forgot_password(user)
-                self.engine.logEvents.addEvent(dbConnection,
-                                               "Forgot password request",
-                                               f"{email} for {user}")
-            except sqlite3.IntegrityError:
-                error = "Username already in use"
+        if rowcount < 1:
+            error = f"Username {user} already in use."
 
         return self.users(error)
 

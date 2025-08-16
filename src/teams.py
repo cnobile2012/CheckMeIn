@@ -117,7 +117,7 @@ class Teams:
     async def add_teams(self, data: list):
         query = ("INSERT INTO teams VALUES (:team_id, :program_name, "
                  ":program_number, :team_name, :start_date, :active);")
-        await self.BD._do_insert_query(query, data)
+        return await self.BD._do_insert_query(query, data)
 
     async def get_teams(self):
         query = "SELECT * FROM teams;"
@@ -125,7 +125,7 @@ class Teams:
 
     async def add_bulk_team_members(self, data: list):
         query = "INSERT INTO team_members VALUES (:team_id, :barcode, :type);"
-        await self.BD._do_insert_query(query, data)
+        return await self.BD._do_insert_query(query, data)
 
     async def get_bulk_team_members(self):
         query = "SELECT * FROM team_members;"
