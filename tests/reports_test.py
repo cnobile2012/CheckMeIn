@@ -4,9 +4,9 @@
 #
 
 import os
-import datetime
 import unittest
 
+from datetime import datetime, date as ddate
 from collections import defaultdict
 
 from src.base_database import BaseDatabase
@@ -31,10 +31,10 @@ class TestPerson(unittest.TestCase):
         Test that the properties return the correct data.
         """
         name = 'Joe S'
-        enter_time = datetime.datetime(2025, 8, 17, 18, 30)
-        exit_time = datetime.datetime(2025, 8, 17, 21)
+        enter_time = datetime(2025, 8, 17, 18, 30)
+        exit_time = datetime(2025, 8, 17, 21)
         hours = 2.5
-        date = defaultdict(float, {datetime.date(2025, 8, 17): 2.5})
+        date = defaultdict(float, {ddate(2025, 8, 17): 2.5})
         person = Person(name, enter_time, exit_time)
         self.assertEqual(name, person.name)
         self.assertEqual(hours, person.hours)
@@ -50,4 +50,24 @@ class TestVisit(unittest.TestCase):
     def test_in_range(self):
         """
         """
-        
+        etr_time = datetime(2025, 8, 17, 18, 30)
+        ext_time = datetime(2025, 8, 17, 21)
+        data = (
+            # If enter_time is between.
+            (etr_time, ext_time,
+             datetime(2025, 8, 17, 19), datetime(2025, 8, 17, 20), True),
+            # If exit_time is between.
+            (etr_time, ext_time,
+             datetime(2025, 8, 17, 20), datetime(2025, 8, 17, 22), True),
+            # If enter_time is before AND exit_time is after.
+            (etr_time, ext_time,
+             datetime(2025, 8, 17, 22), datetime(2025, 8, 17, 19), True),
+            # All othere times
+            (etr_time, ext_time,
+             datetime(2026, 8, 17, 22), datetime(2026, 8, 17, 19), False),
+            )
+
+        for etr_time, ext_time, enter_time, exit_time, expected in data:
+            v = Visit(etr_time, ext_time)
+            result = v.in_range(enter_time, exit_time)
+            self.assertEqual(expected, result)

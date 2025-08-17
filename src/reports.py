@@ -63,8 +63,8 @@ class Visit:
     def in_range(self, enter_time, exit_time):
         ret = False
 
-        # If enter time is in between OR if exit time is in between
-        # OR if enter time is before AND exit time is after.
+        # If enter_time is between OR if exit_time is between
+        # OR if enter_time is before AND exit_time is after.
         if ((self.enter_time <= exit_time and self.enter_time >= enter_time) or
             (self.exit_time <= exit_time and self.exit_time >= enter_time) or
             (self.enter_time <= enter_time and self.exit_time >= exit_time)):
@@ -76,18 +76,19 @@ class Visit:
 class BuildingUsage:
 
     def __init__(self):
-        self.visits = []
+        self._visits = []
 
     def add_visit(self, enter_time, exit_time):
-        self.visits.append(Visit(enter_time, exit_time))
+        self._visits.append(Visit(enter_time, exit_time))
 
     def in_range(self, enter_time, exit_time):
-        numVisitors = 0
-        for visit in self.visits:
-            if visit.in_range(enter_time, exit_time):
-                numVisitors += 1
+        num_visitors = 0
 
-        return numVisitors
+        for visit in self._visits:
+            if visit.in_range(enter_time, exit_time):
+                num_visitors += 1
+
+        return num_visitors
 
 
 class Statistics:
