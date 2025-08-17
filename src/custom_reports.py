@@ -38,24 +38,18 @@ class CustomReports:
 
         return ret
 
-    def saveCustomSQL(self, dbConnection, sql, name):
+    async def save_custom_sql(self, sql, name):
+        ret = ""
         query = "INSERT INTO reports VALUES (NULL, ?, ?, ?, 1);"
+        rowcount = await self.BD._do_insert_query(query, (name, sql, ""))
 
-        try:
-            dbConnection.execute(query, (name, sql, ""))
-        except aiosqlite.IntegrityError:
-            ret = "Report already exists with that name"
-        else:
-            ret = ""
+        if rowcount < 1:
+            ret = f"Report already exists with name '{name}'."
 
         return ret
 
-    def get_report_list(self, dbConnection):
-        report_list = []
-        query = ("SELECT report_id, name FROM reports WHERE (active = ?) "
+    async def get_report_list(self):
+        query = ("SELECT report_id, name FROM reports WHERE active = ? "
                  "ORDER BY name;")
-
-        for row in dbConnection.execute(query, (1,)):
-            report_list.append((row[0], row[1]))
-
-        return report_list
+        rows = await self.BD._do_select_all_query(query, (1,))
+        return [(row[0], row[1]) for row in rows]

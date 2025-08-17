@@ -77,23 +77,64 @@ class TestCustomReports(BaseAsyncTests):
     #@unittest.skip("Temporarily skipped")
     async def test_custom_report(self):
         """
+        Test that the custom_report method returns the correct data for the
+        custom report query.
         """
+        err_msg0 = "Couldn't find report with report_id '{}'."
         data = (
             (1, 'fred', 'SELECT * FROM members;',
              ['barcode', 'displayName', 'firstName', 'lastName', 'email',
               'membershipExpires']),
+            (2, 'No Report', '', []),
             )
         msg = "Expected {}, report_id {}, found {}."
 
         for report_id, title, query, columns in data:
             items = await self._custom_reports.custom_report(report_id)
-            _title = items[0]
-            _query = items[1]
-            _columns = items[2]
-            _rows = items[3]
-            self.assertEqual(title, _title, msg.format(
-                title, report_id, _title))
-            self.assertEqual(query, _query, msg.format(
-                query, report_id, _query))
-            self.assertEqual(columns, _columns, msg.format(
-                columns, report_id, _columns))
+
+            if None not in items:
+                _title = items[0]
+                _query = items[1]
+                _columns = items[2]
+                _rows = items[3]
+                self.assertEqual(title, _title, msg.format(
+                    title, report_id, _title))
+                self.assertEqual(query, _query, msg.format(
+                    query, report_id, _query))
+                self.assertEqual(columns, _columns, msg.format(
+                    columns, report_id, _columns))
+                rows = await self.get_data('members')
+                self.assertEqual(rows, _rows, msg.format(
+                    rows, report_id, _rows))
+            else:
+                self.assertEqual(err_msg0.format(report_id), items[0])
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_save_custom_sql(self):
+        """
+        Test that the save_custom_sql method saves the query to the
+        reports table.
+        """
+        err_msg0 = "Report already exists with name '{}'."
+        data = (
+            ("SELECT barcode, email FROM members;", 'B&E', ""),
+            ("Doest't matter", 'B&E', err_msg0.format('B&E'))
+            )
+        msg = "Expected {}, found {}."
+
+        for query, name, expected in data:
+            error = await self._custom_reports.save_custom_sql(query, name)
+            self.assertEqual(expected, error, msg.format(expected, error))
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_get_report_list(self):
+        """
+        Test that the get_report_list method returns the report_id and
+        name of the active reports.
+        """
+        data = (1, 'fred')
+        reports = await self._custom_reports.get_report_list()
+
+        for report_id, name in reports:
+            self.assertEqual(data[0], report_id)
+            self.assertEqual(data[1], name)

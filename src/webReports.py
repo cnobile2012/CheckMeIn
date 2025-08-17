@@ -28,8 +28,8 @@ class WebReports(WebBase):
             first_date = self.engine.reports.getEarliestDate(
                 dbConnection).isoformat()
             today_date = datetime.date.today().isoformat()
-            report_list = self.engine.custom_reports.get_report_list(
-                dbConnection)
+            report_list = self.engine.run_async(
+                self.engine.custom_reports.get_report_list())
             active_members = self.engine.members.get_active()
             guests = self.engine.run_async(
                 self.engine.guests.guests_last_in_building(30))
@@ -78,11 +78,8 @@ class WebReports(WebBase):
     @cherrypy.expose
     def saveCustom(self, sql, report_name):
         self.checkPermissions()
-
-        with self.dbConnect() as dbConnection:
-            error = self.engine.custom_reports.saveCustomSQL(dbConnection, sql,
-                                                             report_name)
-
+        error = self.engine.run_async(
+            self.engine.custom_reports.save_custom_sql(sql, report_name))
         return self.index(error)
 
     @cherrypy.expose
