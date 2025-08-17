@@ -284,8 +284,8 @@ class BaseDatabase(Borg):
         :returns: A list of the data.
         :rtype: list
         """
-        async with aiosqlite.connect(self.db_fullpath,
-                                     detect_types=self._DETECT_TYPES) as db:
+        async with aiosqlite.connect(
+            self.db_fullpath, detect_types=self._DETECT_TYPES) as db:
             async with db.execute(query, params) as cursor:
                 values = await cursor.fetchall()
 
@@ -300,12 +300,28 @@ class BaseDatabase(Borg):
         :returns: One item of data.
         :rtype: tuple or NoneType
         """
-        async with aiosqlite.connect(self.db_fullpath,
-                                     detect_types=self._DETECT_TYPES) as db:
+        async with aiosqlite.connect(
+            self.db_fullpath, detect_types=self._DETECT_TYPES) as db:
             async with db.execute(query, params) as cursor:
                 value = await cursor.fetchone()
 
         return value
+
+    async def _do_select_read_only(self, query, params: tuple=(),
+                                   fetchone=False) -> tuple:
+        path = f"file:{self.db_fullpath}?mode=ro"
+
+        async with aiosqlite.connect(
+            path, detect_types=self._DETECT_TYPES, uri=True) as db:
+            async with db.execute(query, params) as cursor:
+                description = cursor.description
+
+                if fetchone:
+                    data = await cursor.fetchone()
+                else:
+                    data = await cursor.fetchall()
+
+        return data, description
 
     async def _do_insert_query(self, query: str, data: list) -> int:
         """

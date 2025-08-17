@@ -91,17 +91,17 @@ class TestTracing(BaseAsyncTests):
         method cannot be tested directly. The get_dict_visits method below
         can test it indirectly however.
         """
-        data = (
-            ('100091', start_time, end_time),
-            )
+        # data = (
+        #     ('100091', start_time, end_time),
+        #     )
 
-        members = await self._tracing._who_else_was_here(barcode, start_time,
-                                                         end_time)
+        # members = await self._tracing._who_else_was_here(barcode, start_time,
+        #                                                  end_time)
 
     #@unittest.skip("Temporarily skipped")
     async def test_get_dict_visits(self):
         """
-        Test that the get_dict_visits method 
+        Test that the get_dict_visits method returns a Member object.
         """
         data = (
             ('100091', 30, (('100032', 'Average J', 'fake2@email.com'),

@@ -9,9 +9,6 @@ import unittest
 import aiosqlite
 from passlib.apps import custom_app_context as pwd_context
 
-#import tracemalloc
-#tracemalloc.start()
-
 from src.accounts import Status, Role, Accounts
 from src.base_database import BaseDatabase
 from src.config import Config

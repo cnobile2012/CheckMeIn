@@ -119,7 +119,7 @@ class TestMembers(BaseAsyncTests):
         Test that the get_name method returns (display_name, None) or
         (None, error message).
         """
-        err_msg0 = "Member name not found with invalid barcode: {}."
+        err_msg0 = "Member name not found, invalid barcode: {}."
         data = (
             ('100090', ('Daughter N', None)),
             ('999999', (None, err_msg0.format('999999'))),

@@ -12,7 +12,7 @@ from .members import Members
 from .guests import Guests
 from .reports import Reports
 from .teams import Teams
-from .customReports import CustomReports
+from .custom_reports import CustomReports
 from .certifications import Certifications
 from .visits import Visits
 from .accounts import Accounts
@@ -26,8 +26,8 @@ class Engine(BaseDatabase):
     """
     This is the engine for all of the backend.
     """
-    def __init__(self, db_path: str, db_name: str, *args,
-                 testing: bool=False, **kwargs):
+    def __init__(self, db_path: str, db_name: str, *args, testing: bool=False,
+                 **kwargs):
         """
         Constructor
 
@@ -54,7 +54,7 @@ class Engine(BaseDatabase):
         self.unlocks = Unlocks()
         self.config = Config()
         # needs path since it will open read only
-        self.customReports = CustomReports(self._db_path)
+        self.custom_reports = CustomReports()
         self.certifications = Certifications()
         self.members = Members()
         self.log_events = LogEvents()

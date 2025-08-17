@@ -20,21 +20,21 @@ class Utilities:
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._log = AppConfig().log
 
-    def send_email(self, toName, toEmail, subject, message, ccName="",
-                   ccEmail=""):
+    def send_email(self, to_name, to_email, subject, message, cc_name="",
+                   cc_email=""):
         msg = MIMEText(message)
-        msg['To'] = email.utils.formataddr((toName, toEmail))
+        msg['To'] = email.utils.formataddr((to_name, to_email))
 
-        if ccEmail:
-            msg['Cc'] = email.utils.formataddr((ccName, ccEmail))
+        if cc_email:
+            msg['Cc'] = email.utils.formataddr((cc_name, cc_email))
 
         msg['From'] = email.utils.formataddr((self.FROM_NAME, self.FROM_EMAIL))
         msg['Subject'] = subject
 
-        try:  # pragma: no cover
-            server = smtplib.SMTP('localhost')
-            server.sendmail(self.FROM_EMAIL, [toEmail], msg.as_string())
-            server.quit()
+        try:
+            with smtplib.SMTP('localhost') as smtp:
+                smtp.sendmail(self.FROM_EMAIL, [to_email], msg.as_string())
         except IOError:
             self._log.warning('Email would have been:\n%s', msg)

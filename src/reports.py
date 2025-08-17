@@ -188,6 +188,15 @@ class Reports:
         self.engine = engine
         self._log = AppConfig().log
 
+    async def add_reports(self, data: list) -> int:
+        query = ("INSERT INTO reports (name, sql_text, parameters, active) "
+                 "VALUES (:name, :sql_text, :parameters, :active);")
+        return await self.BD._do_insert_query(query, data)
+
+    async def get_reports(self):
+        query = "SELECT * FROM reports;"
+        return await self.BD._do_select_all_query(query)
+
     def whoIsHere(self, dbConnection):
         keyholders = self.engine.accounts.get_key_holder_barcodes()
         listPresent = []

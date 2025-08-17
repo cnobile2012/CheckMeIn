@@ -13,7 +13,7 @@ def timeAgo(days=0, hours=0):
 
 
 # DO NOT add, change, or remove any values below. If you do it is
-# guaranteed to break tests.
+# guaranteed to break unit tests.
 TEST_DATA = {
     "visits": [{"enter_time": timeAgo(days=7, hours=1),  # admin
                 "exit_time": timeAgo(days=7, hours=0),
@@ -138,9 +138,10 @@ TEST_DATA = {
                         "certifier_id": "100091",
                         "date": timeAgo(days=10),
                         "level": 10}],
-    "custom_reports": [{"report_id": 1,
-                        "name": "fred",
-                        "sql_text": "SELECT * FROM members;"}],
+    "reports": [{"name": "fred",
+                 "sql_text": "SELECT * FROM members;",
+                 "parameters": "",
+                 "active": 1}],
     "log_events": [{"what": "Bulk Add",
                     "date": timeAgo(hours=1),
                     "barcode": "100091"}],

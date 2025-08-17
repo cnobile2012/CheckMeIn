@@ -4,8 +4,8 @@
 #
 
 import datetime
-import sqlite3
 import cherrypy
+import aiosqlite
 
 from .webBase import WebBase
 from .accounts import Role
@@ -28,7 +28,7 @@ class WebReports(WebBase):
             first_date = self.engine.reports.getEarliestDate(
                 dbConnection).isoformat()
             today_date = datetime.date.today().isoformat()
-            report_list = self.engine.customReports.get_report_list(
+            report_list = self.engine.custom_reports.get_report_list(
                 dbConnection)
             active_members = self.engine.members.get_active()
             guests = self.engine.run_async(
@@ -80,8 +80,8 @@ class WebReports(WebBase):
         self.checkPermissions()
 
         with self.dbConnect() as dbConnection:
-            error = self.engine.customReports.saveCustomSQL(dbConnection, sql,
-                                                            report_name)
+            error = self.engine.custom_reports.saveCustomSQL(dbConnection, sql,
+                                                             report_name)
 
         return self.index(error)
 
@@ -92,9 +92,9 @@ class WebReports(WebBase):
         sql = ""
 
         try:
-            title, sql, header, data = self.engine.customReports.customReport(
-                report_id)
-        except sqlite3.OperationalError as e:
+            title, sql, header, data = self.engine.run_async(
+                self.engine.custom_reports.custom_report(report_id))
+        except aiosqlite.OperationalError as e:
             data = repr(e)
             header = ["Error"]
 
@@ -106,8 +106,9 @@ class WebReports(WebBase):
         self.checkPermissions()
 
         try:
-            (header, data) = self.engine.customReports.customSQL(sql)
-        except sqlite3.OperationalError as e:
+            header, data = self.engine.run_async(
+                self.engine.custom_reports.custom_sql(sql))
+        except aiosqlite.OperationalError as e:
             data = repr(e)
             header = ["Error"]
 
