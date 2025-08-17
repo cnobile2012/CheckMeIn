@@ -171,10 +171,10 @@ class Statistics:
 
         fig, ax = plt.subplots()
         plt.plot_date(x=dates, y=values, fmt="r-")
-        title_text = f"Building usage\n{self.beginDate.strftime("%b %e, %G")}"
+        title_text = f"Building usage\n{self.beginDate.strftime('%b %e, %G')}"
 
         if self.beginDate != self.endDate:
-            title_text += f" - {self.endDate.strftime("%b %e, %G")}"
+            title_text += f" - {self.endDate.strftime('%b %e, %G')}"
 
         plt.title(title_text, fontsize=14)
         plt.ylabel("Number of visitors")
