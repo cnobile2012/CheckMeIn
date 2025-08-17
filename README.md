@@ -1,5 +1,10 @@
+
+[comment]: # (-*-coding: utf-8-*-)
 # CheckMeIn
-a system for checking into and out of a building
+[![License](https://img.shields.io/badge/license-MIT-green)](https://en.wikipedia.org/wiki/MIT_License)
+[![Build Status](https://github.com/cnobile2012/CheckMeIn/actions/workflows/main.yml/badge.svg?branch=development)](https://github.com/cnobile2012/CheckMeIn/actions/workflows/main.yml)
+
+A system for checking into and out of a building
 
 # Setup
 Start in the repo. e.g. ```cd .../CheckMeIn``` for wherever you clone the repo.

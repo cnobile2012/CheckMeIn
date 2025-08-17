@@ -146,9 +146,9 @@ class BaseDatabase(Borg):
             ),
         }
     _SCHEMA_INDEXES = (
-        #'CREATE INDEX idx_accounts_role ON accounts(role);',
-        #('CREATE INDEX idx_accounts_activeKeyholder '
-        # 'ON accounts(activeKeyholder);'),
+        # 'CREATE INDEX idx_accounts_role ON accounts(role);',
+        # ('CREATE INDEX idx_accounts_activeKeyholder '
+        #  'ON accounts(activeKeyholder);'),
         'CREATE INDEX idx_visits_barcode ON visits(barcode);'
         'CREATE INDEX idx_members_barcode ON members(barcode);'
         )
@@ -284,8 +284,8 @@ class BaseDatabase(Borg):
         :returns: A list of the data.
         :rtype: list
         """
-        async with aiosqlite.connect(
-            self.db_fullpath, detect_types=self._DETECT_TYPES) as db:
+        async with aiosqlite.connect(self.db_fullpath,
+                                     detect_types=self._DETECT_TYPES) as db:
             async with db.execute(query, params) as cursor:
                 values = await cursor.fetchall()
 
@@ -300,8 +300,8 @@ class BaseDatabase(Borg):
         :returns: One item of data.
         :rtype: tuple or NoneType
         """
-        async with aiosqlite.connect(
-            self.db_fullpath, detect_types=self._DETECT_TYPES) as db:
+        async with aiosqlite.connect(self.db_fullpath,
+                                     detect_types=self._DETECT_TYPES) as db:
             async with db.execute(query, params) as cursor:
                 value = await cursor.fetchone()
 
@@ -311,8 +311,8 @@ class BaseDatabase(Borg):
                                    fetchone=False) -> tuple:
         path = f"file:{self.db_fullpath}?mode=ro"
 
-        async with aiosqlite.connect(
-            path, detect_types=self._DETECT_TYPES, uri=True) as db:
+        async with aiosqlite.connect(path, detect_types=self._DETECT_TYPES,
+                                     uri=True) as db:
             async with db.execute(query, params) as cursor:
                 description = cursor.description
 

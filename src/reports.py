@@ -22,29 +22,36 @@ Transaction = namedtuple('Transaction', ['name', 'time', 'description'])
 Datum = namedtuple('Datum', ['rowid', 'enter_time', 'exit_time', 'name',
                              'status'])
 VisitorsAtTime = namedtuple('VisitorsAtTime', ['startTime', 'numVisitors'])
-PersonInBuilding = namedtuple(
-    'PersonInBuilding', ['displayName', 'barcode', 'enter_time'])
-
-
-def daterange(start_date, end_date):
-    for n in range(int((end_date - start_date).days)):
-        yield start_date + datetime.timedelta(n)
+PersonInBuilding = namedtuple('PersonInBuilding',
+                              ['displayName', 'barcode', 'enter_time'])
 
 
 class Person:
 
-    def __init__(self, name, enter_time, exit_time):
-        self.name = name
-        self.hours = 0.0
-        self.date = defaultdict(float)
-        self.addVisit(enter_time, exit_time)
+    def __init__(self, display_name, enter_time, exit_time):
+        self._name = display_name
+        self._hours = 0.0
+        self._date = defaultdict(float)
+        self.add_visit(enter_time, exit_time)
 
-    def addVisit(self, enter_time, exit_time):
-        dTime = exit_time - enter_time
-        # convert from seconds to hours
-        hours = (float)(dTime.seconds / (60.0 * 60.0))
-        self.hours += hours
-        self.date[enter_time.date()] += hours
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def hours(self):
+        return self._hours
+
+    @property
+    def date(self):
+        return self._date
+
+    def add_visit(self, enter_time, exit_time):
+        d_time = exit_time - enter_time
+        # Convert from seconds to hours.
+        hours = float(d_time.seconds / (60.0 * 60.0))
+        self._hours += hours
+        self._date[enter_time.date()] += hours
 
 
 class Visit:
@@ -53,21 +60,17 @@ class Visit:
         self.enter_time = enter_time
         self.exit_time = exit_time
 
-    def inRange(self, enter_time, exit_time):
-        # if enter time is in between
-        if self.enter_time <= exit_time and self.enter_time >= enter_time:
-            return True
+    def in_range(self, enter_time, exit_time):
+        ret = False
 
-        # OR if exit time is in between
-        if self.exit_time <= exit_time and self.exit_time >= enter_time:
-            return True
+        # If enter time is in between OR if exit time is in between
+        # OR if enter time is before AND exit time is after.
+        if ((self.enter_time <= exit_time and self.enter_time >= enter_time) or
+            (self.exit_time <= exit_time and self.exit_time >= enter_time) or
+            (self.enter_time <= enter_time and self.exit_time >= exit_time)):
+            ret = True
 
-        # OR if enter time is before AND exit time is after
-        if self.enter_time <= enter_time and self.exit_time >= exit_time:
-            return True
-
-        # else False
-        return False
+        return ret
 
 
 class BuildingUsage:
@@ -75,13 +78,13 @@ class BuildingUsage:
     def __init__(self):
         self.visits = []
 
-    def addVisit(self, enter_time, exit_time):
+    def add_visit(self, enter_time, exit_time):
         self.visits.append(Visit(enter_time, exit_time))
 
-    def inRange(self, enter_time, exit_time):
+    def in_range(self, enter_time, exit_time):
         numVisitors = 0
         for visit in self.visits:
-            if visit.inRange(enter_time, exit_time):
+            if visit.in_range(enter_time, exit_time):
                 numVisitors += 1
 
         return numVisitors
@@ -107,10 +110,12 @@ class Statistics:
         for row in dbConnection.execute(query, (beginDate, endDate,
                                                 beginDate, endDate)):
             try:
-                self.visitors[row[3]].addVisit(row[0], row[1])
+                self.visitors[row[3]].add_visit(row[0], row[1])
             except KeyError:
                 self.visitors[row[3]] = Person(row[2], row[0], row[1])
-            self.buildingUsage.addVisit(row[0], row[1])
+
+            self.buildingUsage.add_visit(row[0], row[1])
+
         self.totalHours = 0.0
 
         for _, person in self.visitors.items():
@@ -137,8 +142,8 @@ class Statistics:
     def getBuildingUsage(self):
         dataPoints = []
 
-        for day in daterange(self.beginDate,
-                             self.endDate + datetime.timedelta(days=1)):
+        for day in self.daterange(self.beginDate,
+                                  self.endDate + datetime.timedelta(days=1)):
             beginTimePeriod = datetime.datetime.combine(
                 day, datetime.datetime.min.time())
 
@@ -150,8 +155,8 @@ class Statistics:
                     seconds=60*60)
                 dataPoints.append(VisitorsAtTime(
                     beginTimePeriod,
-                    self.buildingUsage.inRange(beginTimePeriod,
-                                               endTimePeriod)))
+                    self.buildingUsage.in_range(beginTimePeriod,
+                                                endTimePeriod)))
 
         return dataPoints
 
@@ -179,6 +184,10 @@ class Statistics:
         fig.set_size_inches(8, 6)
         fig.savefig(figData, format='png', dpi=100)
         return figData.getvalue()
+
+    def daterange(self, start_date, end_date):
+        for n in range(int((end_date - start_date).days)):
+            yield start_date + datetime.timedelta(n)
 
 
 class Reports:
@@ -213,7 +222,7 @@ class Reports:
         for row in dbConnection.execute(query):
             displayName = row[0]
 
-            if(row[2] in keyholders):
+            if row[2] in keyholders:
                 displayName = f"{displayName}(Keyholder)"
 
             listPresent.append(

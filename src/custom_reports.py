@@ -3,8 +3,6 @@
 # src/custom_reports.py
 #
 
-import aiosqlite
-
 from . import AppConfig
 from .base_database import BaseDatabase
 
