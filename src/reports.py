@@ -92,61 +92,36 @@ class BuildingUsage:
 
 
 class Statistics:
+    BD = BaseDatabase()
 
-    def __init__(self, dbConnection, beginDate, endDate):
-        self.beginDate = beginDate.date()
-        self.endDate = endDate.date()
-        self.visitors = {}
-        self.buildingUsage = BuildingUsage()
-        query = ("SELECT v0.enter_time, v0.exit_time, displayName, v0.barcode "
-                 "FROM visits v0 "
-                 "INNER JOIN members m ON m.barcode = v0.barcode "
-                 "WHERE v0.enter_time BETWEEN ? AND ? "
-                 "UNION "
-                 "SELECT v1.enter_time, v1.exit_time, g.displayName, "
-                 "v1.barcode FROM visits v1 "
-                 "INNER JOIN guests g ON gs.guest_id = v1.barcode "
-                 "WHERE v1.enter_time BETWEEN ? AND ?;")
+    def __init__(self, begin_date, end_date, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._log = AppConfig().log
+        self._begin_date = begin_date.date()
+        self._end_date = end_date.date()
+        self._total_hours = 0.0
 
-        for row in dbConnection.execute(query, (beginDate, endDate,
-                                                beginDate, endDate)):
-            try:
-                self.visitors[row[3]].add_visit(row[0], row[1])
-            except KeyError:
-                self.visitors[row[3]] = Person(row[2], row[0], row[1])
+    @property
+    def begin_date(self):
+        return self._begin_date
 
-            self.buildingUsage.add_visit(row[0], row[1])
+    @property
+    def end_date(self):
+        return self._end_date
 
-        self.totalHours = 0.0
+    @property
+    def total_hours(self):
+        return self._total_hours
 
-        for _, person in self.visitors.items():
-            self.totalHours += person.hours
-
-        self.uniqueVisitors = len(self.visitors)
-        if self.uniqueVisitors == 0:
-            self.avgTime = 0
-            self.medianTime = 0
-            self.sortedList = []
-        else:
-            self.avgTime = self.totalHours / self.uniqueVisitors
-            self.sortedList = sorted(list(self.visitors.values()),
-                                     key=lambda x: x.hours, reverse=True)
-            half = len(self.sortedList) // 2
-
-            if len(self.sortedList) % 2:
-                self.medianTime = self.sortedList[half].hours
-            else:
-                sorted_list = self.sortedList[half - 1].hours
-                self.medianTime = ((sorted_list + self.sortedList[half].hours)
-                                   / 2.0)
-
-    def getBuildingUsage(self):
+    async def getBuildingUsage(self):
         dataPoints = []
 
-        for day in self.daterange(self.beginDate,
-                                  self.endDate + datetime.timedelta(days=1)):
+        for day in self.date_range(self.beginDate,
+                                   self.endDate + datetime.timedelta(days=1)):
             beginTimePeriod = datetime.datetime.combine(
                 day, datetime.datetime.min.time())
+            building_usage = await self._get_member_visits(self.begin_date,
+                                                           self.end_date)
 
             # Care about 8am-10pm
             for startHour in range(8, 22):
@@ -156,10 +131,82 @@ class Statistics:
                     seconds=60*60)
                 dataPoints.append(VisitorsAtTime(
                     beginTimePeriod,
-                    self.buildingUsage.in_range(beginTimePeriod,
-                                                endTimePeriod)))
+                    building_usage.in_range(beginTimePeriod, endTimePeriod)))
 
         return dataPoints
+
+    async def _get_member_visits(self, begin_date, end_date):
+        visitors = {}
+        building_usage = BuildingUsage()
+        query = ("SELECT v0.enter_time, v0.exit_time, displayName, v0.barcode "
+                 "FROM visits v0 "
+                 "INNER JOIN members m ON m.barcode = v0.barcode "
+                 "WHERE v0.enter_time BETWEEN :begin_date AND :end_date "
+                 "UNION "
+                 "SELECT v1.enter_time, v1.exit_time, g.displayName, "
+                 "v1.barcode FROM visits v1 "
+                 "INNER JOIN guests g ON gs.guest_id = v1.barcode "
+                 "WHERE v1.enter_time BETWEEN :begin_date AND :end_date;")
+        rows = await self.BD._do_select_all_query(
+            query, {'begin_date': begin_date, 'end_date': end_date})
+
+        for row in rows:
+            person = visitors.setdefault(row[3],
+                                              Person(row[2], row[0], row[1]))
+            person.add_visit(row[0], row[1])
+            building_usage.add_visit(row[0], row[1])
+
+        for _, person in visitors.items():
+            self.total_hours += person.hours
+
+        self._unique_visitors = len(visitors)
+
+        if self._unique_visitors == 0:
+            self._avg_time = 0
+            self._median_time = 0
+            self._sorted_list = []
+        else:
+            self._avg_time = self.total_hours / self._unique_visitors
+            self._sorted_list = sorted(list(visitors.values()),
+                                       key=lambda x: x.hours, reverse=True)
+            half = len(self._sorted_list) // 2
+
+            if len(self._sorted_list) % 2:
+                self._median_time = self._sorted_list[half].hours
+            else:
+                sorted_list = self._sorted_list[half - 1].hours
+                self._median_time = (
+                    (sorted_list + self._sorted_list[half].hours) / 2.0)
+
+        return building_usage
+
+    @property
+    def unique_visitors(self):
+        assert hasattr(self, '_unique_visitors'), (
+            "Programming error, _get_member_visits() must be called "
+            "before using this property.")
+        return self._unique_visitors
+
+    @property
+    def avg_time(self):
+        assert hasattr(self, '_avg_time'), (
+            "Programming error, _get_member_visits() must be called "
+            "before using this property.")
+        return self._avg_time
+
+    @property
+    def median_time(self):
+        assert hasattr(self, '_median_time'), (
+            "Programming error, _get_member_visits() must be called "
+            "before using this property.")
+        return self._median_time
+
+    @property
+    def sorted_list(self):
+        assert hasattr(self, '_sorted_list'), (
+            "Programming error, _get_member_visits() must be called "
+            "before using this property.")
+        return self._sorted_list
 
     def getBuildingUsageGraph(self):
         dates = []
@@ -186,7 +233,7 @@ class Statistics:
         fig.savefig(figData, format='png', dpi=100)
         return figData.getvalue()
 
-    def daterange(self, start_date, end_date):
+    def date_range(self, start_date, end_date):
         for n in range(int((end_date - start_date).days)):
             yield start_date + datetime.timedelta(n)
 
@@ -311,7 +358,7 @@ class Reports:
                                     int(endDateStr[8:10])).replace(
             hour=23, minute=59, second=59, microsecond=999999)
 
-        return Statistics(dbConnection, startDate, endDate)
+        return Statistics(startDate, endDate)
 
     def getEarliestDate(self, dbConnection):
         query = ("SELECT enter_time FROM visits "

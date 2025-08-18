@@ -49,6 +49,8 @@ class TestVisit(unittest.TestCase):
     #@unittest.skip("Temporarily skipped")
     def test_in_range(self):
         """
+        Test that the in_range method determines if a date is within
+        specific ranges.
         """
         etr_time = datetime(2025, 8, 17, 18, 30)
         ext_time = datetime(2025, 8, 17, 21)
@@ -71,3 +73,40 @@ class TestVisit(unittest.TestCase):
             v = Visit(etr_time, ext_time)
             result = v.in_range(enter_time, exit_time)
             self.assertEqual(expected, result)
+
+
+class TestBuildingUsage(unittest.TestCase):
+
+    def __init__(self, name, *args, **kwargs):
+        super().__init__(name, *args, **kwargs)
+
+    #@unittest.skip("Temporarily skipped")
+    def test_add_visit(self):
+        """
+        Test that the add_visits method inserts
+        """
+        enter_time = datetime(2025, 8, 17, 18, 30)
+        exit_time = datetime(2025, 8, 17, 21)
+        bu = BuildingUsage()
+        bu.add_visit(enter_time, exit_time)
+        self.assertTrue(bu._visits != [])
+
+    #@unittest.skip("Temporarily skipped")
+    def test_in_range(self):
+        """
+        Test that the in_range method retuns if the enter_time and exit_time
+        is within a specific range.
+        """
+        enter_time = datetime(2025, 8, 17, 18, 30)
+        exit_time = datetime(2025, 8, 17, 21)
+        bu = BuildingUsage()
+        bu.add_visit(enter_time, exit_time)
+        result = bu.in_range(datetime(2025, 8, 17, 19),
+                             datetime(2025, 8, 17, 20))
+        self.assertEqual(len(bu._visits), result)
+
+
+class TestStatistics(BaseAsyncTests):
+
+    def __init__(self, name, *args, **kwargs):
+        super().__init__(name, *args, **kwargs)
