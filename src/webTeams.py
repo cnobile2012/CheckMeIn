@@ -150,18 +150,18 @@ class WebTeams(WebBase):
         leaving_keyholder_bc = self.engine.run_async(
             self.engine.bulk_checkout(checkIn, checkOut))
 
-        with self.dbConnect() as dbConnection:
-            if leaving_keyholder_bc:
-                whoIsHere = self.engine.reports.whoIsHere(dbConnection)
+        if leaving_keyholder_bc:
+            who_is_here = self.engine.run_async(
+                self.engine.reports.who_is_here())
 
-                if len(whoIsHere) > 1:
-                    return self.template('keyholderCheckout.mako',
-                                         barcode=leaving_keyholder_bc,
-                                         whoIsHere=whoIsHere)
+            if len(who_is_here) > 1:
+                return self.template('keyholderCheckout.mako',
+                                     barcode=leaving_keyholder_bc,
+                                     whoIsHere=who_is_here)
 
-                self.engine.run_async(
-                    self.engine.accounts.inactivate_all_key_holders())
-                self.engine.run_async(
-                    self.engine.visits.check_out_member(leaving_keyholder_bc))
+            self.engine.run_async(
+                self.engine.accounts.inactivate_all_key_holders())
+            self.engine.run_async(
+                self.engine.visits.check_out_member(leaving_keyholder_bc))
 
         raise cherrypy.HTTPRedirect(f"/teams?team_id={team_id}")

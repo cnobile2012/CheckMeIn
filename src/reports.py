@@ -21,9 +21,9 @@ from .base_database import BaseDatabase
 Transaction = namedtuple('Transaction', ['name', 'time', 'description'])
 Datum = namedtuple('Datum', ['rowid', 'enter_time', 'exit_time', 'name',
                              'status'])
-VisitorsAtTime = namedtuple('VisitorsAtTime', ['startTime', 'numVisitors'])
+VisitorsAtTime = namedtuple('VisitorsAtTime', ['start_time', 'num_visitors'])
 PersonInBuilding = namedtuple('PersonInBuilding',
-                              ['displayName', 'barcode', 'enter_time'])
+                              ['display_name', 'barcode', 'enter_time'])
 
 
 class Person:
@@ -197,7 +197,7 @@ class Statistics:
             "before using this property.")
         return self._sorted_list
 
-    async def getBuildingUsage(self):
+    async def _get_building_usage(self):
         data_points = []
 
         for day in self.date_range(self.begin_date,
@@ -217,30 +217,32 @@ class Statistics:
 
         return data_points
 
-    def getBuildingUsageGraph(self):
+    async def get_building_usage_graph(self):
         dates = []
         values = []
-        fig = plt.figure()
 
-        for point in self.getBuildingUsage():
-            dates.append(matplotlib.dates.date2num(point.startTime))
-            values.append(point.numVisitors)
+        for point in await self._get_building_usage():
+            dates.append(point.start_time)
+            values.append(point.num_visitors)
 
         fig, ax = plt.subplots()
-        plt.plot_date(x=dates, y=values, fmt="r-")
-        title_text = f"Building usage\n{self.beginDate.strftime('%b %e, %G')}"
+        plt.plot(dates, values, "r-")
+        # Tell Matplotlib the x-axis is dates
+        ax.xaxis_date()
+        title_text = ("Building usage\n"
+                      f"{self._begin_date.strftime('%b %e, %G')}")
 
-        if self.beginDate != self.endDate:
-            title_text += f" - {self.endDate.strftime('%b %e, %G')}"
+        if self._begin_date != self._end_date:
+            title_text += f" - {self._end_date.strftime('%b %e, %G')}"
 
-        plt.title(title_text, fontsize=14)
-        plt.ylabel("Number of visitors")
-        plt.grid(True)
-        ax.xaxis.set_tick_params(rotation=30, labelsize=5)
-        figData = BytesIO()
+        ax.set_title(title_text, fontsize=14)
+        ax.set_ylabel("Number of visitors")
+        ax.grid(True)
+        ax.tick_params(axis="x", rotation=30, labelsize=5)
+        fig_data = BytesIO()
         fig.set_size_inches(8, 6)
-        fig.savefig(figData, format='png', dpi=100)
-        return figData.getvalue()
+        fig.savefig(fig_data, format='png', dpi=100)
+        return fig_data.getvalue()
 
     def date_range(self, start_date, end_date):
         for n in range(int((end_date - start_date).days)):
@@ -263,30 +265,29 @@ class Reports:
         query = "SELECT * FROM reports;"
         return await self.BD._do_select_all_query(query)
 
-    def whoIsHere(self, dbConnection):
-        keyholders = self.engine.accounts.get_key_holder_barcodes()
-        listPresent = []
+    async def who_is_here(self):
+        list_present = []
+        keyholders = await self.engine.accounts.get_key_holder_barcodes()
         query = ("SELECT displayName, v0.enter_time, v0.barcode "
                  "FROM visits v0 "
                  "INNER JOIN members m ON m.barcode = v0.barcode "
                  "WHERE v0.status = 'In' "
                  "UNION "
-                 "SELECT g.displayName, v1.entre_time, v1.barcode "
+                 "SELECT g.displayName, v1.enter_time, v1.barcode "
                  "FROM visits v1 "
                  "INNER JOIN guests g ON g.guest_id = v1.barcode "
                  "WHERE v1.status = 'In' ORDER BY g.displayName;")
 
-        for row in dbConnection.execute(query):
-            displayName = row[0]
+        for row in await self.BD._do_select_all_query(query):
+            display_name = row[0]
 
             if row[2] in keyholders:
-                displayName = f"{displayName}(Keyholder)"
+                display_name = f"{display_name}(Keyholder)"
 
-            listPresent.append(
-                PersonInBuilding(displayName=displayName,
-                                 barcode=row[2], enter_time=row[1]))
+            list_present.append(PersonInBuilding(
+                display_name=display_name, barcode=row[2], enter_time=row[1]))
 
-        return listPresent
+        return list_present
 
     def whichTeamMembersHere(self, dbConnection, team_id, startTime, endTime):
         listPresent = []

@@ -37,30 +37,29 @@ class WebMainStation(WebBase):
         # strip whitespace before or after barcode digits (occasionally a
         # space comes before or after)
         barcodes = barcode.split()
+        current_keyholder_bc, _ = self.engine.run_async(
+            self.engine.accounts.get_active_key_holder())
 
-        with self.dbConnect() as dbConnection:
-            current_keyholder_bc, _ = self.engine.run_async(
-                self.engine.accounts.get_active_key_holder())
+        for bc in barcodes:
+            if bc == KEYHOLDER_BARCODE or bc == current_keyholder_bc:
+                who_is_here = self.engine.run_async(
+                    self.engine.reports.who_is_here())
 
-            for bc in barcodes:
-                if bc == KEYHOLDER_BARCODE or bc == current_keyholder_bc:
-                    who_is_here = self.engine.reports.whoIsHere(dbConnection)
-
-                    if bc == current_keyholder_bc and len(who_is_here) == 1:
-                        self.checkout(bc, called=True)
-                    else:
-                        return self.template('keyholder.mako',
-                                             whoIsHere=who_is_here)
+                if bc == current_keyholder_bc and len(who_is_here) == 1:
+                    self.checkout(bc, called=True)
                 else:
-                    error = self.engine.run_async(
-                        self.engine.visits.scanned_member(bc))
+                    return self.template('keyholder.mako',
+                                         whoIsHere=who_is_here)
+            else:
+                error = self.engine.run_async(
+                    self.engine.visits.scanned_member(bc))
 
-                    if not current_keyholder_bc:
-                        self.engine.run_async(
-                            self.engine.accounts.set_key_holder_active(bc))
+                if not current_keyholder_bc:
+                    self.engine.run_async(
+                        self.engine.accounts.set_key_holder_active(bc))
 
-                    if error:
-                        cherrypy.log(error)
+                if error:
+                    cherrypy.log(error)
 
         raise cherrypy.HTTPRedirect("/station")
 
@@ -70,7 +69,8 @@ class WebMainStation(WebBase):
         self.engine.run_async(self.engine.checkin(in_barcode_list))
 
         if not called:
-            raise cherrypy.HTTPRedirect(f"/links?barcode={in_barcode_list[0]}")
+            raise cherrypy.HTTPRedirect(
+                f"/links?barcode={in_barcode_list[0]}")
 
     @cherrypy.expose
     def checkout(self, barcode, called=False):
@@ -99,16 +99,15 @@ class WebMainStation(WebBase):
     @cherrypy.expose
     def makeKeyholder(self, barcode):
         bc = barcode.strip()
+        # make sure checked in
+        self.engine.run_async(self.engine.visits.check_in_member(barcode))
+        result = self.engine.run_async(
+            self.engine.accounts.set_key_holder_active(barcode))
+        who_is_here = self.engine.run_async(
+            self.engine.reports.who_is_here())
 
-        with self.dbConnect() as dbConnection:
-            # make sure checked in
-            self.engine.run_async(self.engine.visits.check_in_member(barcode))
-            result = self.engine.run_async(
-                self.engine.accounts.set_key_holder_active(barcode))
-            who_is_here = self.engine.reports.whoIsHere(dbConnection)
-
-            if not result:
-                return self.template('keyholder.mako', whoIsHere=who_is_here)
+        if not result:
+            return self.template('keyholder.mako', whoIsHere=who_is_here)
 
         raise cherrypy.HTTPRedirect(f"/links?barcode={bc}")
 

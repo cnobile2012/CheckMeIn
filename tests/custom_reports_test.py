@@ -43,6 +43,9 @@ class TestCustomReports(BaseAsyncTests):
         await self._reports.add_reports(TEST_DATA[self.bd._T_REPORTS])
 
     async def asyncTearDown(self):
+        self._engine = None
+        self._custom_reports = None
+        self._members = None
         self._reports = None
         await self.truncate_all_tables()
         # Clear the Borg state.

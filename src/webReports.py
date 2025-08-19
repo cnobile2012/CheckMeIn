@@ -73,7 +73,7 @@ class WebReports(WebBase):
         cherrypy.response.headers['Content-Type'] = "image/png"
         stats = self.engine.reports.getStats(self.dbConnect(), start_date,
                                              end_date)
-        return stats.getBuildingUsageGraph()
+        return self.engine.run_async(stats.get_building_usage_graph())
 
     @cherrypy.expose
     def saveCustom(self, sql, report_name):

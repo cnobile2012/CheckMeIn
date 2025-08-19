@@ -65,15 +65,13 @@ class CheckMeIn(WebBase):
 
     @cherrypy.expose
     def whoishere(self):
-        with self.dbConnect() as dbConnection:
-            _, keyholder_name = self.engine.accounts.get_active_key_holder()
-            return self.template('who_is_here.mako',
-                                 now=datetime.datetime.now(),
-                                 keyholder=keyholder_name,
-                                 whoIsHere=self.engine.reports.whoIsHere(
-                                     dbConnection),
-                                 makeForm=self.hasPermissionsNologin(
-                                     Role.KEYHOLDER))
+        _, keyholder_name = self.engine.run_async(
+            self.engine.accounts.get_active_key_holder())
+        return self.template(
+            'who_is_here.mako', now=datetime.datetime.now(),
+            keyholder=keyholder_name, whoIsHere=self.engine.run_async(
+                self.engine.reports.who_is_here(),
+                makeForm=self.hasPermissionsNologin(Role.KEYHOLDER)))
 
     @cherrypy.expose
     def checkout_who_is_here(self, **params):
