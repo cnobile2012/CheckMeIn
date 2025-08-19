@@ -15,7 +15,7 @@ def timeAgo(days=0, hours=0):
 # DO NOT add, change, or remove any values below. If you do it is
 # guaranteed to break unit tests.
 TEST_DATA = {
-    "visits": [{"enter_time": timeAgo(days=7, hours=1),  # admin
+    "visits": [{"enter_time": timeAgo(days=7, hours=1),  # Member Name (admin)
                 "exit_time": timeAgo(days=7, hours=0),
                 "barcode": "100091",
                 "status": "Out"},
@@ -23,23 +23,25 @@ TEST_DATA = {
                 "exit_time": timeAgo(days=7, hours=0),
                 "barcode": "100032",
                 "status": "Out"},
-               {"enter_time": timeAgo(days=7, hours=2),  # Random (Visitor)
+               {"enter_time": timeAgo(days=7, hours=2),  # Random G (Visitor)
                 "exit_time": timeAgo(days=7, hours=0.5),
                 "barcode": "202107310001",
                 "status": "Out"},
-               {"enter_time": timeAgo(hours=1),  # admin
+               {"enter_time": timeAgo(hours=1),  # Member Name (admin)
                 "barcode": "100091",
                 "status": "In"},
-               {"enter_time": timeAgo(hours=1),  # Random (Visitor)
+               {"enter_time": timeAgo(hours=1),  # Random Guest (Visitor)
                 "barcode": "202107310001",
                 "status": "In"},
-               {"enter_time": timeAgo(hours=1),  # Joe
+               {"enter_time": timeAgo(hours=1),  # Average Joe
                 "barcode": "100032",
                 "status": "In"},
-               {"enter_time": timeAgo(hours=1),  # Paul
+               {"enter_time": timeAgo(hours=1),  # Paul Flintstone
+                "exit_time": timeAgo(hours=0.5),
                 "barcode": "100015",
                 "status": "Out"},
-               {"enter_time": timeAgo(days=32),  # Artie (Visitor)
+               {"enter_time": timeAgo(days=32),  # Artie Nobody (Visitor)
+                "exit_time": timeAgo(days=31, hours=22),
                 "barcode": "202107310002",
                 "status": "Out"}],
     "members": [{"barcode": "100090",

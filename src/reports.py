@@ -47,10 +47,11 @@ class Person:
         return self._date
 
     def add_visit(self, enter_time, exit_time):
-        d_time = exit_time - enter_time
+        time_diff = exit_time - enter_time
         # Convert from seconds to hours.
-        hours = float(d_time.seconds / (60.0 * 60.0))
+        hours = float(time_diff.seconds / (60.0 * 60.0))
         self._hours += hours
+        # *** TODO *** Fix this to be a datetime object with truncated HMS.
         self._date[enter_time.date()] += hours
 
 
@@ -95,10 +96,19 @@ class Statistics:
     BD = BaseDatabase()
 
     def __init__(self, begin_date, end_date, *args, **kwargs):
+        """
+        Constructor.
+
+        :param datetime.datetime begin_date: The start date of the report, this
+                                             date is included in the report.
+        :param datetime.datetime end_date: The end date of the report, this
+                                           date is not included in the report.
+        """
         super().__init__(*args, **kwargs)
-        self._log = AppConfig().log
-        self._begin_date = begin_date.date()
-        self._end_date = end_date.date()
+        self._begin_date = begin_date.replace(hour=0, minute=0, second=0,
+                                              microsecond=0)
+        self._end_date = end_date.replace(hour=0, minute=0, second=0,
+                                          microsecond=0)
         self._total_hours = 0.0
 
     @property
@@ -113,60 +123,39 @@ class Statistics:
     def total_hours(self):
         return self._total_hours
 
-    async def getBuildingUsage(self):
-        dataPoints = []
-
-        for day in self.date_range(self.beginDate,
-                                   self.endDate + datetime.timedelta(days=1)):
-            beginTimePeriod = datetime.datetime.combine(
-                day, datetime.datetime.min.time())
-            building_usage = await self._get_member_visits(self.begin_date,
-                                                           self.end_date)
-
-            # Care about 8am-10pm
-            for startHour in range(8, 22):
-                beginTimePeriod = beginTimePeriod.replace(
-                    hour=startHour, minute=0, second=0, microsecond=0)
-                endTimePeriod = beginTimePeriod + datetime.timedelta(
-                    seconds=60*60)
-                dataPoints.append(VisitorsAtTime(
-                    beginTimePeriod,
-                    building_usage.in_range(beginTimePeriod, endTimePeriod)))
-
-        return dataPoints
-
-    async def _get_member_visits(self, begin_date, end_date):
+    async def _get_member_visits(self):
         visitors = {}
         building_usage = BuildingUsage()
-        query = ("SELECT v0.enter_time, v0.exit_time, displayName, v0.barcode "
-                 "FROM visits v0 "
+        query = ("SELECT v0.enter_time, v0.exit_time, m.displayName, "
+                 "v0.barcode FROM visits v0 "
                  "INNER JOIN members m ON m.barcode = v0.barcode "
-                 "WHERE v0.enter_time BETWEEN :begin_date AND :end_date "
+                 "WHERE v0.enter_time BETWEEN :b_date AND :e_date "
                  "UNION "
                  "SELECT v1.enter_time, v1.exit_time, g.displayName, "
                  "v1.barcode FROM visits v1 "
-                 "INNER JOIN guests g ON gs.guest_id = v1.barcode "
-                 "WHERE v1.enter_time BETWEEN :begin_date AND :end_date;")
+                 "INNER JOIN guests g ON g.guest_id = v1.barcode "
+                 "WHERE v1.enter_time BETWEEN :b_date AND :e_date;")
         rows = await self.BD._do_select_all_query(
-            query, {'begin_date': begin_date, 'end_date': end_date})
+            query, {'b_date': self._begin_date, 'e_date': self._end_date})
 
         for row in rows:
-            person = visitors.setdefault(row[3],
-                                              Person(row[2], row[0], row[1]))
+            person = visitors.setdefault(
+                row[3], Person(row[2], row[0], row[1]))
             person.add_visit(row[0], row[1])
             building_usage.add_visit(row[0], row[1])
 
-        for _, person in visitors.items():
-            self.total_hours += person.hours
+        for person in visitors.values():
+            self._total_hours += person.hours
 
         self._unique_visitors = len(visitors)
 
         if self._unique_visitors == 0:
-            self._avg_time = 0
-            self._median_time = 0
+            self._avg_time = 0.0
+            self._median_time = 0.0
             self._sorted_list = []
         else:
-            self._avg_time = self.total_hours / self._unique_visitors
+            self._avg_time = self._total_hours / self._unique_visitors
+            # Sort by the amount of time in the building.
             self._sorted_list = sorted(list(visitors.values()),
                                        key=lambda x: x.hours, reverse=True)
             half = len(self._sorted_list) // 2
@@ -207,6 +196,26 @@ class Statistics:
             "Programming error, _get_member_visits() must be called "
             "before using this property.")
         return self._sorted_list
+
+    async def getBuildingUsage(self):
+        data_points = []
+
+        for day in self.date_range(self.begin_date,
+                                   self.end_date + datetime.timedelta(days=1)):
+            begin_period = datetime.datetime.combine(
+                day, datetime.datetime.min.time())
+            building_usage = await self._get_member_visits()
+
+            # Care about 8am-10pm
+            for start_hour in range(8, 22):
+                begin_period = begin_period.replace(hour=start_hour, minute=0,
+                                                    second=0, microsecond=0)
+                end_period = begin_period + datetime.timedelta(seconds=60*60)
+                vat = VisitorsAtTime(begin_period, building_usage.in_range(
+                    begin_period, end_period))
+                data_points.append(vat)
+
+        return data_points
 
     def getBuildingUsageGraph(self):
         dates = []
