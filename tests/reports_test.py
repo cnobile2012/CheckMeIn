@@ -324,3 +324,18 @@ class TestReports(BaseAsyncTests):
         for person in await self._reports.who_is_here():
             self.assertTrue(isinstance(person, PersonInBuilding))
 
+    #@unittest.skip("Temporarily skipped")
+    async def test_which_team_members_here(self):
+        """
+        Test that the which_team_members_here method returns the display
+        names for the team members that have been or are in in building today.
+        """
+        data = ['Average J', 'Member N', 'Paul F']
+        team_id = 1
+        now = datetime.now()
+        delta = timedelta(hours=2)
+        start_time = now - delta
+        end_time = now + delta
+        d_names = await self._reports.which_team_members_here(
+            team_id,start_time, end_time)
+        self.assertEqual(data, d_names)

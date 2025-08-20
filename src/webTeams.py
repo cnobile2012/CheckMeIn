@@ -61,8 +61,9 @@ class WebTeams(WebBase):
                 datetime.time(int(end_time_pieces[0]),
                               int(end_time_pieces[1]))
                 )
-            members_here = self.engine.reports.whichTeamMembersHere(
-                dbConnection, team_id, begin_meeting_time, end_meeting_time)
+            members_here = self.engine.run_async(
+                self.engine.reports.which_team_members_here(
+                    team_id, begin_meeting_time, end_meeting_time))
 
         return self.template('team_attendance.mako', team_id=team_id,
                              team_name=team_name, firstDate=first_date,

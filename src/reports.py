@@ -289,18 +289,15 @@ class Reports:
 
         return list_present
 
-    def whichTeamMembersHere(self, dbConnection, team_id, startTime, endTime):
-        listPresent = []
+    async def which_team_members_here(self, team_id, start_time, end_time):
         query = ("SELECT m.displayName FROM visits v "
                  "INNER JOIN members m ON m.barcode = v.barcode "
                  "INNER JOIN team_members tm ON tm.barcode = v.barcode "
                  "WHERE v.enter_time <= ? AND v.exit_time >= ? "
                  "AND tm.team_id = ? ORDER BY m.displayName ASC;")
-
-        for row in dbConnection.execute(query, (endTime, startTime, team_id)):
-            listPresent.append(row[0])
-
-        return listPresent
+        rows = await self.BD._do_select_all_query(query, (end_time, start_time,
+                                                          team_id))
+        return [row[0] for row in rows]
 
     def numberPresent(self, dbConnection):
         query = "SELECT count(*) FROM visits WHERE status = 'In';"
