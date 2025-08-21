@@ -43,7 +43,10 @@ TEST_DATA = {
                {"enter_time": timeAgo(days=32),  # Artie Nobody (Visitor)
                 "exit_time": timeAgo(days=31, hours=22),
                 "barcode": "202107310002",
-                "status": "Out"}],
+                "status": "Out"},
+               {"enter_time": timeAgo(days=7),
+                "barcode": "100090",
+                "status": 'Forgot'}],
     "members": [{"barcode": "100090",
                  "displayName": "Daughter N",
                  "firstName": "Daughter",

@@ -145,23 +145,6 @@ class TestStatistics(BaseAsyncTests):
         self.bd.clear_state()
         self.bd = None
 
-    async def get_data(self, module='all'):
-        match module:
-            case self.bd._T_GUESTS:
-                result = await self._guests.get_guests()
-            case self.bd._T_MEMBERS:
-                result = await self._members.get_members()
-            case self.bd._T_VISITS:
-                result = await self._visits.get_visits()
-            case _:
-                result = {
-                    self.bd._T_GUESTS: await self._guests.get_guests(),
-                    self.bd._T_MEMBERS: await self._members.get_members(),
-                    self.bd._T_VISITS: await self._visits.get_visits()
-                    }
-
-        return result
-
     #@unittest.skip("Temporarily skipped")
     def test_properties(self):
         """
@@ -194,22 +177,28 @@ class TestStatistics(BaseAsyncTests):
         end_date0 = now + timedelta(days=1)
         begin_date1 = now
         end_date1 = now
-        # unique_visitors, avg_time, median_time, sorted_list
+        # b_date, e_date, unique_visitors, avg_time, median_time, sorted_list
         data = (
-            (begin_date0, end_date0, 5, 2.4, 2.0,
-             ['Artie N', 'Random G', 'Member N', 'Average J', 'Paul F']),
+            (begin_date0, end_date0, 6, 2.0, 2.0,
+             ['Artie N', 'Random G', 'Member N', 'Average J', 'Paul F',
+              'Daughter N']),
             (begin_date1, end_date1, 0, 0.0, 0.0, []),
             )
+        msg = "Expected {}, found {}."
 
         for (b_date, e_date, unique_visitors, avg_time,
              median_time, sorted_list) in data:
             s = Statistics(b_date, e_date)
             building_usage = await s._get_member_visits()
-            self.assertEqual(unique_visitors, s.unique_visitors)
-            self.assertEqual(avg_time, s.avg_time)
-            self.assertEqual(median_time, s.median_time)
+            self.assertEqual(unique_visitors, s.unique_visitors, msg.format(
+                unique_visitors, s.unique_visitors))
+            self.assertEqual(avg_time, s.avg_time, msg.format(
+                avg_time, s.avg_time))
+            self.assertEqual(median_time, s.median_time, msg.format(
+                median_time, s.median_time))
             sorted_d_names = [person.name for person in s.sorted_list]
-            self.assertEqual(sorted_list, sorted_d_names)
+            self.assertEqual(sorted_list, sorted_d_names, msg.format(
+                sorted_list, sorted_d_names))
             self.assertTrue(hasattr(building_usage, 'add_visit'))
             self.assertTrue(hasattr(building_usage, 'in_range'))
 
@@ -260,7 +249,7 @@ class TestReports(BaseAsyncTests):
         self.tables_and_views = {
             'tables': (self.bd._T_ACCOUNTS, self.bd._T_GUESTS,
                        self.bd._T_MEMBERS, self.bd._T_TEAM_MEMBERS,
-                       self.bd._T_VISITS)
+                       self.bd._T_REPORTS, self.bd._T_VISITS)
             }
         await self.create_database(self.tables_and_views)
         # Populate tables
@@ -276,6 +265,7 @@ class TestReports(BaseAsyncTests):
         await self._members.add_members(TEST_DATA[self.bd._T_MEMBERS])
         await self._teams.add_bulk_team_members(
             TEST_DATA[self.bd._T_TEAM_MEMBERS])
+        await self._reports.add_reports(TEST_DATA[self.bd._T_REPORTS])
         await self._visits.add_visits(TEST_DATA[self.bd._T_VISITS])
 
     async def asyncTearDown(self):
@@ -291,29 +281,23 @@ class TestReports(BaseAsyncTests):
         self.bd.clear_state()
         self.bd = None
 
-    async def get_data(self, module='all'):
-        match module:
-            case self.bd._T_ACCOUNTS:
-                result = await self._accounts.get_accounts()
-            case self.bd._T_GUESTS:
-                result = await self._guests.get_guests()
-            case self.bd._T_MEMBERS:
-                result = await self._members.get_members()
-            case self.bd._T_TEAM_MEMBERS:
-                result = await self._teams.get_bulk_team_members()
-            case self.bd._T_VISITS:
-                result = await self._visits.get_visits()
-            case _:
-                result = {
-                    self.bd._T_ACCOUNTS: await self._accounts.get_accounts(),
-                    self.bd._T_GUESTS: await self._guests.get_guests(),
-                    self.bd._T_MEMBERS: await self._members.get_members(),
-                    self.bd._T_TEAM_MEMBERS:
-                    await self._teams.get_bulk_team_members(),
-                    self.bd._T_VISITS: await self._visits.get_visits()
-                    }
+    #@unittest.skip("Temporarily skipped")
+    async def test_get_reports(self):
+        """
+        Test that the get_reports method returns all report data.
+        """
+        # report_id, name, sql_text, parameters, active
+        data = (
+            (1, 'fred', 'SELECT * FROM members;', '', 1),
+            )
+        reports = await self._reports.get_reports()
 
-        return result
+        for idx, item in enumerate(reports):
+            self.assertEqual(data[idx][0], item[0])
+            self.assertEqual(data[idx][1], item[1])
+            self.assertEqual(data[idx][2], item[2])
+            self.assertEqual(data[idx][3], item[3])
+            self.assertEqual(data[idx][4], item[4])
 
     #@unittest.skip("Temporarily skipped")
     async def test_who_is_here(self):
@@ -337,5 +321,154 @@ class TestReports(BaseAsyncTests):
         start_time = now - delta
         end_time = now + delta
         d_names = await self._reports.which_team_members_here(
-            team_id,start_time, end_time)
+            team_id, start_time, end_time)
         self.assertEqual(data, d_names)
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_number_present(self):
+        """
+        Test that the number_present method returns the number of people
+        present in the building.
+        """
+        present = await self._reports.number_present()
+        self.assertEqual(3, present)
+
+    #@unittest.skip("Temporarily skipped")
+    async def test__transactions(self):
+        """
+        Test that the _transactions method returns Transaction namedtuple
+        objects in the reverse 'time' order.
+        """
+        data = (
+            ('Paul F(Keyholder)', 'Out'),
+            ('Paul F(Keyholder)', 'In'),
+            ('Average J', 'In'),
+            ('Random G', 'In'),
+            ('Member N(Keyholder)', 'In'),
+            ('Daughter N', 'In'),
+            ('Daughter N', 'Forgot'),
+            ('Average J', 'Out'),
+            ('Member N(Keyholder)', 'Out'),
+            ('Random G', 'Out'),
+            ('Average J', 'In'),
+            ('Member N(Keyholder)', 'In'),
+            ('Random G', 'In'),
+            )
+        msg = "Expected '{}', with name {}, found '{}'."
+        now = datetime.now()
+        start_date = now - timedelta(days=32)
+        end_date = now + timedelta(days=1)
+        transactions = await self._reports._transactions(start_date, end_date)
+        # print(transactions)
+
+        for idx, trans in enumerate(transactions):
+            self.assertEqual(data[idx][0], trans.name, msg.format(
+                data[idx][0], data[idx][0], trans.name))
+            self.assertEqual(data[idx][1], trans.description, msg.format(
+                data[idx][1], data[idx][0], trans.description))
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_transactions_today(self):
+        """
+        Test that the transactions_today method returns Transaction namedtuple
+        objects in the reverse 'time' order for today.
+        """
+        data = (
+            ('Paul F(Keyholder)', 'Out'),
+            ('Paul F(Keyholder)', 'In'),
+            ('Average J', 'In'),
+            ('Random G', 'In'),
+            ('Member N(Keyholder)', 'In'),
+            )
+        msg = "Expected '{}', with name {}, found '{}'."
+        transactions = await self._reports.transactions_today()
+
+        for idx, trans in enumerate(transactions):
+            self.assertEqual(data[idx][0], trans.name, msg.format(
+                data[idx][0], data[idx][0], trans.name))
+            self.assertEqual(data[idx][1], trans.description, msg.format(
+                data[idx][1], data[idx][0], trans.description))
+
+    #@unittest.skip("Temporarily skipped")
+    async def test__unique_visitors(self):
+        """
+        Test that the _unique_visitors method returns the number of unique
+        visitors.
+        """
+        now = datetime.now()
+        start_date = now - timedelta(days=33)
+        end_date = now + timedelta(days=1)
+        visitors = await self._reports._unique_visitors(start_date, end_date)
+        self.assertEqual(6, visitors)
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_unique_visitors_today(self):
+        """
+        Test that the unique_visitors_today method returns the number of unique
+        visitors for today.
+        """
+        visitors = await self._reports.unique_visitors_today()
+        self.assertEqual(4, visitors)
+
+    #@unittest.skip("Temporarily skipped")
+    def test_get_stats(self):
+        """
+        Test that the get_stats method returns a `Statistics` object.
+        """
+        now = datetime.now()
+        start_date = now - timedelta(days=33)
+        end_date = now + timedelta(days=1)
+        stats = self._reports.get_stats(start_date.isoformat(),
+                                        end_date.isoformat())
+        begin_date = start_date.replace(hour=0, minute=0, second=0,
+                                        microsecond=0)
+        end_date = end_date.replace(hour=0, minute=0, second=0, microsecond=0)
+        self.assertEqual(stats.begin_date, begin_date)
+        self.assertEqual(stats.end_date, end_date)
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_get_earliest_date(self):
+        """
+        Test that the get_earliest_date method returns a datetime.datetime
+        object.
+        """
+        data = await self._reports.get_earliest_date()
+        self.assertTrue(isinstance(data, datetime))
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_get_forgotten_dates(self):
+        """
+        Test that the get_forgotten_dates method returns a list of date where
+        people forgot to check out.
+        """
+        dates = await self._reports.get_forgotten_dates()
+
+        for date in dates:
+            self.assertTrue(isinstance(date, ddate))
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_get_data(self):
+        """
+        Test that the get_data method returns a list of Datum namedtuples.
+        """
+        date_str = datetime.now().isoformat()
+        data = (
+            (4, 'Member N', 'In'),
+            (5, 'Random G', 'In'),
+            (6, 'Average J', 'In'),
+            (7, 'Paul F', 'Out'),
+            )
+        msg = "Expected {}, with name {},found {}."
+        datum = await self._reports.get_data(date_str)
+
+        for idx, item in enumerate(datum):
+            self.assertEqual(data[idx][0], item.rowid, msg.format(
+                data[idx][0], data[idx][1], item.rowid))
+            self.assertTrue(isinstance(item.enter_time, datetime), msg.format(
+                True, data[idx][1], False))
+            self.assertTrue(isinstance(item.exit_time, datetime), msg.format(
+                True, data[idx][1], False))
+            self.assertEqual(data[idx][1], item.name, msg.format(
+                data[idx][1], item.name, item.name))
+            self.assertEqual(data[idx][2], item.status, msg.format(
+                data[idx][2], data[idx][1], item.status))

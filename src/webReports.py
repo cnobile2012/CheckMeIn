@@ -23,17 +23,14 @@ class WebReports(WebBase):
     @cherrypy.expose
     def index(self, error=""):
         self.checkPermissions()
-
-        with self.dbConnect() as dbConnection:
-            first_date = self.engine.reports.getEarliestDate(
-                dbConnection).isoformat()
-            today_date = datetime.date.today().isoformat()
-            report_list = self.engine.run_async(
-                self.engine.custom_reports.get_report_list())
-            active_members = self.engine.members.get_active()
-            guests = self.engine.run_async(
-                self.engine.guests.guests_last_in_building(30))
-
+        first_date = self.engine.run_async(
+            self.engine.reports.get_earliest_date().isoformat())
+        today_date = datetime.date.today().isoformat()
+        report_list = self.engine.run_async(
+            self.engine.custom_reports.get_report_list())
+        active_members = self.engine.members.get_active()
+        guests = self.engine.run_async(
+            self.engine.guests.guests_last_in_building(30))
         return self.template('reports.mako',
                              firstDate=first_date, todayDate=today_date,
                              reportList=report_list,
@@ -64,15 +61,14 @@ class WebReports(WebBase):
     def standard(self, start_date, end_date):
         self.checkPermissions()
         return self.template('report.mako',
-                             stats=self.engine.reports.getStats(
-                                 self.dbConnect(), start_date, end_date))
+                             stats=self.engine.reports.get_stats(
+                                 start_date, end_date))
 
     @cherrypy.expose
     def graph(self, start_date, end_date):
         self.checkPermissions()
         cherrypy.response.headers['Content-Type'] = "image/png"
-        stats = self.engine.reports.getStats(self.dbConnect(), start_date,
-                                             end_date)
+        stats = self.engine.reports.get_stats(start_date, end_date)
         return self.engine.run_async(stats.get_building_usage_graph())
 
     @cherrypy.expose

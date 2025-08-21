@@ -12,7 +12,7 @@ from .base_database import BaseDatabase
 
 class Visits:
     BD = BaseDatabase()
-    _STATUS_VALUES = ('In', 'Out')
+    _STATUS_VALUES = ('In', 'Out', 'Forgot')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

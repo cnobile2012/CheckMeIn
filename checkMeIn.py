@@ -58,10 +58,10 @@ class CheckMeIn(WebBase):
 
     @cherrypy.expose
     def metrics(self):
-        with self.dbConnect() as dbConnection:
-            numberPresent = self.engine.reports.numberPresent(dbConnection)
-            return self.template('metrics.mako',
-                                 number_people_checked_in=numberPresent)
+        number_present = self.engine.run_async(
+            self.engine.reports.number_present())
+        return self.template('metrics.mako',
+                             number_people_checked_in=number_present)
 
     @cherrypy.expose
     def whoishere(self):

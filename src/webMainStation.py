@@ -15,20 +15,22 @@ class WebMainStation(WebBase):
 
     @cherrypy.expose
     def index(self, error=''):
-        with self.dbConnect() as dbConnection:
-            _, keyholder_name = self.engine.run_async(
-                self.engine.accounts.get_active_key_holder())
-            todaysTrans = self.engine.reports.transactionsToday(dbConnection)
-            numberPresent = self.engine.reports.numberPresent(dbConnection)
-            unqVisitTdy = self.engine.reports.uniqueVisitorsToday(dbConnection)
-            stewards = self.engine.run_async(
-                self.engine.accounts.get_present_with_role(Role.SHOP_STEWARD))
-            return self.template('station.mako',
-                                 todaysTransactions=todaysTrans,
-                                 numberPresent=numberPresent,
-                                 uniqueVisitorsToday=unqVisitTdy,
-                                 keyholder_name=keyholder_name,
-                                 stewards=stewards, error=error)
+        _, keyholder_name = self.engine.run_async(
+            self.engine.accounts.get_active_key_holder())
+        todays_trans = self.engine.run_async(
+            self.engine.reports.transactions_today())
+        number_present = self.engine.run_async(
+            self.engine.reports.number_present())
+        unq_visit_tdy = self.engine.run_async(
+            self.engine.reports.unique_visitorstoday())
+        stewards = self.engine.run_async(
+            self.engine.accounts.get_present_with_role(Role.SHOP_STEWARD))
+        return self.template('station.mako',
+                             todays_transactions=todays_trans,
+                             number_present=number_present,
+                             unique_visitors_today=unq_visit_tdy,
+                             keyholder_name=keyholder_name,
+                             stewards=stewards, error=error)
 
     @cherrypy.expose
     # later change this to be more ajaxy, but for now...

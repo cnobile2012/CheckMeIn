@@ -76,12 +76,12 @@ install-prod:
 .PHONY  : setup run
 setup	:
 	@echo "l1n5Be5G9GHFXTSMi6tb0O6o5AKmTC68OjF2UmaU55A=" > data/checkmein.key
-	@mkdir -p sessions
+	@mkdir -p data/sessions
 
 # The following target is for running the server in a development
 # environment only.
 run	: setup
-	python checkMeIn.py development.conf
+	python checkMeIn.py data/development.conf
 
 #----------------------------------------------------------------------
 .PHONY	: clean clobber
@@ -89,7 +89,6 @@ clean	:
 	@$(shell $(RM_CMD))
 
 clobber	: clean
-	@rm -rf testData sessions
 	@(cd $(DOCS_DIR); rm -rf htmlcov)
 	@rm -rf data/tests
 	@rm -rf .pytest_cache

@@ -127,7 +127,7 @@ class TestVisits(BaseAsyncTests):
         rowcount = await self._visits.empty_building('')
         visits = await self.get_data('visits')
         forgot = [visit for visit in visits if 'Forgot' in visit]
-        self.assertEqual(3, len(forgot))
+        self.assertEqual(4, len(forgot))
         rowcount = await self._visits.empty_building('100091')
         self.assertEqual(0, rowcount)
 
@@ -139,11 +139,11 @@ class TestVisits(BaseAsyncTests):
         await self._visits.empty_building('')
         visits = await self.get_data('visits')
         forgot = [visit for visit in visits if 'Forgot' in visit]
-        self.assertEqual(3, len(forgot))
+        self.assertEqual(4, len(forgot))
         await self._visits.oops_forgot()
         visits = await self.get_data('visits')
         forgot = [visit for visit in visits if 'Forgot' in visit]
-        self.assertEqual(0, len(forgot))
+        self.assertEqual(1, len(forgot))
 
     #@unittest.skip("Temporarily skipped")
     async def test_get_members_in_building(self):

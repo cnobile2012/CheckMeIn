@@ -26,23 +26,19 @@ class WebAdminStation(WebBase):
     @cherrypy.expose
     def index(self, error=""):
         self.checkPermissions()
+        dates = self.engine.run_async(self.engine.reports.getForgottenDates())
+        forgot_dates = [date.isoformat() for date in dates]
+        team_list = self.engine.run_async(
+            self.engine.teams.get_active_team_list())
+        last_bulk_update_name = None
+        last_bulk_update_date, barcode = self.engine.run_async(
+            self.engine.log_events.get_last_event("Bulk Add"))
 
-        with self.dbConnect() as dbConnection:
-            forgot_dates = []
-            for date in self.engine.reports.getForgottenDates(dbConnection):
-                forgot_dates.append(date.isoformat())
-            team_list = self.engine.run_async(
-                self.engine.teams.get_active_team_list())
-            last_bulk_update_name = None
-            last_bulk_update_date, barcode = self.engine.run_async(
-                self.engine.log_events.get_last_event("Bulk Add"))
+        if barcode:
+            last_bulk_update_name = self.engine.members.get_name(barcode)
 
-            if barcode:
-                last_bulk_update_name = self.engine.members.get_name(barcode)
-
-            grace_period = self.engine.run_async(
-                self.engine.config.get('grace_period'))
-
+        grace_period = self.engine.run_async(
+            self.engine.config.get('grace_period'))
         return self.template('admin.mako', forgotDates=forgot_dates,
                              lastBulkUpdateDate=last_bulk_update_date,
                              lastBulkUpdateName=last_bulk_update_name,
@@ -77,10 +73,7 @@ class WebAdminStation(WebBase):
     @cherrypy.expose
     def fixData(self, date):
         self.checkPermissions()
-
-        with self.dbConnect() as dbConnection:
-            data = self.engine.reports.getData(dbConnection, date)
-
+        data = self.engine.run_async(self.engine.reports.get_data(date))
         return self.template('fixData.mako', date=date, data=data)
 
     @cherrypy.expose

@@ -40,31 +40,27 @@ class WebTeams(WebBase):
 
     @cherrypy.expose
     def attendance(self, team_id, date, start_time, end_time):
-        with self.dbConnect() as dbConnection:
-            first_date = self.engine.reports.getEarliestDate(
-                dbConnection).isoformat()
-            today_date = datetime.date.today().isoformat()
-            team_name = self.engine.run_async(
-                self.engine.teams.team_name_from_id(team_id))
-            date_pieces = date.split('-')
-            start_time_pieces = start_time.split(':')
-            end_time_pieces = end_time.split(':')
-            begin_meeting_time = datetime.datetime.combine(
-                datetime.date(int(date_pieces[0]), int(date_pieces[1]),
-                              int(date_pieces[2])),
-                datetime.time(int(start_time_pieces[0]),
-                              int(start_time_pieces[1]))
-                )
-            end_meeting_time = datetime.datetime.combine(
-                datetime.date(int(date_pieces[0]), int(date_pieces[1]),
-                              int(date_pieces[2])),
-                datetime.time(int(end_time_pieces[0]),
-                              int(end_time_pieces[1]))
-                )
-            members_here = self.engine.run_async(
-                self.engine.reports.which_team_members_here(
-                    team_id, begin_meeting_time, end_meeting_time))
-
+        first_date = self.engine.run_async(
+            self.engine.reports.get_earliest_date().isoformat())
+        today_date = datetime.date.today().isoformat()
+        team_name = self.engine.run_async(
+            self.engine.teams.team_name_from_id(team_id))
+        date_pieces = date.split('-')
+        start_time_pieces = start_time.split(':')
+        end_time_pieces = end_time.split(':')
+        begin_meeting_time = datetime.datetime.combine(
+            datetime.date(int(date_pieces[0]), int(date_pieces[1]),
+                          int(date_pieces[2])),
+            datetime.time(int(start_time_pieces[0]), int(start_time_pieces[1]))
+            )
+        end_meeting_time = datetime.datetime.combine(
+            datetime.date(int(date_pieces[0]), int(date_pieces[1]),
+                          int(date_pieces[2])),
+            datetime.time(int(end_time_pieces[0]), int(end_time_pieces[1]))
+            )
+        members_here = self.engine.run_async(
+            self.engine.reports.which_team_members_here(
+                team_id, begin_meeting_time, end_meeting_time))
         return self.template('team_attendance.mako', team_id=team_id,
                              team_name=team_name, firstDate=first_date,
                              todayDate=today_date, membersHere=members_here,

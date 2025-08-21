@@ -36,11 +36,11 @@ ${self.logo()}<br/>
 <table class="side">
   <TR>
     <TH># people in building</TH>
-    <TD>${numberPresent}</TD>
+    <TD>${number_Present}</TD>
   </TR>
   <TR>
     <TH>Total people today</TH>
-    <TD>${uniqueVisitorsToday}</TD>
+    <TD>${unique_visitors_today}</TD>
   </TR>
   <TR>
     <TH>Keyholder</TH>
@@ -62,7 +62,7 @@ ${self.logo()}<br/>
   <H2>Recent Activity (today)</H2>
   <TABLE style="width:80%">
     <TR><TH>Time</TH><TH>Name</TH><TH>Description</TH></TR>
-  % for trans in todaysTransactions:
+  % for trans in todays_transactions:
     <TR class="${trans.description}"><TD>${trans.time.strftime("%I:%M %p")}</TD><TD>${trans.name}</TD><TD>${trans.description}</TD></TR>
   % endfor
   </TABLE>

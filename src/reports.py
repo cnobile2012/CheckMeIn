@@ -299,85 +299,87 @@ class Reports:
                                                           team_id))
         return [row[0] for row in rows]
 
-    def numberPresent(self, dbConnection):
+    async def number_present(self):
         query = "SELECT count(*) FROM visits WHERE status = 'In';"
-        numPeople = dbConnection.execute().fetchone(query)
-        return numPeople
+        data = await self.BD._do_select_one_query(query)
+        return data[0] if data else 0
 
-    def transactionsToday(self, dbConnection):
-        now = datetime.datetime.now()
-        startDate = now.replace(hour=0, minute=0, second=0, microsecond=0)
-        endDate = now.replace(hour=23, minute=59,
-                              second=59, microsecond=999999)
-        return self.transactions(dbConnection, startDate, endDate)
-
-    def transactions(self, dbConnection, startDate, endDate):
-        keyholders = self.engine.accounts.get_key_holder_barcodes()
-        listTransactions = []
-        query = ("SELECT displayName, v0.enter_time, v0.exit_time, "
-                 "v0.status, v0.barcode FROM visits v0 "
+    async def _transactions(self, start_date, end_date):
+        keyholders = await self.engine.accounts.get_key_holder_barcodes()
+        list_transactions = []
+        query = ("SELECT displayName, v0.enter_time, v0.exit_time, v0.status, "
+                 "v0.barcode FROM visits v0 "
                  "INNER JOIN members m ON m.barcode = v0.barcode "
-                 "WHERE (v0.enter_time BETWEEN ? and ?) "
+                 "WHERE v0.enter_time BETWEEN :start_date and :end_date "
                  "UNION "
                  "SELECT displayName, v1.enter_time, v1.exit_time, v1.status, "
                  "v1.barcode FROM visits v1 "
                  "INNER JOIN guests g ON g.guest_id = v1.barcode "
-                 "WHERE (v1.enter_time BETWEEN ? and ?) "
+                 "WHERE v1.enter_time BETWEEN :start_date and :end_date "
                  "ORDER BY v1.enter_time;")
+        rows = await self.BD._do_select_all_query(
+            query, {'start_date': start_date, 'end_date': end_date})
 
-        for row in dbConnection.execute(query, (startDate, endDate,
-                                                startDate, endDate)):
-            displayName = row[0]
+        for row in rows:
+            display_name = row[0]
 
             if row[4] in keyholders:
-                displayName = f"{displayName}(Keyholder)"
+                display_name = f"{display_name}(Keyholder)"
 
-            listTransactions.append(Transaction(displayName, row[1], 'In'))
+            list_transactions.append(Transaction(display_name, row[1], 'In'))
 
             if row[3] != 'In':
-                listTransactions.append(
-                    Transaction(displayName, row[2], row[3]))
+                list_transactions.append(Transaction(display_name, row[2],
+                                                     row[3]))
 
-        return sorted(listTransactions, key=lambda x: x[1], reverse=True)
+        return sorted(list_transactions, key=lambda x: x.time, reverse=True)
 
-    def uniqueVisitors(self, dbConnection, startDate, endDate):
+    async def transactions_today(self):
+        now = datetime.datetime.now()
+        start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        end_date = now.replace(hour=23, minute=59, second=59,
+                               microsecond=999999)
+        return await self._transactions(start_date, end_date)
+
+    async def _unique_visitors(self, start_date, end_date):
         query = ("SELECT COUNT (DISTINCT barcode) FROM visits "
                  "WHERE enter_time BETWEEN ? AND ?;")
-        numUniqueVisitors = dbConnection.execute(
-            query, (startDate, endDate)).fetchone()[0]
+        data = await self.BD._do_select_one_query(
+            query, (start_date, end_date))
+        return data[0] if data else 0
 
-        return numUniqueVisitors
-
-    def uniqueVisitorsToday(self, dbConnection):
+    async def unique_visitors_today(self):
         now = datetime.datetime.now()
-        startDate = now.replace(hour=0, minute=0, second=0, microsecond=0)
-        endDate = now.replace(hour=23, minute=59,
-                              second=59, microsecond=999999)
-        return self.uniqueVisitors(dbConnection, startDate, endDate)
+        start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        end_date = now.replace(hour=23, minute=59, second=59,
+                               microsecond=999999)
+        return await self._unique_visitors(start_date, end_date)
 
-    def getStats(self, dbConnection, beginDateStr, endDateStr):
-        startDate = datetime.datetime(int(beginDateStr[0:4]),
-                                      int(beginDateStr[5:7]),
-                                      int(beginDateStr[8:10])).replace(
-                                          hour=0, minute=0, second=0,
-                                          microsecond=0)
-        endDate = datetime.datetime(int(endDateStr[0:4]), int(endDateStr[5:7]),
-                                    int(endDateStr[8:10])).replace(
-            hour=23, minute=59, second=59, microsecond=999999)
+    def get_stats(self, begin_date_str, end_date_str):
+        start_date = datetime.datetime(int(begin_date_str[0:4]),
+                                       int(begin_date_str[5:7]),
+                                       int(begin_date_str[8:10])).replace(
+                                           hour=0, minute=0, second=0,
+                                           microsecond=0)
+        end_date = datetime.datetime(int(end_date_str[0:4]),
+                                     int(end_date_str[5:7]),
+                                     int(end_date_str[8:10])).replace(
+                                         hour=23, minute=59, second=59,
+                                         microsecond=999999)
+        return Statistics(start_date, end_date)
 
-        return Statistics(startDate, endDate)
-
-    def getEarliestDate(self, dbConnection):
+    async def get_earliest_date(self):
         query = ("SELECT enter_time FROM visits "
                  "ORDER BY enter_time ASC LIMIT 1;")
-        data = dbConnection.execute(query).fetchone()
-        return data[0]
+        data = await self.BD._do_select_one_query(query)
+        return data[0] if data else datetime.datetime(1970, 1, 1)
 
-    def getForgottenDates(self, dbConnection):
+    async def get_forgotten_dates(self):
         dates = []
         query = "SELECT enter_time FROM visits WHERE status = 'Forgot';"
+        rows = await self.BD._do_select_all_query(query)
 
-        for row in dbConnection.execute(query):
+        for row in rows:
             day = row[0].date()
 
             if day not in dates:
@@ -385,26 +387,23 @@ class Reports:
 
         return dates
 
-    def getData(self, dbConnection, dateStr):
-        data = []
-        date = datetime.datetime(int(dateStr[0:4]), int(dateStr[5:7]),
-                                 int(dateStr[8:10]))
-        startDate = date.replace(hour=0, minute=0, second=0, microsecond=0)
-        endDate = date.replace(hour=23, minute=59, second=59,
-                               microsecond=999999)
-        query = ("SELECT displayName, v0.enter_time, v0.exit_time, v0.status, "
-                 "v0.rowid FROM visits v0 "
+    async def get_data(self, date_str):
+        date = datetime.datetime(int(date_str[0:4]), int(date_str[5:7]),
+                                 int(date_str[8:10]))
+        start_date = date.replace(hour=0, minute=0, second=0, microsecond=0)
+        end_date = date.replace(hour=23, minute=59, second=59,
+                                microsecond=999999)
+        query = ("SELECT m.displayName, v0.enter_time, v0.exit_time, "
+                 "v0.status, v0.rowid FROM visits v0 "
                  "INNER JOIN members m ON m.barcode = v0.barcode "
-                 "WHERE v0.enter_time BETWEEN ? and ? "
+                 "WHERE v0.enter_time BETWEEN :start_date and :end_date "
                  "UNION "
                  "SELECT g.displayName, v1.enter_time, v1.exit_time, "
-                 "v1.status, visits.rowid FROM visits v1 "
+                 "v1.status, v1.rowid FROM visits v1 "
                  "INNER JOIN guests g ON g.guest_id = v1.barcode "
-                 "WHERE v1.enter_time BETWEEN ? and ? ORDER BY v1.enter_time;")
-
-        for row in dbConnection.execute(query, (startDate, endDate,
-                                                startDate, endDate)):
-            data.append(Datum(enter_time=row[1], exit_time=row[2], name=row[0],
-                              status=row[3], rowid=row[4]))
-
-        return data
+                 "WHERE v1.enter_time BETWEEN :start_date and :end_date "
+                 "ORDER BY v1.enter_time;")
+        rows = await self.BD._do_select_all_query(
+            query, {'start_date': start_date, 'end_date': end_date})
+        return [Datum(enter_time=row[1], exit_time=row[2], name=row[0],
+                status=row[3], rowid=row[4]) for row in rows]
