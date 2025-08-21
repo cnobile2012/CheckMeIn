@@ -37,7 +37,7 @@ $ nano .bashrc
 
 Then add the following lines to the bottom of the .bashrc file.
 ```
-\# Setup the Python virtual environment.
+# Setup the Python virtual environment.
 VIRTUALENVWRAPPER_PYTHON=/usr/bin/python3
 source /etc/profile.d/virtualenvwrapper.sh
 ```
@@ -90,26 +90,24 @@ Running the server is as simple as typing `make run`, it sets up the
 
 ## Running tests
 To make sure you haven't broken anything where the app will crash, run the
-tests. See the `Makefile` for instruction on how to run tests individually,
+tests. See the `Makefile` for instructions on how to run tests individually,
 just classes, or just modules.
 ```bash
 $ make tests
 ```
 
 If a test fails and you want to eliminate it temporarily, uncomment the skip
-that is before each test. This can also be done for an entire class.
+that is before each test. This can also be done for an entire test class.
 ```
-\#@unittest.skip("Temporarily skipped")
+#@unittest.skip("Temporarily skipped")
 ```
 
 ## Launching the server on your test platform
-Before first starting the server create an admin account with the provided
+Before the first start of the server create an admin account with the provided
 script, following the instruction. *** TODO  This script is not written yet.***
 ```bash
 $ ./scripts/create_admin.py
 ```
-
-
 
 Once you are satisfied that you have the dependencies met, and the unit tests
 are passing, then to run the server, you will execute:
@@ -121,10 +119,9 @@ You can connect to your server using a local browser at "http://localhost:8089"
 
 ## Temporary notes for trouble shooting
 * On recent releases of Raspberry Pi OS, it may be necessary to
-```sudo apt install libatlas-base-dev```
-to get numpy to work in python3.
+`sudo apt install libatlas-base-dev` to get numpy to work in python3.
 
 ## Credits
-Original repo: https://github.com/alan412/CheckMeIn
-Second repo: https://github.com/theforgeinitiative/CheckMeIn
-Third repo: https://github.com/cnobile2012/CheckMeIn
+Original repo: https://github.com/alan412/CheckMeIn<br>
+Second repo: https://github.com/theforgeinitiative/CheckMeIn<br>
+Third repo: https://github.com/cnobile2012/CheckMeIn<br>
