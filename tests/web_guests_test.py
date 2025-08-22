@@ -1,21 +1,23 @@
 # -*- coding: utf-8 -*-
 #
-# tests/guests_test.py
+# tests/web_guests_test.py
 #
 
 import unittest
 
-from . import CPtest
+from .base_cp_test import CPTest
 
 
-@unittest.skip("Temporarily disabled")
-class GuestTest(CPtest.CPTest):
+class GuestTest(CPTest):
+
+    @unittest.skip("Temporarily skipped")
     def test_guests(self):
         with self.patch_session():
             self.getPage("/guests/")
 
         self.assertStatus('200 OK')
 
+    @unittest.skip("Temporarily skipped")
     def test_addGuest(self):
         with self.patch_session():
             self.getPage("/guests/addGuest?first=Fred&last=Guest&email="
@@ -23,6 +25,7 @@ class GuestTest(CPtest.CPTest):
 
         self.assertStatus('200 OK')
 
+    @unittest.skip("Temporarily skipped")
     def test_addGuestSecond(self):
         with self.patch_session():
             self.getPage("/guests/addGuest?first=Anne&last=Guest&email="
@@ -30,6 +33,7 @@ class GuestTest(CPtest.CPTest):
 
         self.assertStatus('200 OK')
 
+    @unittest.skip("Temporarily skipped")
     def test_addGuest_blankName(self):
         with self.patch_session():
             self.getPage("/guests/addGuest?first=&last=Guest&email="
@@ -37,6 +41,7 @@ class GuestTest(CPtest.CPTest):
 
         self.assertStatus('200 OK')
 
+    @unittest.skip("Temporarily skipped")
     def test_addGuest_otherReason(self):
         with self.patch_session():
             self.getPage("/guests/addGuest?first=First&last=Guest&email="
@@ -44,24 +49,28 @@ class GuestTest(CPtest.CPTest):
 
         self.assertStatus('200 OK')
 
+    @unittest.skip("Temporarily skipped")
     def test_returnGuest(self):
         with self.patch_session():
             self.getPage("/guests/returnGuest?guest_id=202107310001")
 
         self.assertStatus('200 OK')
 
+    @unittest.skip("Temporarily skipped")
     def test_returnGuestError(self):
         with self.patch_session():
             self.getPage("/guests/returnGuest?guest_id=error")
 
         self.assertStatus('200 OK')
 
+    @unittest.skip("Temporarily skipped")
     def test_leaveGuestNoComments(self):
         with self.patch_session():
             self.getPage("/guests/leaveGuest?guest_id=202107310001")
 
         self.assertStatus('200 OK')
 
+    @unittest.skip("Temporarily skipped")
     def test_leaveGuestWithComments(self):
         with self.patch_session():
             self.getPage("/guests/leaveGuest?guest_id=202107310001"
@@ -69,6 +78,7 @@ class GuestTest(CPtest.CPTest):
 
         self.assertStatus('200 OK')
 
+    @unittest.skip("Temporarily skipped")
     def test_leaveGuestError(self):
         with self.patch_session():
             self.getPage("/guests/leaveGuest?guest_id=error")

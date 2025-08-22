@@ -5,16 +5,18 @@
 
 import unittest
 
-from . import CPtest
+from .base_cp_test import CPTest
 
 
-@unittest.skip("Temporarily disabled")
-class ReportsTest(CPtest.CPTest):
+class ReportsTest(CPTest):
+
+    @unittest.skip("Temporarily disabled")
     def test_report_page(self):
         with self.patch_session():
             self.getPage("/reports/")
             self.assertStatus('200 OK')
 
+    @unittest.skip("Temporarily disabled")
     def test_reports(self):
         with self.patch_session():
             self.getPage("/reports/standard?startDate=2018-09-03"
@@ -22,6 +24,7 @@ class ReportsTest(CPtest.CPTest):
 
         self.assertStatus('200 OK')
 
+    @unittest.skip("Temporarily disabled")
     def test_reports_nodata(self):
         with self.patch_session():
             self.getPage("/reports/standard?startDate=2018-09-03"
@@ -29,6 +32,7 @@ class ReportsTest(CPtest.CPTest):
 
         self.assertStatus('200 OK')
 
+    @unittest.skip("Temporarily disabled")
     def test_sql(self):
         with self.patch_session():
             self.getPage("/reports/customSQLReport"
@@ -36,6 +40,7 @@ class ReportsTest(CPtest.CPTest):
 
         self.assertStatus('200 OK')
 
+    @unittest.skip("Temporarily disabled")
     def test_bad_sql(self):
         with self.patch_session():
             self.getPage("/reports/customSQLReport"
@@ -43,6 +48,7 @@ class ReportsTest(CPtest.CPTest):
 
         self.assertStatus('200 OK')
 
+    @unittest.skip("Temporarily disabled")
     def tests_savereport(self):
         with self.patch_session():
             self.getPage("/reports/saveCustom?sql=SELECT+*+FROM+"
@@ -50,6 +56,7 @@ class ReportsTest(CPtest.CPTest):
 
         self.assertStatus('200 OK')
 
+    @unittest.skip("Temporarily disabled")
     def tests_savereport_duplicate(self):
         with self.patch_session():
             self.getPage("/reports/saveCustom?sql=SELECT+*"
@@ -57,18 +64,21 @@ class ReportsTest(CPtest.CPTest):
 
         self.assertStatus('200 OK')
 
+    @unittest.skip("Temporarily disabled")
     def test_customReportGood(self):
         with self.patch_session():
             self.getPage("/reports/savedCustom?report_id=1")
 
         self.assertStatus('200 OK')
 
+    @unittest.skip("Temporarily disabled")
     def test_customReportBad(self):
         with self.patch_session():
             self.getPage("/reports/savedCustom?report_id=100")
 
         self.assertStatus('200 OK')
 
+    @unittest.skip("Temporarily disabled")
     def test_buildingGraph(self):
         with self.patch_session():
             self.getPage("/reports/graph?startDate=2019-12-01"
@@ -76,14 +86,17 @@ class ReportsTest(CPtest.CPTest):
 
         self.assertStatus('200 OK')
 
+    @unittest.skip("Temporarily disabled")
     def test_tracing(self):
         with self.patch_session():
             self.getPage("/reports/tracing?barcode=100091&numDays=14")
 
+    @unittest.skip("Temporarily disabled")
     def test_tracing_nobarcode(self):
         with self.patch_session():
             self.getPage("/reports/tracing?barcode=&numDays=14")
 
+    @unittest.skip("Temporarily disabled")
     def test_teamlist(self):
         with self.patch_session():
             self.getPage("/reports/teamList")

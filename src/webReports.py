@@ -7,22 +7,22 @@ import datetime
 import cherrypy
 import aiosqlite
 
-from .webBase import WebBase
+from .web_base import WebBase
 from .accounts import Role
 from .tracing import Tracing
 
 
 class WebReports(WebBase):
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, lookup, engine, *args, **kwargs):
+        super().__init__(lookup, engine, *args, **kwargs)
 
-    def checkPermissions(self, source="/reports"):
-        super().checkPermissions(Role.ADMIN, source)
+    def check_permissions(self, source="/reports"):
+        super().check_permissions(Role.ADMIN, source)
 
     @cherrypy.expose
     def index(self, error=""):
-        self.checkPermissions()
+        self.check_permissions()
         first_date = self.engine.run_async(
             self.engine.reports.get_earliest_date().isoformat())
         today_date = datetime.date.today().isoformat()
@@ -40,7 +40,7 @@ class WebReports(WebBase):
     @cherrypy.expose
     def tracing(self, num_days, barcode=None):
         if barcode:
-            self.checkPermissions()
+            self.check_permissions()
             dict_visits = self.engine.run_async(
                 Tracing().get_dict_visits(barcode, num_days))
             display_name, error = self.engine.run_async(
@@ -59,28 +59,28 @@ class WebReports(WebBase):
 
     @cherrypy.expose
     def standard(self, start_date, end_date):
-        self.checkPermissions()
+        self.check_permissions()
         return self.template('report.mako',
                              stats=self.engine.reports.get_stats(
                                  start_date, end_date))
 
     @cherrypy.expose
     def graph(self, start_date, end_date):
-        self.checkPermissions()
+        self.check_permissions()
         cherrypy.response.headers['Content-Type'] = "image/png"
         stats = self.engine.reports.get_stats(start_date, end_date)
         return self.engine.run_async(stats.get_building_usage_graph())
 
     @cherrypy.expose
     def saveCustom(self, sql, report_name):
-        self.checkPermissions()
+        self.check_permissions()
         error = self.engine.run_async(
             self.engine.custom_reports.save_custom_sql(sql, report_name))
         return self.index(error)
 
     @cherrypy.expose
     def savedCustom(self, report_id, error=''):
-        self.checkPermissions()
+        self.check_permissions()
         title = "Error"
         sql = ""
 
@@ -96,7 +96,7 @@ class WebReports(WebBase):
 
     @cherrypy.expose
     def customSQLReport(self, sql):
-        self.checkPermissions()
+        self.check_permissions()
 
         try:
             header, data = self.engine.run_async(
@@ -110,7 +110,7 @@ class WebReports(WebBase):
 
     @cherrypy.expose
     def teamList(self):
-        self.checkPermissions()
+        self.check_permissions()
         teams = self.engine.run_async(self.engine.teams.get_active_team_list())
 
         for team in teams:

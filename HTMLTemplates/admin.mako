@@ -18,8 +18,9 @@ ${self.logo()}<br/>
 <form action="bulkAddMembers" method="post" enctype="multipart/form-data">
 <fieldset>
     <legend>Bulk add members</legend>
-    %if lastBulkUpdateDate: 
-       <P>Last Update: ${lastBulkUpdateDate.strftime("%Y-%m-%d at %I:%M %p")} by ${lastBulkUpdateName}</P>
+    %if last_bulk_update_date:
+       <P>Last Update: ${last_bulk_update_date.strftime("%Y-%m-%d at %I:%M %p")}
+                         by ${last_bulk_update_name}</P>
     %endif 
           <input type="file" ID="csvFile" name="csvfile" accept=".csv"/>
     <br/>
@@ -32,7 +33,8 @@ ${self.logo()}<br/>
     <legend>Set Grace Period</legend>
     <form action="setGracePeriod" method="post" enctype="multipart/form-data">
       <label class="normal" for="grace">Grace Period:</label>
-      <input type="number" id="grace" name="grace" min="0" max="180" step="5" value="${grace_period}"><br/>
+      <input type="number" id="grace" name="grace" min="0" max="180" step="5"
+             value="${grace_period}"><br/>
     <br/>
     <input type="submit" value="Set"/>
     </form>
@@ -40,10 +42,10 @@ ${self.logo()}<br/>
 <br/>
 
 <H2>Fix "forgot" data</H2>
-%if len(forgotDates):
+%if len(forgot_dates):
   <FORM action="fixData">
   <SELECT id="date-select" name="date">
-%for date in forgotDates:
+%for date in forgot_dates:
     <OPTION value="${date}">${date}</OPTION>
 %endfor
   </SELECT>
@@ -54,4 +56,5 @@ ${self.logo()}<br/>
 %endif
 
 <hr/>
-To add feature requests or report issues, please go to:<A HREF="https://github.com/alan412/CheckMeIn/issues">https://github.com/alan412/CheckMeIn/issues</A>
+To add feature requests or report issues, please go to:
+<A HREF="${repo}/issues">${repo}/issues</A>

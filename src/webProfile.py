@@ -5,10 +5,13 @@
 
 import cherrypy
 
-from .webBase import WebBase, Cookie
+from .web_base import Cookie, WebBase
 
 
 class WebProfile(WebBase):
+
+    def __init__(self, lookup, engine, *args, **kwargs):
+        super().__init__(lookup, engine, *args, **kwargs)
 
     @cherrypy.expose
     def logout(self):
@@ -40,7 +43,7 @@ class WebProfile(WebBase):
     # Profile
     @cherrypy.expose
     def index(self, error=""):
-        barcode = self.getBarcode('/profile')
+        barcode = self.get_barcode('/profile')
         devices = self.engine.run_async(
             self.engine.devices.get_device_list(barcode))
         return self.template('profile.mako', error='',
@@ -77,7 +80,7 @@ class WebProfile(WebBase):
 
     @cherrypy.expose
     def changePassword(self, oldPass, newPass1, newPass2):
-        user = self.getUser('/profile')
+        user = self.get_user('/profile')
 
         if newPass1 != newPass2:
             error = "New Passwords must match."
@@ -94,13 +97,13 @@ class WebProfile(WebBase):
 
     @cherrypy.expose
     def addDevice(self, mac, name):
-        barcode = self.getBarcode('/profile')
+        barcode = self.get_barcode('/profile')
         self.engine.run_async(
             self.engine.devices.add_device(mac, barcode, name))
         raise cherrypy.HTTPRedirect("/profile")
 
     @cherrypy.expose
     def delDevice(self, mac):
-        barcode = self.getBarcode('/profile')
+        barcode = self.get_barcode('/profile')
         self.engine.run_async(self.engine.devices.delete_device(mac, barcode))
         raise cherrypy.HTTPRedirect("/profile")

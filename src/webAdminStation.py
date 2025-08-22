@@ -11,25 +11,26 @@ import json
 from cryptography.fernet import Fernet
 
 from .accounts import Role
-from .webBase import WebBase, Cookie
+from .web_base import WebBase, Cookie
 from .teams import TeamMemberType
 
 
 class WebAdminStation(WebBase):
+    _REPO = 'https://github.com/theforgeinitiative/CheckMeIn'
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def checkPermissions(self, source="/admin"):
-        super().checkPermissions(Role.ADMIN, source)
+    def check_permissions(self, source="/admin"):
+        super().check_permissions(Role.ADMIN, source)
 
     @cherrypy.expose
     def index(self, error=""):
-        self.checkPermissions()
+        self.check_permissions()
         dates = self.engine.run_async(self.engine.reports.getForgottenDates())
         forgot_dates = [date.isoformat() for date in dates]
-        team_list = self.engine.run_async(
-            self.engine.teams.get_active_team_list())
+        # team_list = self.engine.run_async(
+        #     self.engine.teams.get_active_team_list())
         last_bulk_update_name = None
         last_bulk_update_date, barcode = self.engine.run_async(
             self.engine.log_events.get_last_event("Bulk Add"))
@@ -39,12 +40,13 @@ class WebAdminStation(WebBase):
 
         grace_period = self.engine.run_async(
             self.engine.config.get('grace_period'))
-        return self.template('admin.mako', forgotDates=forgot_dates,
-                             lastBulkUpdateDate=last_bulk_update_date,
-                             lastBulkUpdateName=last_bulk_update_name,
-                             teamList=team_list, error=error,
+        return self.template('admin.mako', forgot_dates=forgot_dates,
+                             last_bulk_update_date=last_bulk_update_date,
+                             last_bulk_update_name=last_bulk_update_name,
+                             # teamList=team_list, error=error,
                              grace_period=grace_period,
-                             username=Cookie('username').get(''))
+                             username=Cookie('username').get(''),
+                             repo=self._REPO)
 
     @cherrypy.expose
     def emptyBuilding(self):
@@ -55,48 +57,48 @@ class WebAdminStation(WebBase):
 
     @cherrypy.expose
     def setGracePeriod(self, grace):
-        self.checkPermissions()
+        self.check_permissions()
         self.engine.run_async(self.engine.config.update('grace_period', grace))
         self.engine.run_async(
             self.engine.log_events.add_event('Grace changed',
-                                             self.getBarcode('/admin')))
+                                             self.get_barcode('/admin')))
         return self.index()
 
     @cherrypy.expose
     def bulkAddMembers(self, csvfile):
-        self.checkPermissions()
+        self.check_permissions()
         error = self.engine.run_async(self.engine.members.bulk_add(csvfile))
         self.engine.run_async(self.engine.log_events.add_event(
-            'Bulk Add', self.getBarcode('/admin')))
+            'Bulk Add', self.get_barcode('/admin')))
         return self.index(error)
 
     @cherrypy.expose
     def fixData(self, date):
-        self.checkPermissions()
+        self.check_permissions()
         data = self.engine.run_async(self.engine.reports.get_data(date))
         return self.template('fixData.mako', date=date, data=data)
 
     @cherrypy.expose
     def oops(self):
-        super().checkPermissions(Role.KEYHOLDER, "/")
+        super().check_permissions(Role.KEYHOLDER, "/")
         self.engine.run_async(self.engine.visits.oops_forgot())
         return self.index('Oops is fixed. :-)')
 
     @cherrypy.expose
     def updatePresent(self, checked_out):
-        super().checkPermissions(Role.KEYHOLDER, "/")
+        super().check_permissions(Role.KEYHOLDER, "/")
         self.engine.run_async(self.engine.visits.oops_forgot())
         return self.index('Oops is fixed. :-)')
 
     @cherrypy.expose
     def fixed(self, output):
-        self.checkPermissions()
+        self.check_permissions()
         self.engine.run_async(self.engine.visits.fix(output))
         return self.index()
 
     @cherrypy.expose
     async def teams(self, error=""):
-        self.checkPermissions()
+        self.check_permissions()
         active_teams = self.engine.run_async(
             self.engine.teams.get_active_team_list())
         inactive_teams = self.engine.run_async(
@@ -115,12 +117,12 @@ class WebAdminStation(WebBase):
     @cherrypy.expose
     def addTeam(self, program_name, program_number, team_name, start_date,
                 coach1, coach2):
-        self.checkPermissions()
+        self.check_permissions()
 
         if not team_name:
             team_name = f"TBD:{program_name}{program_number}"
 
-        season_start = self.dateFromString(start_date)
+        season_start = self.date_from_string(start_date)
         rowcount = self.engine.run_async(self.engine.teams.create_team(
             program_name, program_number, team_name, season_start))
         error = "" if rowcount else f"Team name {program_name} already exists."
@@ -140,7 +142,7 @@ class WebAdminStation(WebBase):
 
     @cherrypy.expose
     def users(self, error=''):
-        self.checkPermissions()
+        self.check_permissions()
         users = self.engine.accounts.get_users()
         non_users = self.engine.accounts.get_non_accounts()
         return self.template('users.mako', error=error,
@@ -151,7 +153,7 @@ class WebAdminStation(WebBase):
     async def addUser(self, user, barcode, keyholder=0, admin=0, certifier=0,
                       coach=0, steward=0):
         error = ""
-        self.checkPermissions()
+        self.check_permissions()
 
         if user == "":
             error = "Username must not be blank"
@@ -179,32 +181,32 @@ class WebAdminStation(WebBase):
 
     @cherrypy.expose
     def deleteUser(self, barcode):
-        self.checkPermissions()
+        self.check_permissions()
         self.engine.accounts.remove_user(barcode)
         raise cherrypy.HTTPRedirect("/admin/users")
 
     @cherrypy.expose
     def deactivateTeam(self, teamId):
-        self.checkPermissions()
+        self.check_permissions()
         self.engine.run_async(self.engine.teams.deactivate_team(teamId))
         raise cherrypy.HTTPRedirect("/admin/teams")
 
     @cherrypy.expose
     def activateTeam(self, teamId):
-        self.checkPermissions()
+        self.check_permissions()
         self.engine.run_async(self.engine.teams.activate_team(teamId))
         raise cherrypy.HTTPRedirect("/admin/teams")
 
     @cherrypy.expose
     def deleteTeam(self, teamId):
-        self.checkPermissions()
+        self.check_permissions()
         self.engine.run_async(self.engine.teams.delete_team(teamId))
         raise cherrypy.HTTPRedirect("/admin/teams")
 
     @cherrypy.expose
     def editTeam(self, programName, programNumber, startDate, teamId):
-        self.checkPermissions()
-        seasonStart = self.dateFromString(startDate)
+        self.check_permissions()
+        seasonStart = self.date_from_string(startDate)
         self.engine.run_async(self.engine.teams.edit_team(
             programName, programNumber, seasonStart, teamId))
         raise cherrypy.HTTPRedirect("/admin/teams")
@@ -212,7 +214,7 @@ class WebAdminStation(WebBase):
     @cherrypy.expose
     def changeAccess(self, barcode, admin=False, keyholder=False,
                      certifier=False, coach=False, steward=False):
-        self.checkPermissions()
+        self.check_permissions()
         newRole = Role()
         newRole.setAdmin(admin)
         newRole.setKeyholder(keyholder)

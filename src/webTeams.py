@@ -7,17 +7,18 @@ import datetime
 import cherrypy
 
 from .teams import TeamMemberType
-from .webBase import WebBase, Cookie
+from .web_base import Cookie, WebBase
 from .accounts import Role
 
 
 class WebTeams(WebBase):
-    def __init__(self, lookup, engine):
-        super().__init__(lookup, engine)
 
-    def checkPermissions(self, team_id):
+    def __init__(self, lookup, engine, *args, **kwargs):
+        super().__init__(lookup, engine, *args, **kwargs)
+
+    def check_permissions(self, team_id):
         source = f"/teams?team_id={team_id}"
-        role = self.getRole(source)
+        role = self.get_role(source)
 
         if role.cookie_value & Role.ADMIN:
             return
@@ -27,7 +28,7 @@ class WebTeams(WebBase):
             raise cherrypy.HTTPRedirect("/profile/login")
 
         is_coach = self.engine.run_async(self.engine.teams.is_coach_of_team(
-            team_id, self.getBarcode('')))
+            team_id, self.get_barcode('')))
         coachTeam = Cookie(f'coach-{str(team_id)}').get(is_coach)
 
         if not coachTeam:
@@ -68,7 +69,7 @@ class WebTeams(WebBase):
 
     @cherrypy.expose
     def index(self, team_id="", error=''):
-        self.checkPermissions(team_id)
+        self.check_permissions(team_id)
 
         if not team_id:
             raise cherrypy.HTTPRedirect("/admin/teams")
@@ -92,7 +93,7 @@ class WebTeams(WebBase):
     @cherrypy.expose
     def addMember(self, team_id, type, member=None):
         if member:
-            self.checkPermissions(team_id)
+            self.check_permissions(team_id)
             self.engine.run_async(
                 self.engine.teams.add_member(team_id, member, type))
 
@@ -100,22 +101,22 @@ class WebTeams(WebBase):
 
     @cherrypy.expose
     def removeMember(self, team_id, member):
-        self.checkPermissions(team_id)
+        self.check_permissions(team_id)
         self.engine.run_async(self.engine.teams.remove_member(team_id, member))
         raise cherrypy.HTTPRedirect(f"/teams?team_id={team_id}")
 
     @cherrypy.expose
     def renameTeam(self, team_id, new_name):
-        self.checkPermissions(team_id)
+        self.check_permissions(team_id)
         self.engine.run_async(self.engine.teams.rename_team(team_id, new_name))
         raise cherrypy.HTTPRedirect(f"/teams?team_id={team_id}")
 
     @cherrypy.expose
     def newSeason(self, team_id, start_date, **returning):
-        self.checkPermissions(team_id)
+        self.check_permissions(team_id)
         team_info = self.engine.run_async(
             self.engine.teams.from_team_id(team_id))
-        season_start = self.dateFromString(start_date)
+        season_start = self.date_from_string(start_date)
         rowcount = self.engine.run_async(self.engine.teams.create_team(
             team_info.program_name, team_info.program_number, team_info.name,
             season_start))
@@ -134,7 +135,7 @@ class WebTeams(WebBase):
 
     @cherrypy.expose
     def update(self, team_id, **params):
-        self.checkPermissions(team_id)
+        self.check_permissions(team_id)
         checkIn = []
         checkOut = []
 

@@ -19,8 +19,8 @@ $ sudo apt install sqlitebrowswer
 
 Now we clone the repository.
 
-The first command is if you have a GitHub account and are logged in and the
-second command is if you do not have a GitHub account.
+The first command is used if you have a GitHub account and are logged in and
+the second command is if you do not have a GitHub account.
 ```bash
 $ git clone git@github.com:theforgeinitiative/CheckMeIn.git
 
@@ -83,6 +83,7 @@ run
 setup
 tar
 tests
+test_setup
 ```
 
 Running the server is as simple as typing `make run`, it sets up the

@@ -5,13 +5,13 @@
 
 import cherrypy
 
-from .webBase import WebBase
+from .web_base import WebBase
 
 
 class WebCertifications(WebBase):
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, lookup, engine, *args, **kwargs):
+        super().__init__(lookup, engine, *args, **kwargs)
 
     def showCertifications(self, message, tools, certifications,
                            show_table_header=True, show_left_names=True,
@@ -24,7 +24,7 @@ class WebCertifications(WebBase):
 
     @cherrypy.expose
     def certify(self, all=False):
-        certifier_id = self.getBarcode("/certifications/certify")
+        certifier_id = self.get_barcode("/certifications/certify")
         message = ''
 
         if all:
@@ -44,7 +44,7 @@ class WebCertifications(WebBase):
 
     @cherrypy.expose
     def addCertification(self, member_id, tool_id, level):
-        certifier_id = self.getBarcode("/certifications/certify")
+        certifier_id = self.get_barcode("/certifications/certify")
         # We don't check here for valid tool since someone is forging HTML
         # to put an invalid one and we'll catch it with the email out...\
         self.engine.run_async(self.engine.certifications.add_new_certification(

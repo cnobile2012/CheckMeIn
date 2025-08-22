@@ -6,12 +6,15 @@
 import cherrypy
 
 from .accounts import Role
-from .webBase import WebBase
+from .web_base import WebBase
 
 KEYHOLDER_BARCODE = '999901'
 
 
 class WebMainStation(WebBase):
+
+    def __init__(self, lookup, engine, *args, **kwargs):
+        super().__init__(lookup, engine, *args, **kwargs)
 
     @cherrypy.expose
     def index(self, error=''):
@@ -22,7 +25,7 @@ class WebMainStation(WebBase):
         number_present = self.engine.run_async(
             self.engine.reports.number_present())
         unq_visit_tdy = self.engine.run_async(
-            self.engine.reports.unique_visitorstoday())
+            self.engine.reports.unique_visitors_today())
         stewards = self.engine.run_async(
             self.engine.accounts.get_present_with_role(Role.SHOP_STEWARD))
         return self.template('station.mako',

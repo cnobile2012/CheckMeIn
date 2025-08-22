@@ -5,29 +5,33 @@
 
 import unittest
 
-from . import CPtest
+from .base_cp_test import CPTest
 
 
-@unittest.skip("Temporarily disabled")
-class CertificationsTest(CPtest.CPTest):
+class CertificationsTest(CPTest):
+
+    @unittest.skip("Temporarily disabled")
     def test_certify(self):
         with self.patch_session():
             self.getPage("/certifications/certify")
 
         self.assertStatus('200 OK')
 
+    @unittest.skip("Temporarily disabled")
     def test_invalid_certify(self):
         with self.patch_session_none():
             self.getPage("/certifications/certify")
 
         self.assertStatus('303 See Other')
 
+    @unittest.skip("Temporarily disabled")
     def test_certify_all(self):
         with self.patch_session():
             self.getPage("/certifications/certify?all=True")
 
         self.assertStatus('200 OK')
 
+    @unittest.skip("Temporarily disabled")
     def test_addCertification(self):
         with self.patch_session():
             self.getPage("/certifications/addCertification"
@@ -35,18 +39,21 @@ class CertificationsTest(CPtest.CPTest):
 
         self.assertStatus('200 OK')
 
+    @unittest.skip("Temporarily disabled")
     def test_certification_list(self):
         with self.patch_session():
             self.getPage("/certifications/")
 
         self.assertStatus('200 OK')
 
+    @unittest.skip("Temporarily disabled")
     def test_monitor_normal(self):
         with self.patch_session():
             self.getPage("/certifications/monitor?tools=1_2_3")
 
         self.assertStatus('200 OK')
 
+    @unittest.skip("Temporarily disabled")
     def test_monitor_noname(self):
         with self.patch_session():
             self.getPage("/certifications/monitor?tools=1_2_3"
@@ -54,6 +61,7 @@ class CertificationsTest(CPtest.CPTest):
 
         self.assertStatus('200 OK')
 
+    @unittest.skip("Temporarily disabled")
     def test_monitor_noheader(self):
         with self.patch_session():
             self.getPage("/certifications/monitor?tools=1_2_3"
@@ -61,6 +69,7 @@ class CertificationsTest(CPtest.CPTest):
 
         self.assertStatus('200 OK')
 
+    @unittest.skip("Temporarily disabled")
     def test_monitor_blank(self):
         with self.patch_session():
             self.getPage("/certifications/monitor?tools=1_2_3"
@@ -68,24 +77,28 @@ class CertificationsTest(CPtest.CPTest):
 
         self.assertStatus('200 OK')
 
+    @unittest.skip("Temporarily disabled")
     def test_all_certification_list(self):
         with self.patch_session():
             self.getPage("/certifications/all")
 
         self.assertStatus('200 OK')
 
+    @unittest.skip("Temporarily disabled")
     def test_team_certification(self):
         with self.patch_session():
             self.getPage('/certifications/team?team_id=1')
 
         self.assertStatus('200 OK')
 
+    @unittest.skip("Temporarily disabled")
     def test_team_certification_badteam(self):
         with self.patch_session():
             self.getPage('/certifications/team?team_id=35')
 
         self.assertStatus('200 OK')
 
+    @unittest.skip("Temporarily disabled")
     def test_user_certification(self):
         with self.patch_session():
             self.getPage('/certifications/user?barcode=100091')

@@ -5,14 +5,14 @@
 
 import cherrypy
 
-from .webBase import WebBase
+from .web_base import WebBase
 from .utils import Utilities
 
 
 class WebGuestStation(Utilities, WebBase):
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, lookup, engine, *args, **kwargs):
+        super().__init__(lookup, engine, *args, **kwargs)
 
     def showGuestPage(self, message=''):
         building_guests, recent_guests = self.engine.run_async(

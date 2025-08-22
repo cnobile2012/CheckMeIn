@@ -12,7 +12,7 @@ import cherrypy.process.plugins
 
 from src import AppConfig
 from src.engine import Engine
-from src.webBase import WebBase, Cookie
+from src.web_base import WebBase, Cookie
 from src.webMainStation import WebMainStation
 from src.webGuestStation import WebGuestStation
 from src.webCertifications import WebCertifications
@@ -71,7 +71,7 @@ class CheckMeIn(WebBase):
             'who_is_here.mako', now=datetime.datetime.now(),
             keyholder=keyholder_name, whoIsHere=self.engine.run_async(
                 self.engine.reports.who_is_here(),
-                makeForm=self.hasPermissionsNologin(Role.KEYHOLDER)))
+                makeForm=self.has_permissions_no_login(Role.KEYHOLDER)))
 
     @cherrypy.expose
     def checkout_who_is_here(self, **params):
@@ -79,7 +79,7 @@ class CheckMeIn(WebBase):
         for param, value in params.items():
             check_outs.append(param)
 
-        if self.hasPermissionsNologin(Role.KEYHOLDER):
+        if self.has_permissions_no_login(Role.KEYHOLDER):
             current_keyholder_bc, _ = self.engine.run_async(
                 self.engine.accounts.get_allactive_key_holders())
             self.engine.run_async(
@@ -111,7 +111,8 @@ class CheckMeIn(WebBase):
             if barcode == logged_in_barcode:
                 role = Role(Cookie('role').get(0))
 
-            display_name = self.engine.members.get_name(barcode)[1]
+            display_name = self.engine.run_async(
+                self.engine.members.get_name(barcode)[1])
             active_members = {}
 
             if role.isCoach():
@@ -119,7 +120,8 @@ class CheckMeIn(WebBase):
                     self.engine.teams.get_active_teams_coached(barcode))
         else:
             display_name = ""
-            active_members = self.engine.members.get_active()
+            active_members = self.engine.run_async(
+                self.engine.members.get_active())
 
         in_building = self.engine.run_async(
             self.engine.visits.in_building(barcode))

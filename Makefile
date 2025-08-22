@@ -45,16 +45,19 @@ tar	: clobber
 #
 # Run just one test in a specific class within a test file.
 # $ make tests TEST_PATH=tests/test_bases.py::TestBases::test_version
-.PHONY	: tests flake8
-tests	: clobber
+.PHONY	: tests test_setup flake8
+tests	: clobber test_setup
 	@rm -rf $(DOCS_DIR)/htmlcov
 	@mkdir -p $(LOGS_DIR)
 	@coverage erase --rcfile=$(COVERAGE_FILE)
-	@coverage run --rcfile=$(COVERAGE_FILE) -m pytest --capture=tee-sys \
+	@coverage run --rcfile=$(COVERAGE_FILE) -m pytest tests --capture=tee-sys \
         $(TEST_PATH)
 	@coverage report -m --rcfile=$(COVERAGE_FILE)
 	@coverage html --rcfile=$(COVERAGE_FILE)
 	@echo $(TODAY)
+
+test_setup:
+	@mkdir -p data/tests/sessions
 
 flake8	:
 	# Error on syntax errors or undefined names.
