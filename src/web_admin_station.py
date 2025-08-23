@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# src/webAdminStation.py
+# src/web_admin_station.py
 #
 
 import os
@@ -18,32 +18,31 @@ from .teams import TeamMemberType
 class WebAdminStation(WebBase):
     _REPO = 'https://github.com/theforgeinitiative/CheckMeIn'
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, lookup, engine, *args, **kwargs):
+        super().__init__(lookup, engine, *args, **kwargs)
 
     def check_permissions(self, source="/admin"):
         super().check_permissions(Role.ADMIN, source)
 
     @cherrypy.expose
-    def index(self, error=""):
+    def index(self):
         self.check_permissions()
-        dates = self.engine.run_async(self.engine.reports.getForgottenDates())
+        dates = self.engine.run_async(
+            self.engine.reports.get_forgotten_dates())
         forgot_dates = [date.isoformat() for date in dates]
-        # team_list = self.engine.run_async(
-        #     self.engine.teams.get_active_team_list())
         last_bulk_update_name = None
         last_bulk_update_date, barcode = self.engine.run_async(
             self.engine.log_events.get_last_event("Bulk Add"))
 
         if barcode:
-            last_bulk_update_name = self.engine.members.get_name(barcode)
+            last_bulk_update_name = self.engine.run_async(
+                self.engine.members.get_name(barcode))
 
         grace_period = self.engine.run_async(
             self.engine.config.get('grace_period'))
         return self.template('admin.mako', forgot_dates=forgot_dates,
                              last_bulk_update_date=last_bulk_update_date,
                              last_bulk_update_name=last_bulk_update_name,
-                             # teamList=team_list, error=error,
                              grace_period=grace_period,
                              username=Cookie('username').get(''),
                              repo=self._REPO)
@@ -65,7 +64,7 @@ class WebAdminStation(WebBase):
         return self.index()
 
     @cherrypy.expose
-    def bulkAddMembers(self, csvfile):
+    def bulk_add_members(self, csvfile):
         self.check_permissions()
         error = self.engine.run_async(self.engine.members.bulk_add(csvfile))
         self.engine.run_async(self.engine.log_events.add_event(
@@ -73,7 +72,7 @@ class WebAdminStation(WebBase):
         return self.index(error)
 
     @cherrypy.expose
-    def fixData(self, date):
+    def fix_data(self, date):
         self.check_permissions()
         data = self.engine.run_async(self.engine.reports.get_data(date))
         return self.template('fixData.mako', date=date, data=data)

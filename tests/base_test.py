@@ -20,9 +20,9 @@ class BaseAsyncTests(unittest.IsolatedAsyncioTestCase):
     The one caveat is that self.bd = BaseDatabase() must be defines in the
     async def asyncSetUp(self): methods.
     """
-    _log = None
     TEST_DB = 'testing.db'
     _RE_FIRST_LINE = r'^.*{}.*$'
+    _log = None
 
     def __init__(self, name, *args, **kwargs):
         super().__init__(name, *args, **kwargs)

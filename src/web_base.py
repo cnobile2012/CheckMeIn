@@ -49,10 +49,6 @@ class WebBase:
     def engine(self):
         return self._engine
 
-    @engine.setter
-    def engine(self, engine):
-        self._engine = engine
-
     def _get_barcode_no_login(self):
         return Cookie('barcode').get(None)
 

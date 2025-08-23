@@ -43,8 +43,8 @@ class Engine(BaseDatabase):
             # We use path and the the db name and True means we are in prod.
             # See BaseDatabase.
             self.db_fullpath = (db_path, db_name, True)
-            self._create_schema_and_start_event_loop()
 
+        self._create_schema_and_start_event_loop(testing=testing)
         self.visits = Visits()
         self.guests = Guests()
         self.reports = Reports(self)
@@ -59,8 +59,10 @@ class Engine(BaseDatabase):
         self.members = Members()
         self.log_events = LogEvents()
 
-    def _create_schema_and_start_event_loop(self):  # pragma: no cover
-        asyncio.run(self.create_schema())
+    def _create_schema_and_start_event_loop(self, testing):  # pragma: no cover
+        if not testing:
+            asyncio.run(self.create_schema())
+
         # Async event loop
         # (CherryPi cannot work with async directly, so we put all async
         #  code in a separate thread.)

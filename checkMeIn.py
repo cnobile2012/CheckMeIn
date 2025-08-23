@@ -17,7 +17,7 @@ from src.webMainStation import WebMainStation
 from src.webGuestStation import WebGuestStation
 from src.webCertifications import WebCertifications
 from src.webTeams import WebTeams
-from src.webAdminStation import WebAdminStation
+from src.web_admin_station import WebAdminStation
 from src.webReports import WebReports
 from src.webProfile import WebProfile
 from src.docs import getDocumentation
@@ -29,19 +29,19 @@ class CheckMeIn(WebBase):
 
     def __init__(self, *args, **kwargs):
         AppConfig().start_logging()
-        self.lookup = TemplateLookup(directories=['HTMLTemplates'],
-                                     default_filters=['h'])
+        self._lookup = TemplateLookup(directories=['HTMLTemplates'],
+                                      default_filters=['h'])
         self.updateChannel = 'updates'
-        self.engine = Engine(cherrypy.config["database.path"],
-                             cherrypy.config["database.name"])
-        super().__init__(self.lookup, self.engine, *args, **kwargs)
-        self.station = WebMainStation(self.lookup, self.engine)
-        self.guests = WebGuestStation(self.lookup, self.engine)
-        self.certifications = WebCertifications(self.lookup, self.engine)
-        self.teams = WebTeams(self.lookup, self.engine)
-        self.admin = WebAdminStation(self.lookup, self.engine)
-        self.reports = WebReports(self.lookup, self.engine)
-        self.profile = WebProfile(self.lookup, self.engine)
+        self._engine = Engine(cherrypy.config["database.path"],
+                              cherrypy.config["database.name"])
+        super().__init__(self._lookup, self._engine, *args, **kwargs)
+        self.station = WebMainStation(self._lookup, self._engine)
+        self.guests = WebGuestStation(self._lookup, self._engine)
+        self.certifications = WebCertifications(self._lookup, self._engine)
+        self.teams = WebTeams(self._lookup, self._engine)
+        self.admin = WebAdminStation(self._lookup, self._engine)
+        self.reports = WebReports(self._lookup, self._engine)
+        self.profile = WebProfile(self._lookup, self._engine)
 
     def update(self, msg):
         fullMessage = f"event: update\ndata: {msg}\n\n"
@@ -58,19 +58,19 @@ class CheckMeIn(WebBase):
 
     @cherrypy.expose
     def metrics(self):
-        number_present = self.engine.run_async(
-            self.engine.reports.number_present())
+        number_present = self._engine.run_async(
+            self._engine.reports.number_present())
         return self.template('metrics.mako',
                              number_people_checked_in=number_present)
 
     @cherrypy.expose
     def whoishere(self):
-        _, keyholder_name = self.engine.run_async(
-            self.engine.accounts.get_active_key_holder())
+        _, keyholder_name = self._engine.run_async(
+            self._engine.accounts.get_active_key_holder())
         return self.template(
             'who_is_here.mako', now=datetime.datetime.now(),
-            keyholder=keyholder_name, whoIsHere=self.engine.run_async(
-                self.engine.reports.who_is_here(),
+            keyholder=keyholder_name, whoIsHere=self._engine.run_async(
+                self._engine.reports.who_is_here(),
                 makeForm=self.has_permissions_no_login(Role.KEYHOLDER)))
 
     @cherrypy.expose
@@ -80,10 +80,10 @@ class CheckMeIn(WebBase):
             check_outs.append(param)
 
         if self.has_permissions_no_login(Role.KEYHOLDER):
-            current_keyholder_bc, _ = self.engine.run_async(
-                self.engine.accounts.get_allactive_key_holders())
-            self.engine.run_async(
-                self.engine.checkout(current_keyholder_bc, check_outs))
+            current_keyholder_bc, _ = self._engine.run_async(
+                self._engine.accounts.get_allactive_key_holders())
+            self._engine.run_async(
+                self._engine.checkout(current_keyholder_bc, check_outs))
 
         return self.whoishere()
 
@@ -94,8 +94,8 @@ class CheckMeIn(WebBase):
     @cherrypy.expose
     def unlock(self, location, barcode):
         # For now there is only one location
-        self.engine.run_async(
-            self.engine.unlocks.add_unlock(location, barcode))
+        self._engine.run_async(
+            self._engine.unlocks.add_unlock(location, barcode))
         self.station.checkin(barcode)
 
     @cherrypy.expose
@@ -111,20 +111,20 @@ class CheckMeIn(WebBase):
             if barcode == logged_in_barcode:
                 role = Role(Cookie('role').get(0))
 
-            display_name = self.engine.run_async(
-                self.engine.members.get_name(barcode)[1])
+            display_name = self._engine.run_async(
+                self._engine.members.get_name(barcode)[1])
             active_members = {}
 
             if role.isCoach():
-                active_teams_coached = self.engine.run_async(
-                    self.engine.teams.get_active_teams_coached(barcode))
+                active_teams_coached = self._engine.run_async(
+                    self._engine.teams.get_active_teams_coached(barcode))
         else:
             display_name = ""
-            active_members = self.engine.run_async(
-                self.engine.members.get_active())
+            active_members = self._engine.run_async(
+                self._engine.members.get_active())
 
-        in_building = self.engine.run_async(
-            self.engine.visits.in_building(barcode))
+        in_building = self._engine.run_async(
+            self._engine.visits.in_building(barcode))
         return self.template('links.mako', barcode=barcode, role=role,
                              activeTeamsCoached=active_teams_coached,
                              inBuilding=in_building, displayName=display_name,

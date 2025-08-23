@@ -9,11 +9,10 @@ import datetime
 import unittest
 
 from unittest.mock import patch
-from mako.lookup import TemplateLookup
 
 from src.accounts import Role
 from src.web_base import Cookie, WebBase
-from src.webAdminStation import WebAdminStation
+from src.web_admin_station import WebAdminStation
 
 from .base_cp_test import TestFakeServer
 
@@ -52,11 +51,9 @@ class TestWebBase(TestFakeServer):
         super().__init__(name, *args, **kwargs)
 
     def setUp(self):
+        super().setUp()
         self.fake_config()
-        lookup = TemplateLookup(directories=['HTMLTemplates'],
-                                default_filters=['h'])
-        cherrypy.session = {}  # This is a fake session.
-        self._web_base = WebBase(lookup, None)
+        self._web_base = WebBase(self._lookup, None)
 
     def tearDown(self):
         self._web_base = None

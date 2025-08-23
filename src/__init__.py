@@ -193,8 +193,10 @@ class AppConfig(Borg):
                             file_path=self.full_log_path, level=self._level,
                             initial_msg=False)
             log = logging.getLogger(self._logger)
-            # The next line shuts off the annoying asyncio debug messages.
+            # Disable asyncio debug messages.
             logging.getLogger("asyncio").setLevel(logging.CRITICAL)
+            # Disable CherryPi debug messages.
+            logging.getLogger("cherrypy.error").setLevel(logging.CRITICAL)
             path, filename = os.path.split(self._fullpath)
             log.info("Logger configured as '%s' with file '%s'.",
                      self._ENVIRONMENT, filename)
