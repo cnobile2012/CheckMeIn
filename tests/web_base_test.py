@@ -78,12 +78,14 @@ class TestWebBase(TestFakeServer):
         now = datetime.datetime.now()
         kwargs = {'forgot_dates': (), 'last_bulk_update_date': now,
                   'last_bulk_update_name': 'Joe S', 'grace_period': '15',
-                  'username': 'admin', 'repo': WebAdminStation._REPO}
+                  'username': 'admin', 'message': 'Testing',
+                  'repo': WebAdminStation._REPO}
         template = self._web_base.template(name, **kwargs)
         self.assertIn(now.strftime("%Y-%m-%d at %I:%M %p"), template)
         self.assertIn('Joe S', template)
         self.assertIn('15', template)
         self.assertIn('admin', template)
+        self.assertIn('Testing', template)
         self.assertIn(WebAdminStation._REPO, template)
 
     #@unittest.skip("Temporarily skipped")

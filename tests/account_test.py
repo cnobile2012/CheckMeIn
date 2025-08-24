@@ -321,19 +321,22 @@ class TestAccounts(BaseAsyncTests):
         self.bd = None
 
     async def get_data(self, module='all'):
-        if module == self.bd._T_ACCOUNTS:
-            result = await self._accounts.get_accounts()
-        elif module == self.bd._T_CONFIG:
-            result = await self._config.get_config()
-        elif module == self.bd._T_MEMBERS:
-            result = await self._members.get_members()
-        elif module == self.bd._T_VISITS:
-            result = await self._visits.get_visits()
-        else:
-            result = {self.bd._T_ACCOUNTS: await self._accounts.get_accounts(),
-                      self.bd._T_CONFIG: await self._config.get_config(),
-                      self.bd._T_MEMBERS: await self._members.get_members(),
-                      self.bd._T_VISITS: await self._visits.get_visits()}
+        match module:
+            case self.bd._T_ACCOUNTS:
+                result = await self._accounts.get_accounts()
+            case self.bd._T_CONFIG:
+                result = await self._config.get_config()
+            case self.bd._T_MEMBERS:
+                result = await self._members.get_members()
+            case self.bd._T_VISITS:
+                result = await self._visits.get_visits()
+            case _:
+                result = {
+                    self.bd._T_ACCOUNTS: await self._accounts.get_accounts(),
+                    self.bd._T_CONFIG: await self._config.get_config(),
+                    self.bd._T_MEMBERS: await self._members.get_members(),
+                    self.bd._T_VISITS: await self._visits.get_visits()
+                    }
 
         return result
 
@@ -717,19 +720,20 @@ class TestAccounts(BaseAsyncTests):
                 status, user, items[user]))
 
     #@unittest.skip("Temporarily skipped")
-    async def test_set_key_holder_active(self):
+    async def test_activate_key_holder(self):
         """
-        Test that the set_key_holder_active method sets the user with a
-        specific barcode active.
+        Test that the activate_key_holder method sets the user with barcode
+        active.
         """
         data = (
             ('100091', '', True),        # No one else active
             ('100015', '100091', True),  # admin is active
+            ('', '', False),             # No barcode
             )
         msg = "Expected {} with bc0 {}, and bc1 {}, found {}."
 
         for bc0, bc1, expected in data:
-            result = await self._accounts.set_key_holder_active(bc0)
+            result = await self._accounts.activate_key_holder(bc0)
             self.assertEqual(expected, result, msg.format(
                 expected, bc0, bc1, result))
 

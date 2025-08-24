@@ -97,7 +97,7 @@ class Members:
 
             num_members = num_members + 1
 
-        msg = f"Imported {num_members} from {csv_file.filename}"
+        msg = f"Imported {num_members} member(s) from {csv_file.filename}"
         self._log.info(msg)
         return msg
 

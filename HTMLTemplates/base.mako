@@ -1,33 +1,34 @@
 <%def name="logo()">
-<a HREF="${logoLink}"><img alt="TFI Logo" SRC="/static/TFI-logo-smaller.png"
-                           width="250"/></a>
+<a HREF="${logo_link}"><img alt="TFI Logo" SRC="/static/TFI-logo-smaller.png"
+                            width="250"/></a>
 </%def>
 ## base.mako
 <!DOCTYPE html>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
     ${self.scripts()}
 <script>
-function pythonDatetimeToHTML(datetime){
+function pythonDatetimeToHTML(datetime) {
     var js_datetime = new Date(datetime * 1000);
-    var options = {weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName : 'short'};
+    var options = {weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short'};
     return js_datetime.toLocaleString("en-US", options);
 }
 
-function pythonDateToHTML(datetime){
+function pythonDateToHTML(datetime) {
     var js_datetime = new Date(datetime * 1000);
     var options = {weekday: 'short', year: 'numeric', month: 'short', day: 'numeric'};
     return js_datetime.toLocaleString("en-US", options);
 }
 
-function trimInput(control){
+function trimInput(control) {
     control.value = $.trim(control.value);
 }
 
-$( document ).ready(function(){
-    $(".date").each(function(){
-        $( this ).text(pythonDatetimeToHTML($(this).text()));
+$(document).ready(function() {
+    $(".date").each(function() {
+        $(this).text(pythonDatetimeToHTML($(this).text()));
     });
 });
+
 var entityMap = {
   "&": "&amp;",
   "<": "&lt;",
@@ -38,7 +39,7 @@ var entityMap = {
 };
 
 function escapeHTML(string) {
-    return String(string).replace(/[&<>"'\/]/g, function (s) {
+    return String(string).replace(/[&<>"'\/]/g, function(s) {
         return entityMap[s];
     });
 }
@@ -51,7 +52,6 @@ function escapeHTML(string) {
         <meta name="apple-mobile-web-app-title" content="CheckMeIn">
         <meta name="apple-mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-status-bar-style" content="black">
-
         <title>${self.title()}</title>
             ${self.head()}
             <meta name="viewport" content="width=device-width, initial-scale=1"

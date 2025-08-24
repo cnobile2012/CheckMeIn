@@ -61,7 +61,7 @@ class WebMainStation(WebBase):
 
                 if not current_keyholder_bc:
                     self.engine.run_async(
-                        self.engine.accounts.set_key_holder_active(bc))
+                        self.engine.accounts.activate_key_holder(bc))
 
                 if error:
                     cherrypy.log(error)
@@ -107,7 +107,7 @@ class WebMainStation(WebBase):
         # make sure checked in
         self.engine.run_async(self.engine.visits.check_in_member(barcode))
         result = self.engine.run_async(
-            self.engine.accounts.set_key_holder_active(barcode))
+            self.engine.accounts.activate_key_holder(barcode))
         who_is_here = self.engine.run_async(
             self.engine.reports.who_is_here())
 

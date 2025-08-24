@@ -56,7 +56,7 @@ class StationTest(CPTest):
     @unittest.skip("Temporarily disabled")
     def test_bulkUpdateAllOut(self):
         with self.patch_session():
-            self.getPage("/admin/emptyBuilding")
+            self.getPage("/admin/empty_building")
             self.getPage("/station/makeKeyholder?barcode=100091")
             self.getPage(
                 "/station/bulkUpdate?inBarcodes=100090+100091&outBarcodes=")

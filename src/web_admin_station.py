@@ -25,7 +25,7 @@ class WebAdminStation(WebBase):
         super().check_permissions(Role.ADMIN, source)
 
     @cherrypy.expose
-    def index(self):
+    def index(self, message=""):
         self.check_permissions()
         dates = self.engine.run_async(
             self.engine.reports.get_forgotten_dates())
@@ -45,22 +45,21 @@ class WebAdminStation(WebBase):
                              last_bulk_update_name=last_bulk_update_name,
                              grace_period=grace_period,
                              username=Cookie('username').get(''),
-                             repo=self._REPO)
+                             message=message, repo=self._REPO)
 
     @cherrypy.expose
-    def emptyBuilding(self):
+    def empty_building(self):
         self.engine.run_async(self.engine.visits.empty_building(""))
         self.engine.run_async(
             self.engine.accounts.inactivate_all_key_holders())
         return "Building Empty"
 
     @cherrypy.expose
-    def setGracePeriod(self, grace):
+    def set_grace_period(self, grace):
         self.check_permissions()
         self.engine.run_async(self.engine.config.update('grace_period', grace))
-        self.engine.run_async(
-            self.engine.log_events.add_event('Grace changed',
-                                             self.get_barcode('/admin')))
+        self.engine.run_async(self.engine.log_events.add_event(
+            'Grace changed', self.get_barcode('/admin')))
         return self.index()
 
     @cherrypy.expose
@@ -75,7 +74,13 @@ class WebAdminStation(WebBase):
     def fix_data(self, date):
         self.check_permissions()
         data = self.engine.run_async(self.engine.reports.get_data(date))
-        return self.template('fixData.mako', date=date, data=data)
+        return self.template('fix_data.mako', date=date, data=data)
+
+    @cherrypy.expose
+    def fixed_data(self, output):
+        self.check_permissions()
+        self.engine.run_async(self.engine.visits.fix(output))
+        return self.index()
 
     @cherrypy.expose
     def oops(self):
@@ -88,12 +93,6 @@ class WebAdminStation(WebBase):
         super().check_permissions(Role.KEYHOLDER, "/")
         self.engine.run_async(self.engine.visits.oops_forgot())
         return self.index('Oops is fixed. :-)')
-
-    @cherrypy.expose
-    def fixed(self, output):
-        self.check_permissions()
-        self.engine.run_async(self.engine.visits.fix(output))
-        return self.index()
 
     @cherrypy.expose
     async def teams(self, error=""):

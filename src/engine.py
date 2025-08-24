@@ -84,7 +84,7 @@ class Engine(BaseDatabase):
         current_kh_bc, _ = await self.accounts.get_active_key_holder()
 
         for barcode in check_ins:
-            is_active = await self.accounts.set_key_holder_active(barcode)
+            is_active = await self.accounts.activate_key_holder(barcode)
 
             if not current_kh_bc and is_active:
                 current_kh_bc = barcode

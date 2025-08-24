@@ -54,9 +54,9 @@ class WebBase:
 
     def template(self, name, **kwargs):
         barcode = self._get_barcode_no_login()
-        logoLink = f'/links/?barcode={barcode}' if barcode else '/links/'
+        logo_link = f'/links/?barcode={barcode}' if barcode else '/links/'
         return self._lookup.get_template(name).render(
-            logoLink=logoLink, **kwargs)
+            logo_link=logo_link, **kwargs)
 
     def has_permissions_no_login(self, role_check):
         role = Role(Cookie('role').get(0))

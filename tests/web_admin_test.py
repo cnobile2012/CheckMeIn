@@ -6,6 +6,7 @@
 import os
 import unittest
 import cherrypy
+import datetime
 
 from cherrypy.lib import sessions
 from mako.lookup import TemplateLookup
@@ -16,6 +17,7 @@ from src.base_database import BaseDatabase
 from src.config import Config
 from src.devices import Devices
 from src.engine import Engine
+from src.guests import Guests
 from src.log_events import LogEvents
 from src.members import Members
 from src.reports import Reports
@@ -27,7 +29,7 @@ from src.web_base import Cookie
 
 from .base_test import BaseAsyncTests
 from .sample_data import timeAgo, TEST_DATA
-#from .base_cp_test import CPTest
+from .base_cp_test import CPTest
 
 
 class TestAdmin(BaseAsyncTests):
@@ -44,9 +46,10 @@ class TestAdmin(BaseAsyncTests):
         # Create tables and views.
         self.tables_and_views = {
             'tables': (self.bd._T_ACCOUNTS, self.bd._T_CONFIG,
-                       self.bd._T_DEVICES, self.bd._T_LOG_EVENTS,
-                       self.bd._T_MEMBERS, self.bd._T_REPORTS,
-                       self.bd._T_TEAMS, self.bd._T_VISITS),
+                       self.bd._T_DEVICES, self.bd._T_GUESTS,
+                       self.bd._T_LOG_EVENTS, self.bd._T_MEMBERS,
+                       self.bd._T_REPORTS, self.bd._T_TEAMS,
+                       self.bd._T_VISITS),
             'views': (self.bd._V_CURRENT_MEMBERS,)
             }
         await self.create_database(self.tables_and_views)
@@ -58,6 +61,7 @@ class TestAdmin(BaseAsyncTests):
                                 default_filters=['h'])
         path = os.path.join(BASE_DIR, 'data', 'tests')
         self._engine = Engine(path, self.TEST_DB, testing=True)
+        self._guests = Guests()
         self._log_events = LogEvents()
         self._members = Members()
         self._reports = Reports(self._engine)
@@ -67,18 +71,26 @@ class TestAdmin(BaseAsyncTests):
         await self._accounts.add_accounts(TEST_DATA[self.bd._T_ACCOUNTS])
         await self._config.add_config(TEST_DATA[self.bd._T_CONFIG])
         await self._devices.add_bulk_devices(TEST_DATA[self.bd._T_DEVICES])
+        await self._guests.add_guests(TEST_DATA[self.bd._T_GUESTS])
         await self._log_events.add_log_events(TEST_DATA[self.bd._T_LOG_EVENTS])
         await self._members.add_members(TEST_DATA[self.bd._T_MEMBERS])
         await self._teams.add_bulk_team_members(
             TEST_DATA[self.bd._T_TEAM_MEMBERS])
         await self._visits.add_visits(TEST_DATA[self.bd._T_VISITS])
+        # Since we are testing the admin page all tests will need the cookies.
+        Cookie('role').set(Role.ADMIN)
+        Cookie('username').set('admin')
+        Cookie('source').set('/admin')
+        Cookie('barcode').set('100091')
 
     async def asyncTearDown(self):
         self._accounts = None
         self._config = None
         self._devices = None
         self._engine = None
+        self._guests = None
         self._members = None
+        self._teams = None
         self._visits = None
         await self.truncate_all_tables()
         # Clear the Borg state.
@@ -105,14 +117,29 @@ class TestAdmin(BaseAsyncTests):
             else:
                 self._was.check_permissions()
 
+    async def get_data(self, module='all'):
+        match module:
+            case self.bd._T_ACCOUNTS:
+                result = await self._accounts.get_accounts()
+            case self.bd._T_MEMBERS:
+                result = await self._members.get_members()
+            case self.bd._T_VISITS:
+                result = await self._visits.get_visits()
+            case _:
+                result = {
+                    self.bd._T_ACCOUNTS: await self._accounts.get_accounts(),
+                    self.bd._T_MEMBERS: await self._members.get_members(),
+                    self.bd._T_VISITS: await self._visits.get_visits(),
+                    }
+
+        return result
+
     #@unittest.skip("Temporarily disabled")
     def test_index(self):
         """
         Test that the index method generates the correct HTML for the
         admin page.
         """
-        Cookie('role').set(Role.ADMIN)
-        Cookie('username').set('admin')
         html = self._was.index()
         # To be sure all DB calls were wrapped.
         self.assertNotIn('coroutine', html)
@@ -123,46 +150,90 @@ class TestAdmin(BaseAsyncTests):
         self.assertIn('admin', html)          # username
         self.assertIn(self._was._REPO, html)  # repo (repository)
 
+    #@unittest.skip("Temporarily disabled")
+    async def test_empty_building(self):
+        """
+        Test that the empty_building method sets a keyholder inactive and sets
+        anyone who forgot to log out of the building to status = 'Forgot'.
+        """
+        await self._accounts.activate_key_holder('100015')  # A keyholder
+        active_kh = [account for account in await self.get_data('accounts')
+                     if account[5] == 1]
+        self.assertEqual(1, len(active_kh))
+        result = self._was.empty_building()
+        self.assertEqual('Building Empty', result)
+        data = await self.get_data()
+        forgots = [visit for visit in data['visits'] if visit[3] == 'Forgot']
+        self.assertEqual(4, len(forgots))  # One was already in sample data.
+        active_kh = [account for account in data['accounts']
+                     if account[5] == 1]
+        self.assertEqual(0, len(active_kh))
+
+    #@unittest.skip("Temporarily disabled")
+    async def test_set_grace_period(self):
+        """
+        Test that the set_grace_period method returns an HTML page with the
+        grace period changed.
+        """
+        html = self._was.set_grace_period(30)
+        self.assertIn('30', html)  # grace_period
+
+    #@unittest.skip("Temporarily disabled")
+    async def test_bulk_add_members(self):
+        """
+        Test that the bulk_add_members method adds members to the members
+        table.
+        """
+        class File:
+            file = None
+            filename = 'bulk_data.csv'  # Has 6 new members.
+
+        def do_bulk_all(fo):
+            with open(os.path.join(BASE_DIR, 'tests', fo.filename), 'rb') as f:
+                fo.file = f
+                return self._was.bulk_add_members(fo)
+
+        members = await self.get_data('members')
+        before_members = len(members)
+        html = do_bulk_all(File())
+        self.assertIn("Imported 6 member(s) from bulk_data.csv", html)
+        members = await self.get_data('members')
+        self.assertEqual(before_members + 6, len(members))
+
+    #@unittest.skip("Temporarily disabled")
+    async def test_fix_data(self):
+        """
+        Test that the fix_data method returns an HTML page for fixing enter
+        and exit dates.
+        """
+        date_str = datetime.datetime.now().isoformat()
+        html = self._was.fix_data(date_str)
+        self.assertIn('Member N', html)
+        self.assertIn('Random G', html)
+        self.assertIn('Average J', html)
+        self.assertIn('Paul F', html)
+
+
+class TestPageAccess(CPTest):
+
     @unittest.skip("Temporarily disabled")
     def test_admin(self):
         with self.patch_session():
             self.getPage("/admin/")
             self.assertStatus('200 OK')
 
+    # this is done at 2am
     @unittest.skip("Temporarily disabled")
-    def test_oops(self):
-        with self.patch_session():
-            self.getPage("/admin/oops")
-            self.assertStatus('200 OK')
+    def test_empty_building(self):
+        self.getPage("/admin/empty_building")
 
     @unittest.skip("Temporarily disabled")
-    def test_fixData(self):
+    def test_change_grace_period(self):
         with self.patch_session():
-            self.getPage("/admin/fixData?date=2018-06-28")
-            self.assertStatus('200 OK')
+            self.getPage("/admin/set_grace_period?grace=30")
 
     @unittest.skip("Temporarily disabled")
-    def test_fixedData(self):
-        with self.patch_session():
-            self.getPage("/admin/fixed?output=3%212018-06-28+2%3A25PM%21"
-                         "2018-06-28+3%3A25PM%2C18%212018-06-28+7%3A9PM%21"
-                         "2018-06-28+11%3A3PM%2C")
-            self.assertStatus('200 OK')
-
-    @unittest.skip("Temporarily disabled")
-    def test_fixDataNoOutput(self):
-        with self.patch_session():
-            self.getPage("/admin/fixed?output=")
-            self.assertStatus('200 OK')
-
-    @unittest.skip("Temporarily disabled")
-    def test_getKeyholderJSON(self):
-        with self.patch_session():
-            self.getPage("/admin/getKeyholderJSON")
-            self.assertStatus('200 OK')
-
-    @unittest.skip("Temporarily disabled")
-    def test_bulkadd(self):
+    def test_bulk_add_members(self):
         filecontents = (
             '"First Name","Last Name","TFI Barcode for Button",'
             '"TFI Barcode AUTO","TFI Barcode AUTONUM",'
@@ -182,7 +253,39 @@ class TestAdmin(BaseAsyncTests):
         b += filecontents + '\n--x--\n'
 
         with self.patch_session():
-            self.getPage('/admin/bulkAddMembers', h, 'POST', b)
+            self.getPage('/admin/bulk_add_members', h, 'POST', b)
+            self.assertStatus('200 OK')
+
+    @unittest.skip("Temporarily disabled")
+    def test_fix_data(self):
+        with self.patch_session():
+            self.getPage("/admin/fix_data?date=2018-06-28")
+            self.assertStatus('200 OK')
+
+    @unittest.skip("Temporarily disabled")
+    def test_fixed_data(self):
+        with self.patch_session():
+            self.getPage("/admin/fixed_data?output=3%212018-06-28+2%3A25PM%21"
+                         "2018-06-28+3%3A25PM%2C18%212018-06-28+7%3A9PM%21"
+                         "2018-06-28+11%3A3PM%2C")
+            self.assertStatus('200 OK')
+
+    @unittest.skip("Temporarily disabled")
+    def test_fixDataNoOutput(self):
+        with self.patch_session():
+            self.getPage("/admin/fixed_data?output=")
+            self.assertStatus('200 OK')
+
+    @unittest.skip("Temporarily disabled")
+    def test_oops(self):
+        with self.patch_session():
+            self.getPage("/admin/oops")
+            self.assertStatus('200 OK')
+
+    @unittest.skip("Temporarily disabled")
+    def test_getKeyholderJSON(self):
+        with self.patch_session():
+            self.getPage("/admin/getKeyholderJSON")
             self.assertStatus('200 OK')
 
     @unittest.skip("Temporarily disabled")
@@ -204,11 +307,6 @@ class TestAdmin(BaseAsyncTests):
             self.getPage("/admin/")
             self.assertStatus('303 See Other')
 
-    # this is done at 2am
-    @unittest.skip("Temporarily disabled")
-    def test_emptyBuilding(self):
-        self.getPage("/admin/emptyBuilding")
-
     @unittest.skip("Temporarily disabled")
     def test_addUser(self):
         with self.patch_session():
@@ -223,11 +321,6 @@ class TestAdmin(BaseAsyncTests):
     def test_addUserNoName(self):
         with self.patch_session():
             self.getPage("/admin/addUser?user=&barcode=100042")
-
-    @unittest.skip("Temporarily disabled")
-    def test_changeGracePeriod(self):
-        with self.patch_session():
-            self.getPage("/admin/setGracePeriod?grace=30")
 
     @unittest.skip("Temporarily disabled")
     def test_deleteUser(self):

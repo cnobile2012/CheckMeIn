@@ -336,7 +336,7 @@ class Accounts(Utilities):
         await self.BD._do_update_query(query,
                                        [(Status.inactive, Status.active)])
 
-    async def set_key_holder_active(self, barcode):
+    async def activate_key_holder(self, barcode):
         ret = False
 
         if barcode:
@@ -348,10 +348,10 @@ class Accounts(Utilities):
                          "AND role & :role != 0;")
                 params = {'akh': Status.active, 'bc': barcode,
                           'role': Role.KEYHOLDER}
-                row_count = await self.BD._do_update_query(query, params)
+                rowcount = await self.BD._do_update_query(query, params)
 
                 # Were there changes from the last update query?
-                if row_count > 0:
+                if rowcount > 0:
                     ret = True
 
                     if item[0]:

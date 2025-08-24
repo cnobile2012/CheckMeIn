@@ -44,13 +44,16 @@ class TestVisits(BaseAsyncTests):
         self.bd.clear_state()
 
     async def get_data(self, module='all'):
-        if module == self.bd._T_MEMBERS:
-            result = await self._members.get_members()
-        elif module == self.bd._T_VISITS:
-            result = await self._visits.get_visits()
-        else:
-            result = {self.bd._T_MEMBERS: await self._members.get_members(),
-                      self.bd._T_VISITS: await self._visits.get_visits()}
+        match module:
+            case self.bd._T_MEMBERS:
+                result = await self._members.get_members()
+            case self.bd._T_VISITS:
+                result = await self._visits.get_visits()
+            case _:
+                result = {
+                    self.bd._T_MEMBERS: await self._members.get_members(),
+                    self.bd._T_VISITS: await self._visits.get_visits()
+                    }
 
         return result
 
@@ -160,7 +163,7 @@ class TestVisits(BaseAsyncTests):
         Test that the fix method updates the visits table where the
         visits.rowid is equal to some value.
         This method seems to only be used for debugging with input coming
-        from the frontend fixData.mako file, thus making it difficult to test,
+        from the frontend fix_data.mako file, thus making it difficult to test,
         because the output variable is hand entered. The code gives no sign
         as to what to enter except that there are three fields.
         """
