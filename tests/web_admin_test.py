@@ -165,7 +165,7 @@ class TestAdmin(BaseAsyncTests):
         self.assertEqual('Building Empty', result)
         data = await self.get_data()
         forgots = [visit for visit in data['visits'] if visit[3] == 'Forgot']
-        self.assertEqual(4, len(forgots))  # One was already in sample data.
+        self.assertEqual(4, len(forgots))  # One is already in sample data.
         active_kh = [account for account in data['accounts']
                      if account[5] == 1]
         self.assertEqual(0, len(active_kh))

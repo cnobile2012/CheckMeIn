@@ -1,11 +1,11 @@
 <%def name="logo()">
-<a HREF="${logo_link}"><img alt="TFI Logo" SRC="/static/TFI-logo-smaller.png"
-                            width="250"/></a>
+<a href="${logo_link}">
+    <img alt="TFI Logo" SRC="/static/TFI-logo-smaller.png" width="250"/>
+</a>
 </%def>
-## base.mako
 <!DOCTYPE html>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
-    ${self.scripts()}
+${self.scripts()}
 <script>
 function pythonDatetimeToHTML(datetime) {
     var js_datetime = new Date(datetime * 1000);

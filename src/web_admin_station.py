@@ -24,7 +24,7 @@ class WebAdminStation(WebBase):
         super().check_permissions(Role.ADMIN, source)
 
     @cherrypy.expose
-    def index(self, message=""):
+    def index(self, error=""):
         self.check_permissions()
         dates = self.engine.run_async(
             self.engine.reports.get_forgotten_dates())
@@ -44,7 +44,7 @@ class WebAdminStation(WebBase):
                              last_bulk_update_name=last_bulk_update_name,
                              grace_period=grace_period,
                              username=Cookie('username').get(''),
-                             message=message, repo=self.engine.repository)
+                             error=error, repo=self.engine.repository)
 
     @cherrypy.expose
     def empty_building(self):

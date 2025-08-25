@@ -23,7 +23,6 @@ ${self.logo()}<br/>
         <br/>
         <input type="submit" value="Add Members"/>
     </fieldset>
-    ${message}
 </form>
 <br/>
 <fieldset>
