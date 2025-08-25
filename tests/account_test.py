@@ -73,6 +73,7 @@ class TestAccountRole(unittest.TestCase):
         data = (
             (Role.ADMIN, True),
             (0x80, False),
+            (0x00, False),
             )
         msg = "Expected {} with value {}, found {}."
 
@@ -159,11 +160,11 @@ class TestAccountRole(unittest.TestCase):
             (Role.SHOP_CERTIFIER, 0x00, 0x00),
             (Role.KEYHOLDER, 0x10, 0x10),
             (Role.KEYHOLDER, 0x00, 0x00),
-            (Role.ADMIN, 0x20, 0x20),
+            (Role.ADMIN, 0x20, 0xFF),
             (Role.ADMIN, 0x00, 0x00),
             (Role.SHOP_STEWARD, 0x40, 0x40),
             (Role.SHOP_STEWARD, 0x00, 0x00),
-            (Role.ADMIN, '32', 0x20),
+            (Role.ADMIN, '32', 0xFF),
             )
         msg = "Expected {} with check {}, and value {}, found {}."
 
@@ -192,7 +193,7 @@ class TestAccountRole(unittest.TestCase):
         """
         Test that the setAdmin method correctly sets the Admin value.
         """
-        expected = 0x20
+        expected = 0xff
         rl = Role(0)
         rl.setAdmin(expected)
         result = rl.cookie_value
@@ -245,13 +246,15 @@ class TestAccountRole(unittest.TestCase):
         """
         data = (
             (Role.COACH, "Coach"),
-            (Role.COACH | Role.SHOP_CERTIFIER, "Certifier Coach"),
+            (Role.COACH | Role.SHOP_CERTIFIER, "Coach Certifier"),
             (Role.COACH | Role.SHOP_CERTIFIER | Role.KEYHOLDER,
-             "Keyholder Certifier Coach"),
+             "Coach Certifier Keyholder"),
+            (Role.COACH | Role.SHOP_CERTIFIER | Role.KEYHOLDER,
+             "Coach Certifier Keyholder"),
             (Role.COACH | Role.SHOP_CERTIFIER | Role.KEYHOLDER | Role.ADMIN,
-             "Admin Keyholder Certifier Coach"),
+             "Admin Coach Certifier Keyholder Steward"),
             (Role.COACH | Role.SHOP_CERTIFIER | Role.KEYHOLDER | Role.ADMIN
-             | Role.SHOP_STEWARD, "Admin Keyholder Certifier Steward Coach"),
+             | Role.SHOP_STEWARD, "Admin Coach Certifier Keyholder Steward"),
             )
         msg = "Expected {} with value {}, found {}."
 
@@ -452,11 +455,11 @@ class TestAccounts(BaseAsyncTests):
         barcode for all users with a specific role.
         """
         data = (
-            (Role.COACH, 1),
-            (Role.SHOP_CERTIFIER, 1),
-            (Role.KEYHOLDER, 2),
-            (Role.ADMIN, 1),
-            (Role.SHOP_STEWARD, 2),
+            (Role.COACH, 1),           # Role 0x04
+            (Role.SHOP_CERTIFIER, 1),  # Role 0x08
+            (Role.KEYHOLDER, 2),       # Role 0x10
+            (Role.ADMIN, 1),           # Role 0xFF
+            (Role.SHOP_STEWARD, 2),    # Role 0x40
             )
         msg = "Expected {} with role {}, found {}."
 
@@ -476,7 +479,7 @@ class TestAccounts(BaseAsyncTests):
             (Role.COACH, 1),           # Role 0x04
             (Role.SHOP_CERTIFIER, 1),  # Role 0x08
             (Role.KEYHOLDER, 1),       # Role 0x10
-            (Role.ADMIN, 1),           # Role 0x20
+            (Role.ADMIN, 1),           # Role 0xFF
             (Role.SHOP_STEWARD, 2),    # Role 0x40
             )
         msg = "Expected {} with role {}, found {}."

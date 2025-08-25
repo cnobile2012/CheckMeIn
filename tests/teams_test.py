@@ -252,20 +252,23 @@ class TestTeams(BaseAsyncTests):
         self.bd = None
 
     async def get_data(self, module='all'):
-        if module == self.bd._T_MEMBERS:
-            result = await self._members.get_members()
-        elif module == self.bd._T_TEAMS:
-            result = await self._teams.get_teams()
-        elif module == self.bd._T_TEAM_MEMBERS:
-            result = await self._teams.get_bulk_team_members()
-        elif module == self.bd._T_VISITS:
-            result = await self._visits.get_visits()
-        else:
-            result = {self.bd._T_MEMBERS: await self._members.get_members(),
-                      self.bd._T_TEAMS: await self._teams.get_teams(),
-                      self.bd._T_TEAM_MEMBERS:
-                      await self._teams.get_bulk_team_members(),
-                      self.bd._T_VISITS: await self._visits.get_visits()}
+        match module:
+            case self.bd._T_MEMBERS:
+                result = await self._members.get_members()
+            case self.bd._T_TEAMS:
+                result = await self._teams.get_teams()
+            case self.bd._T_TEAM_MEMBERS:
+                result = await self._teams.get_bulk_team_members()
+            case self.bd._T_VISITS:
+                result = await self._visits.get_visits()
+            case _:
+                result = {
+                    self.bd._T_MEMBERS: await self._members.get_members(),
+                    self.bd._T_TEAMS: await self._teams.get_teams(),
+                    self.bd._T_TEAM_MEMBERS:
+                    await self._teams.get_bulk_team_members(),
+                    self.bd._T_VISITS: await self._visits.get_visits()
+                    }
 
         return result
 

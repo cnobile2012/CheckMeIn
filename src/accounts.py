@@ -22,10 +22,10 @@ class Status(IntEnum):
 
 
 class Role:
+    ADMIN = 0xFF
     COACH = 0x04
     SHOP_CERTIFIER = 0x08
     KEYHOLDER = 0x10
-    ADMIN = 0x20
     SHOP_STEWARD = 0x40
 
     def __init__(self, value=0):
@@ -34,19 +34,24 @@ class Role:
         self._value = value
 
     def isRole(self, role):
-        return self._value & role > 0
+        if self._value == self.ADMIN:
+            ret = True
+        else:
+            ret = (self._value & role) == role
 
-    def isKeyholder(self):
-        return self.isRole(self.KEYHOLDER)
+        return ret
 
     def isAdmin(self):
         return self.isRole(self.ADMIN)
 
+    def isCoach(self):
+        return self.isRole(self.COACH)
+
     def isShopCertifier(self):
         return self.isRole(self.SHOP_CERTIFIER)
 
-    def isCoach(self):
-        return self.isRole(self.COACH)
+    def isKeyholder(self):
+        return self.isRole(self.KEYHOLDER)
 
     def isShopSteward(self):
         return self.isRole(self.SHOP_STEWARD)
@@ -67,8 +72,7 @@ class Role:
         if isinstance(check, str) and check.isdigit():
             check = int(check)
 
-        self._value = ((self._value | value) if check
-                       else (self._value & ~value))
+        self._value = self._value | value if check else self._value & ~value
 
     def setKeyholder(self, keyholder):
         self.cookie_value = (keyholder, self.KEYHOLDER)
@@ -86,24 +90,24 @@ class Role:
         self.cookie_value = (steward, self.SHOP_STEWARD)
 
     def __str__(self):
-        roleStr = ""
+        roles = []
 
         if self.isAdmin():
-            roleStr += "Admin "
-
-        if self.isKeyholder():
-            roleStr += "Keyholder "
-
-        if self.isShopCertifier():
-            roleStr += "Certifier "
-
-        if self.isShopSteward():
-            roleStr += "Steward "
+            roles.append("Admin")
 
         if self.isCoach():
-            roleStr += "Coach "
+            roles.append("Coach")
 
-        return roleStr.strip()
+        if self.isShopCertifier():
+            roles.append("Certifier")
+
+        if self.isKeyholder():
+            roles.append("Keyholder")
+
+        if self.isShopSteward():
+            roles.append("Steward")
+
+        return ' '.join(roles)
 
     def __repr__(self):
         return str(self.cookie_value)
@@ -169,16 +173,16 @@ class Accounts(Utilities):
     async def get_members_with_role(self, role: int) -> list:
         query = ("SELECT cm.displayName, a.barcode FROM accounts a "
                  "INNER JOIN current_members cm ON cm.barcode = a.barcode "
-                 "WHERE a.role & ? != 0 ORDER BY cm.displayName;")
-        return await self.BD._do_select_all_query(query, (role,))
+                 "WHERE (a.role & ?) = ? ORDER BY cm.displayName;")
+        return await self.BD._do_select_all_query(query, (role, role))
 
     async def get_present_with_role(self, role: int) -> list:
         query = ("SELECT cm.displayName, a.barcode FROM accounts a "
                  "INNER JOIN current_members cm ON cm.barcode = a.barcode "
                  "INNER JOIN visits v ON v.barcode = a.barcode "
-                 "WHERE v.status = 'In' AND role & ? != 0 "
+                 "WHERE v.status = 'In' AND (a.role & ?) = ? "
                  "ORDER BY cm.displayName;")
-        return await self.BD._do_select_all_query(query, (role,))
+        return await self.BD._do_select_all_query(query, (role, role))
 
     async def change_password(self, user: str, new_password: str) -> None:
         query = "UPDATE accounts SET password = ? WHERE user = ?;"
@@ -345,7 +349,7 @@ class Accounts(Utilities):
             if barcode != item[0]:
                 query = ("UPDATE accounts SET activeKeyholder = :akh "
                          "WHERE barcode = :bc AND activeKeyholder != :akh "
-                         "AND role & :role != 0;")
+                         "AND (role & :role) = :role;")
                 params = {'akh': Status.active, 'bc': barcode,
                           'role': Role.KEYHOLDER}
                 rowcount = await self.BD._do_update_query(query, params)
@@ -381,12 +385,12 @@ class Accounts(Utilities):
 
     async def get_key_holders(self):
         query = ("SELECT user, barcode, password FROM accounts "
-                 "WHERE role & ? != 0;")
+                 "WHERE (role & ?) = ?;")
         return [{'user': row[0], 'barcode': row[1], 'password': row[2]}
                 for row in await self.BD._do_select_all_query(
-                    query, (Role.KEYHOLDER,))]
+                    query, (Role.KEYHOLDER, Role.KEYHOLDER))]
 
     async def get_key_holder_barcodes(self):
-        query = "SELECT barcode FROM accounts WHERE role & ? != 0;"
+        query = "SELECT barcode FROM accounts WHERE (role & ?) = ?;"
         return [row[0] for row in await self.BD._do_select_all_query(
-            query, (Role.KEYHOLDER,))]
+            query, (Role.KEYHOLDER, Role.KEYHOLDER))]

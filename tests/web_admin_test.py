@@ -49,7 +49,7 @@ class TestAdmin(BaseAsyncTests):
                        self.bd._T_DEVICES, self.bd._T_GUESTS,
                        self.bd._T_LOG_EVENTS, self.bd._T_MEMBERS,
                        self.bd._T_REPORTS, self.bd._T_TEAMS,
-                       self.bd._T_VISITS),
+                       self.bd._T_TEAM_MEMBERS, self.bd._T_VISITS),
             'views': (self.bd._V_CURRENT_MEMBERS,)
             }
         await self.create_database(self.tables_and_views)
@@ -74,10 +74,11 @@ class TestAdmin(BaseAsyncTests):
         await self._guests.add_guests(TEST_DATA[self.bd._T_GUESTS])
         await self._log_events.add_log_events(TEST_DATA[self.bd._T_LOG_EVENTS])
         await self._members.add_members(TEST_DATA[self.bd._T_MEMBERS])
+        await self._teams.add_teams(TEST_DATA[self.bd._T_TEAMS])
         await self._teams.add_bulk_team_members(
             TEST_DATA[self.bd._T_TEAM_MEMBERS])
         await self._visits.add_visits(TEST_DATA[self.bd._T_VISITS])
-        # Since we are testing the admin page all tests will need the cookies.
+        # Since we are testing the admin page most tests will need the cookies.
         Cookie('role').set(Role.ADMIN)
         Cookie('username').set('admin')
         Cookie('source').set('/admin')
@@ -143,12 +144,12 @@ class TestAdmin(BaseAsyncTests):
         html = self._was.index()
         # To be sure all DB calls were wrapped.
         self.assertNotIn('coroutine', html)
-        self.assertIn('fix_data', html)       # forgot_dates
-        self.assertIn('Last Update:', html)   # last_bulk_update_date
-        self.assertIn('Member N', html)       # last_bulk_update_name
-        self.assertIn('15', html)             # grace_period
-        self.assertIn('admin', html)          # username
-        self.assertIn(self._was._REPO, html)  # repo (repository)
+        self.assertIn('fix_data', html)               # forgot_dates
+        self.assertIn('Last Update:', html)           # last_bulk_update_date
+        self.assertIn('Member N', html)               # last_bulk_update_name
+        self.assertIn('15', html)                     # grace_period
+        self.assertIn('admin', html)                  # username
+        self.assertIn(self._engine.repository, html)  # repo (repository)
 
     #@unittest.skip("Temporarily disabled")
     async def test_empty_building(self):
@@ -212,6 +213,43 @@ class TestAdmin(BaseAsyncTests):
         self.assertIn('Random G', html)
         self.assertIn('Average J', html)
         self.assertIn('Paul F', html)
+
+    @unittest.skip("Temporarily disabled")
+    async def test_fixed_data(self):
+        """
+        Test that the fixed_data method returns the admin HTML page.
+        This method seems to only be used for debugging with input coming
+        from the frontend fix_data.mako file, thus making it difficult to test,
+        because the output variable is hand entered. The code gives no sign
+        as to what to enter except that there are three fields.
+        See async def test_fix() in tests/visits_test.py.
+        """
+        output = ''
+        html = self._was.fixed_data()
+
+    #@unittest.skip("Temporarily disabled")
+    async def test_oops(self):
+        """
+        Test that the oops method fixes the forgot to logout visits.
+        """
+        html = self._was.oops()
+        self.assertIn('Oops is fixed. :-)', html)
+
+    #@unittest.skip("Temporarily disabled")
+    async def test_teams(self):
+        """
+        Test that the teams method returns the admin_teams.mako HTML page.
+        """
+        html = self._was.teams()
+        self.assertIn('Logout admin', html)
+        self.assertIn('Member N', html)
+        self.assertIn('TFI100', html)
+        self.assertIn('TFI400', html)
+        self.assertIn('Member N(100091)', html)
+        self.assertIn(self._engine.repository, html)
+
+
+
 
 
 class TestPageAccess(CPTest):

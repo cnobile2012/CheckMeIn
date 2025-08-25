@@ -27,7 +27,7 @@ ${self.logo()}<br/>
         </td>
         <td class="leave">
             <input class="hour" type="number" min="1" max="12"
-                   value="${ row.exit_time.hour if (row.exit_time.hour < 13) else row.exit_time.hour - 12}" onchange="itemChanged(this);">:
+                   value="${row.exit_time.hour if (row.exit_time.hour < 13) else row.exit_time.hour - 12}" onchange="itemChanged(this);">:
             <input class="minute" type="number" min="0" max="60" value="${row.exit_time.minute}" onchange="itemChanged(this);">
             <select class="period" onchange="itemChanged(this);"><option value="AM" ${"selected" if (row.exit_time.hour < 12) else ""}>AM</option>
                  <option value="PM" ${"selected" if (row.exit_time.hour > 11) else ""}>PM</option>
@@ -54,6 +54,9 @@ function returnTime(el) {
 }
 
 function submitPressed() {
+    // this: the current, raw DOM element
+    // index: the current element's index in the selection
+    // elem: the current, raw DOM element (same as this)
     var dataItems = $('.dataRow');
     var dataString = "";
 
@@ -65,12 +68,8 @@ function submitPressed() {
                           returnTime($('.start', this)) + '!' +
                           returnTime($('.leave', this)) + ',';
         }
-
-  // this: the current, raw DOM element
-  // index: the current element's index in the selection
-  // elem: the current, raw DOM element (same as this)
-  });
-  $('#output').val(dataString);
-  $("form#formID").submit();
+    });
+    $('#output').val(dataString);
+    $("form#formID").submit();
 }
 </script>

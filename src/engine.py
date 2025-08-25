@@ -26,6 +26,8 @@ class Engine(BaseDatabase):
     """
     This is the engine for all of the backend.
     """
+    _REPO = 'https://github.com/theforgeinitiative/CheckMeIn'
+
     def __init__(self, db_path: str, db_name: str, *args, testing: bool=False,
                  **kwargs):
         """
@@ -58,6 +60,10 @@ class Engine(BaseDatabase):
         self.certifications = Certifications()
         self.members = Members()
         self.log_events = LogEvents()
+
+    @property
+    def repository(self):
+        return self._REPO
 
     def _create_schema_and_start_event_loop(self, testing):  # pragma: no cover
         if not testing:

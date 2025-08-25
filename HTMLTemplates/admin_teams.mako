@@ -1,0 +1,214 @@
+<%def name="scripts()">
+<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+<script>
+function deactivateTeam(teamName, team_id){
+    if (confirm("OK to deactivate team " + teamName + "?")) {
+        window.location.href = "deactivateTeam?teamId="+team_id;
+    }
+}
+
+function activateTeam(teamName, team_id) {
+    if (confirm("OK to activate team " + teamName + "?")) {
+        window.location.href = "activateTeam?teamId="+team_id;
+    }
+}
+
+function deleteTeam(teamName, team_id) {
+    if (confirm("OK to delete team " + teamName + "?")) {
+        window.location.href = "deleteTeam?teamId="+team_id;
+    }
+}
+
+function editTeam(programName, programNumber, teamName, startDate, team_id){
+    $('#teamDialogName').html(teamName);
+    $('#dlgProgramName').val(programName);
+    $('#dlgProgramNumber').val(programNumber);
+    $('#dlgStartDate').val(startDate);
+    var dWidth = $(window).width() * 0.8;
+
+    $("#editTeamDialog").dialog({
+        autoOpen: false,
+        modal: true,
+        width: dWidth,
+        buttons: {" Cancel ": function() {
+            $(this).dialog('close');
+            },
+                  " Ok ": function() {
+                      $(this).dialog('close');
+                      requestStr = 'editTeam?teamId=' + team_id +
+                                   '&programName=' +
+                                   $('#dlgProgramName').val() +
+                                   "&programNumber=" +
+                                   $('#dlgProgramNumber').val() + "&startDate="
+                      $('#dlgStartDate').val()
+                      window.location.href = requestStr;
+                  }
+        }
+    });
+    $("#editTeamDialog").dialog( "open");
+}
+
+</script>			
+</%def>
+<%def name="head()">
+<link href = "https://code.jquery.com/ui/1.10.4/themes/ui-lightness/jquery-ui.css"
+      rel = "stylesheet">
+</%def>
+<%def name="title()">CheckMeIn Teams</%def>
+<%inherit file="base.mako"/>
+${self.logo()}
+<a style="text-align:right" href="/profile/logout">Logout ${username}</a>
+<br/>
+    <fieldset>
+        <legend>Add Team</legend>
+        <form action="addTeam">
+            <table>
+	       <tr>
+                   <td>Program Type</td>
+                   <td>
+                       <select name="programName" id="programName">
+	                   <option value="TFI">Non-FIRST Teams</option>
+		           <option value="FLL-DISCOVERY">FIRST Lego League Discovery</option>
+                           <option value="FLL-EXPLORE">FIRST Lego League Explore</option>
+                           <option value="FLL-CHALLENGE" selected>FIRST Lego League Challenge</option>
+                           <option value="FTC">FIRST Tech Challenge (FTC)</option>
+                           <option value="FRC">FIRST Robotics Challenge (FRC)</option>
+                       </select>
+                   </td>
+               </tr>
+               <tr>
+                   <td>Program Number</td>
+		   <td>
+                       <input type="number" id="programNumber" name="programNumber">
+                   </td>
+               </tr>
+               <tr>
+                   <td>Team Name</td>
+		   <td>
+                       <input id="teamName" name="teamName" placeholder="To be determined">
+                   </td>
+               <tr/>
+               <tr>
+                   <td>Start Date:</td>
+		   <td>
+                       <input id="start_date" type="date" name="startDate" value="${today_date}" max="${today_date}"/>
+                   </td>
+               </tr>
+	       <tr>
+                   <td></td>
+                   <td>If the coach isn't in this list, please add them <a href="/admin/users">HERE</a>.
+                   </td>
+               </tr>
+               <tr>
+                   <td>Coach 1</td>
+                   <td>
+                       <select name="coach1" id="coach1">
+% for user in active_coaches:
+                           <option value="${user[1]}">${user[0]} - ${user[1]}</option>
+% endfor
+                       </select>
+                   </td>
+                   <td>Coach 2</td>
+                   <td>
+                       <select name="coach2" id="coach2">
+% for user in active_coaches:
+                           <option value="${user[1]}">${user[0]} - ${user[1]}</option>
+% endfor
+                       </select>
+                   </td>
+               </tr>
+               <tr>
+                   <td><input type="submit" value="Add"/></td>
+               </tr>
+            </table>
+        </form>
+    </fieldset>
+    <br/>
+    <fieldset>
+        <legend>Active Teams</legend>
+        <table class="teams" width="100%">
+            <tr>
+                <th align="left">Team ID</th>
+                <th align="left">Team Name</th>
+                <th align="left">Start Date</th>
+                <th align="left">Coaches</th>
+                <th align="center">Actions</th>
+            </tr>
+% for team in active_teams:
+            <tr>
+                <td>
+                    <a href="/teams?team_id=${team.team_id}">
+                        ${team.program_id}</a>
+                </td>
+                <td>
+                    <a href="/teams?team_id=${team.team_id}">${team.name}</a>
+                </td>
+                <td>${team.start_date.strftime("%d %b %Y")}</td>
+                <td>
+% for coach in coaches[team.team_id]:
+                    ${coach.display + " " }
+% endfor
+                </td>
+                <td align="center">
+                    <button name="Edit" onclick="editTeam('${team.program_name}', '${team.program_number}', '${team.name}', '${team.start_date.date()}', '${team.team_id}')">Edit Team Info</button>
+                    <button name="Deactivate" class="deactivate" onclick="deactivateTeam('${team.name}', '${team.team_id}')">Deactivate</button>
+                </td>
+            </tr>
+% endfor
+        </table>
+            </fieldset>
+            <br/>
+%if len(inactive_teams):
+            <fieldset>
+                <legend>Inactive Teams</legend>
+                <table class="teams" width="100%">
+                    <tr>
+                        <th align="left">Team ID</th>
+                        <th align="left">Team Name</th>
+                        <th align="left">Start Date</th>
+                        <th align="center">Actions</th>
+                    </tr>
+% for team in inactive_teams:
+                    <tr>
+                        <td>${team.program_id}</td>
+                        <td>${team.name}</td>
+                        <td>${team.start_date.strftime("%d %b %Y")}</td>
+                        <td align="center">
+                            <button name="Activate" onclick="activateTeam('${team.name}', '${team.team_id}')">Activate</button>
+                            <button name="Delete" onclick="deleteTeam(${team.name}', '${team.team_id}')">Delete</button>
+                        </td>
+                    </tr>
+% endfor
+                </table>
+            </fieldset>
+%endif
+<hr/>
+To add feature requests or report issues, please go to:
+<a href="${repo}/issues">${repo}/issues</a>
+<div id="editTeamDialog" title="Edit Team info" style="display:none;">
+    <h2 id="teamDialogName"></h2>
+    <p>To change team name, coaches or member info click on the link in list of teams</p>
+    <table>
+        <tr>
+            <td>Program Type</td>
+            <td>
+                <select name="programName" id="dlgProgramName">
+                    <option value="TFI">Non-FIRST Teams</option>
+                    <option value="FLL-DISCOVERY">FIRST Lego League Discovery</option>
+                    <option value="FLL-EXPLORE">FIRST Lego League Explore</option>
+                    <option value="FLL-CHALLENGE" selected>FIRST Lego League Challenge</option>
+                    <option value="FTC">FIRST Tech Challenge (FTC)</option>
+                    <option value="FRC">FIRST Robotics Challenge (FRC)</option>
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td>Program Number</td>
+            <td><input type="number" id="dlgProgramNumber" name="programNumber"></td>
+        </tr>
+        <tr>
+            <td>Start Date:</td>
+            <td><input id="dlgStartDate" type="date" name="startDate" value="${today_date}" max="${today_date}"/></td>
+        </tr>
+    </table>
+</div>

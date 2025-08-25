@@ -11,8 +11,8 @@ import unittest
 from unittest.mock import patch
 
 from src.accounts import Role
+from src.engine import Engine
 from src.web_base import Cookie, WebBase
-from src.web_admin_station import WebAdminStation
 
 from .base_cp_test import TestFakeServer
 
@@ -79,14 +79,14 @@ class TestWebBase(TestFakeServer):
         kwargs = {'forgot_dates': (), 'last_bulk_update_date': now,
                   'last_bulk_update_name': 'Joe S', 'grace_period': '15',
                   'username': 'admin', 'message': 'Testing',
-                  'repo': WebAdminStation._REPO}
+                  'repo': Engine._REPO}
         template = self._web_base.template(name, **kwargs)
         self.assertIn(now.strftime("%Y-%m-%d at %I:%M %p"), template)
         self.assertIn('Joe S', template)
         self.assertIn('15', template)
         self.assertIn('admin', template)
         self.assertIn('Testing', template)
-        self.assertIn(WebAdminStation._REPO, template)
+        self.assertIn(Engine._REPO, template)
 
     #@unittest.skip("Temporarily skipped")
     def test_has_permissions_no_login(self):

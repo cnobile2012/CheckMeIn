@@ -142,7 +142,7 @@ class Visits:
     async def oops_forgot(self):
         """
         This method sets the status = 'In' if the status = 'Forgot' and the
-        exit_time > than midnight of the same day.
+        exit_time > midnight of the same day.
         """
         now = datetime.datetime.now()
         start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)

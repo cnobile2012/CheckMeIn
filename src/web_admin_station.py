@@ -16,7 +16,6 @@ from .teams import TeamMemberType
 
 
 class WebAdminStation(WebBase):
-    _REPO = 'https://github.com/theforgeinitiative/CheckMeIn'
 
     def __init__(self, lookup, engine, *args, **kwargs):
         super().__init__(lookup, engine, *args, **kwargs)
@@ -45,7 +44,7 @@ class WebAdminStation(WebBase):
                              last_bulk_update_name=last_bulk_update_name,
                              grace_period=grace_period,
                              username=Cookie('username').get(''),
-                             message=message, repo=self._REPO)
+                             message=message, repo=self.engine.repository)
 
     @cherrypy.expose
     def empty_building(self):
@@ -89,28 +88,23 @@ class WebAdminStation(WebBase):
         return self.index('Oops is fixed. :-)')
 
     @cherrypy.expose
-    def updatePresent(self, checked_out):
-        super().check_permissions(Role.KEYHOLDER, "/")
-        self.engine.run_async(self.engine.visits.oops_forgot())
-        return self.index('Oops is fixed. :-)')
-
-    @cherrypy.expose
-    async def teams(self, error=""):
+    def teams(self, error=""):
         self.check_permissions()
         active_teams = self.engine.run_async(
             self.engine.teams.get_active_team_list())
         inactive_teams = self.engine.run_async(
             self.engine.teams.get_inactive_team_list())
-        active_coaches = await self.engine.accounts.get_members_with_role(
-            Role.COACH)
-        coaches = self.engine.run_async(self.engine.teams.get_coaches(
-            active_teams))
+        active_coaches = self.engine.run_async(
+            self.engine.accounts.get_members_with_role(Role.COACH))
+        coaches = self.engine.run_async(
+            self.engine.teams.get_coaches(active_teams))
         today_date = datetime.date.today().isoformat()
         return self.template(
-            'adminTeams.mako', error=error, todayDate=today_date,
+            'admin_teams.mako', error=error, today_date=today_date,
             username=Cookie('username').get(''),
-            activeTeams=active_teams, inactiveTeams=inactive_teams,
-            activeCoaches=active_coaches, coaches=coaches)
+            active_teams=active_teams, inactive_teams=inactive_teams,
+            active_coaches=active_coaches, coaches=coaches,
+            repo=self.engine.repository)
 
     @cherrypy.expose
     def addTeam(self, program_name, program_number, team_name, start_date,
