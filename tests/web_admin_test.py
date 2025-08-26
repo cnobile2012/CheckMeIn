@@ -248,8 +248,87 @@ class TestAdmin(BaseAsyncTests):
         self.assertIn('Member N(100091)', html)
         self.assertIn(self._engine.repository, html)
 
+    #@unittest.skip("Temporarily disabled")
+    async def test_add_team(self):
+        """
+        Test that the add_team method returns a admin_teams.mako HTML page
+        with a new team in 'Active Teams'.
+        """
+        program_name = 'TFI'
+        program_number = 123
+        team_name = ''
+        start_date = '2021-07-31'
+        coach1 = '100091'
+        coach2 = '100090'
+        html = self._was.add_team(program_name, program_number, team_name,
+                                  start_date, coach1, coach2)
+        self.assertIn('TFI123', html)
+        self.assertIn('TBD:TFI123', html)
+        self.assertIn('31 Jul 2021', html)
+        self.assertIn('Daughter N(100090)', html)
+        self.assertIn('Member N(100091)', html)
 
+    #@unittest.skip("Temporarily disabled")
+    async def test_users(self):
+        """
+        Test that the users method a users.mako HTML page with current users
+        and non-account users filled in.
+        """
+        html = self._was.users()
+        self.assertIn('admin', html)
+        self.assertIn('100091', html)
+        self.assertIn('(Member N)', html)
+        self.assertIn('Admin Coach Certifier Keyholder Steward', html)
+        self.assertIn('100032', html)
+        self.assertIn('(Average J)', html)
+        self.assertIn('Steward', html)
+        self.assertIn('100015', html)
+        self.assertIn('(Paul F)', html)
+        self.assertIn('Keyholder', html)
+        self.assertIn('100090 (Daughter N)', html)
+        self.assertIn('100093 (Fred N)', html)
+        self.assertIn(self._engine.repository, html)
 
+    #@unittest.skip("Temporarily disabled")
+    async def test_add_user(self):
+        """
+        Test that the add_user method a users.mako HTML page with a new user,
+        also tests for two error messages in the HTML.
+        """
+        err_msg0 = "Username must not be blank for barcode {}."
+        err_msg1 = ""
+        data = (
+            ('Fred', '100093', False, None),
+            ('', '999999', True, err_msg0.format('999999')),
+            ('admin', '100091', True, err_msg1.format('admin')),
+            )
+
+        for display_name, barcode, verify, expected in data:
+            html = self._was.add_user(display_name, barcode)
+
+            if verify:
+                self.assertIn(expected, html)
+            else:
+                self.assertIn(display_name, html)
+                self.assertIn(barcode, html)
+
+    #@unittest.skip("Temporarily disabled")
+    async def test_delete_user(self):
+        """
+        Test that the delete_user method returns a redirect after deleting
+        a user from the accounts table.
+        """
+        barcode = '100032'
+        accounts = await self.get_data('accounts')
+        self.assertTrue([accounts for account in accounts
+                         if account[4] == barcode])
+
+        with self.assertRaises(cherrypy._cperror.HTTPRedirect) as cm:
+            self._was.delete_user(barcode)
+
+        accounts = await self.get_data('accounts')
+        self.assertFalse([accounts for account in accounts
+                          if account[4] == barcode])
 
 
 class TestPageAccess(CPTest):
@@ -321,10 +400,18 @@ class TestPageAccess(CPTest):
             self.assertStatus('200 OK')
 
     @unittest.skip("Temporarily disabled")
-    def test_getKeyholderJSON(self):
+    def test_admin_teams(self):
         with self.patch_session():
-            self.getPage("/admin/getKeyholderJSON")
-            self.assertStatus('200 OK')
+            self.getPage("/admin/teams")
+            self.assertStatus("200 OK")
+
+    @unittest.skip("Temporarily disabled")
+    def test_add_team(self):
+        with self.patch_session():
+            self.getPage("/admin/add_team?program_name=TFI"
+                         "&start_date=2021-07-31&program_number=123"
+                         "&team_name=&coach1=100091&coach2=100090")
+            self.assertStatus("200 OK")
 
     @unittest.skip("Temporarily disabled")
     def test_users(self):
@@ -333,70 +420,25 @@ class TestPageAccess(CPTest):
             self.assertStatus('200 OK')
 
     @unittest.skip("Temporarily disabled")
-    def test_changeAccess(self):
+    def test_add_user(self):
         with self.patch_session():
-            self.getPage(
-                "/admin/changeAccess?barcode=100091&admin=1&keyholder=1")
-            self.assertStatus('303 See Other')
+            self.getPage("/admin/add_user?user=Fred&barcode=100093")
 
     @unittest.skip("Temporarily disabled")
-    def test_notloggedIn(self):
-        with self.patch_session_none():
-            self.getPage("/admin/")
-            self.assertStatus('303 See Other')
-
-    @unittest.skip("Temporarily disabled")
-    def test_addUser(self):
+    def test_delete_user(self):
         with self.patch_session():
-            self.getPage("/admin/addUser?user=Fred&barcode=100093")
-
-    @unittest.skip("Temporarily disabled")
-    def test_addUserDuplicate(self):
-        with self.patch_session():
-            self.getPage("/admin/addUser?user=Fred&barcode=100093")
-
-    @unittest.skip("Temporarily disabled")
-    def test_addUserNoName(self):
-        with self.patch_session():
-            self.getPage("/admin/addUser?user=&barcode=100042")
-
-    @unittest.skip("Temporarily disabled")
-    def test_deleteUser(self):
-        with self.patch_session():
-            self.getPage("/admin/deleteUser?barcode=100093")
-
-    @unittest.skip("Temporarily disabled")
-    def test_adminTeams(self):
-        with self.patch_session():
-            self.getPage("/admin/teams")
-            self.assertStatus("200 OK")
-
-    @unittest.skip("Temporarily disabled")
-    def test_addTeam(self):
-        with self.patch_session():
-            self.getPage("/admin/addTeam?programName=TFI"
-                         "&startDate=2021-07-31&programNumber=123"
-                         "&teamName=&coach1=100091&coach2=100090")
-            self.assertStatus("200 OK")
-
-    @unittest.skip("Temporarily disabled")
-    def test_addTeamDuplicate(self):
-        with self.patch_session():
-            self.getPage("/admin/addTeam?programName=TFI&startDate=2021-07-31"
-                         "&programNumber=123&teamName=&coach1=100091"
-                         "&coach2=100090")
-            self.assertStatus("200 OK")
-
-    @unittest.skip("Temporarily disabled")
-    def test_activateTeam(self):
-        with self.patch_session():
-            self.getPage("/admin/activateTeam?teamId=1")
-            self.assertStatus("303 See Other")
+            self.getPage("/admin/delete_user?barcode=100093")
 
     @unittest.skip("Temporarily disabled")
     def test_deactivateTeam(self):
         with self.patch_session():
             self.getPage("/admin/deactivateTeam?teamId=1")
+            self.assertStatus("303 See Other")
+
+    @unittest.skip("Temporarily disabled")
+    def test_activateTeam(self):
+        with self.patch_session():
+            self.getPage("/admin/activateTeam?teamId=1")
             self.assertStatus("303 See Other")
 
     @unittest.skip("Temporarily disabled")
@@ -411,6 +453,43 @@ class TestPageAccess(CPTest):
             self.getPage("/admin/editTeam?teamId=100&programName=FRC"
                          "&programNumber=3459&startDate=2021-07-31")
             self.assertStatus("303 See Other")
+
+    @unittest.skip("Temporarily disabled")
+    def test_changeAccess(self):
+        with self.patch_session():
+            self.getPage(
+                "/admin/changeAccess?barcode=100091&admin=1&keyholder=1")
+            self.assertStatus('303 See Other')
+
+    @unittest.skip("Temporarily disabled")
+    def test_getKeyholderJSON(self):
+        with self.patch_session():
+            self.getPage("/admin/getKeyholderJSON")
+            self.assertStatus('200 OK')
+
+    @unittest.skip("Temporarily disabled")
+    def test_notloggedIn(self):
+        with self.patch_session_none():
+            self.getPage("/admin/")
+            self.assertStatus('303 See Other')
+
+    @unittest.skip("Temporarily disabled")
+    def test_addUserDuplicate(self):
+        with self.patch_session():
+            self.getPage("/admin/addUser?user=Fred&barcode=100093")
+
+    @unittest.skip("Temporarily disabled")
+    def test_addUserNoName(self):
+        with self.patch_session():
+            self.getPage("/admin/addUser?user=&barcode=100042")
+
+    @unittest.skip("Temporarily disabled")
+    def test_addTeamDuplicate(self):
+        with self.patch_session():
+            self.getPage("/admin/addTeam?programName=TFI&startDate=2021-07-31"
+                         "&programNumber=123&teamName=&coach1=100091"
+                         "&coach2=100090")
+            self.assertStatus("200 OK")
 
     @unittest.skip("Temporarily disabled")
     def test_removeFromWhoIsHere(self):

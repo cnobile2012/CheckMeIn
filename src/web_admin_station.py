@@ -107,8 +107,8 @@ class WebAdminStation(WebBase):
             repo=self.engine.repository)
 
     @cherrypy.expose
-    def addTeam(self, program_name, program_number, team_name, start_date,
-                coach1, coach2):
+    def add_team(self, program_name, program_number, team_name, start_date,
+                 coach1, coach2):
         self.check_permissions()
 
         if not team_name:
@@ -135,24 +135,26 @@ class WebAdminStation(WebBase):
     @cherrypy.expose
     def users(self, error=''):
         self.check_permissions()
-        users = self.engine.accounts.get_users()
-        non_users = self.engine.accounts.get_non_accounts()
+        users = self.engine.run_async(self.engine.accounts.get_users())
+        non_users = self.engine.run_async(
+            self.engine.accounts.get_non_accounts())
         return self.template('users.mako', error=error,
                              username=Cookie('username').get(''), users=users,
-                             nonAccounts=non_users)
+                             non_accounts=non_users,
+                             repo=self.engine.repository)
 
     @cherrypy.expose
-    async def addUser(self, user, barcode, keyholder=0, admin=0, certifier=0,
-                      coach=0, steward=0):
+    def add_user(self, user, barcode, keyholder=0, admin=0, certifier=0,
+                 coach=0, steward=0):
         error = ""
         self.check_permissions()
 
         if user == "":
-            error = "Username must not be blank"
+            error = f"Username must not be blank for barcode {barcode}."
             return self.users(error)
 
         chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
-        tempPassword = ''.join(random.SystemRandom().choice(chars)
+        temp_password = ''.join(random.SystemRandom().choice(chars)
                                for _ in range(12))
         role = Role()
         role.setAdmin(admin)
@@ -161,8 +163,9 @@ class WebAdminStation(WebBase):
         role.setCoach(coach)
         role.setShopSteward(steward)
         rowcount = self.engine.run_async(self.engine.accounts.add_user(
-            user, tempPassword, barcode, role))
-        email = await self.engine.accounts.forgot_password(user)
+            user, temp_password, barcode, role.cookie_value))
+        email = self.engine.run_async(
+            self.engine.accounts.forgot_password(user))
         self.engine.run_async(self.engine.log_events.add_event(
             "Forgot password request", f"{email} for {user}"))
 
@@ -172,9 +175,9 @@ class WebAdminStation(WebBase):
         return self.users(error)
 
     @cherrypy.expose
-    def deleteUser(self, barcode):
+    def delete_user(self, barcode):
         self.check_permissions()
-        self.engine.accounts.remove_user(barcode)
+        self.engine.run_async(self.engine.accounts.remove_user(barcode))
         raise cherrypy.HTTPRedirect("/admin/users")
 
     @cherrypy.expose

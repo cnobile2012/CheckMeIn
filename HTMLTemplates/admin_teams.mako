@@ -61,42 +61,51 @@ ${self.logo()}
 <br/>
     <fieldset>
         <legend>Add Team</legend>
-        <form action="addTeam">
+        <form action="add_team">
             <table>
 	       <tr>
                    <td>Program Type</td>
                    <td>
                        <select name="programName" id="programName">
 	                   <option value="TFI">Non-FIRST Teams</option>
-		           <option value="FLL-DISCOVERY">FIRST Lego League Discovery</option>
-                           <option value="FLL-EXPLORE">FIRST Lego League Explore</option>
-                           <option value="FLL-CHALLENGE" selected>FIRST Lego League Challenge</option>
-                           <option value="FTC">FIRST Tech Challenge (FTC)</option>
-                           <option value="FRC">FIRST Robotics Challenge (FRC)</option>
+		           <option value="FLL-DISCOVERY">
+                               FIRST Lego League Discovery</option>
+                           <option value="FLL-EXPLORE">
+                               FIRST Lego League Explore</option>
+                           <option value="FLL-CHALLENGE" selected>
+                               FIRST Lego League Challenge</option>
+                           <option value="FTC">
+                               FIRST Tech Challenge (FTC)</option>
+                           <option value="FRC">
+                               FIRST Robotics Challenge (FRC)</option>
                        </select>
                    </td>
                </tr>
                <tr>
                    <td>Program Number</td>
 		   <td>
-                       <input type="number" id="programNumber" name="programNumber">
+                       <input type="number" id="programNumber"
+                              name="programNumber">
                    </td>
                </tr>
                <tr>
                    <td>Team Name</td>
 		   <td>
-                       <input id="teamName" name="teamName" placeholder="To be determined">
+                       <input id="teamName" name="teamName"
+                              placeholder="To be determined">
                    </td>
                <tr/>
                <tr>
                    <td>Start Date:</td>
 		   <td>
-                       <input id="start_date" type="date" name="startDate" value="${today_date}" max="${today_date}"/>
+                       <input id="start_date" type="date" name="startDate"
+                              value="${today_date}" max="${today_date}"/>
                    </td>
                </tr>
 	       <tr>
                    <td></td>
-                   <td>If the coach isn't in this list, please add them <a href="/admin/users">HERE</a>.
+                   <td>If the coach isn't in this list, please add them
+                       <a href="/admin/users">HERE</a>.
                    </td>
                </tr>
                <tr>
@@ -104,7 +113,8 @@ ${self.logo()}
                    <td>
                        <select name="coach1" id="coach1">
 % for user in active_coaches:
-                           <option value="${user[1]}">${user[0]} - ${user[1]}</option>
+                           <option value="${user[1]}">
+                               ${user[0]} - ${user[1]}</option>
 % endfor
                        </select>
                    </td>
@@ -112,7 +122,8 @@ ${self.logo()}
                    <td>
                        <select name="coach2" id="coach2">
 % for user in active_coaches:
-                           <option value="${user[1]}">${user[0]} - ${user[1]}</option>
+                           <option value="${user[1]}">
+                               ${user[0]} - ${user[1]}</option>
 % endfor
                        </select>
                    </td>
@@ -187,16 +198,20 @@ To add feature requests or report issues, please go to:
 <a href="${repo}/issues">${repo}/issues</a>
 <div id="editTeamDialog" title="Edit Team info" style="display:none;">
     <h2 id="teamDialogName"></h2>
-    <p>To change team name, coaches or member info click on the link in list of teams</p>
+    <p>To change team name, coaches or member info click on the link in list
+       of teams</p>
     <table>
         <tr>
             <td>Program Type</td>
             <td>
                 <select name="programName" id="dlgProgramName">
                     <option value="TFI">Non-FIRST Teams</option>
-                    <option value="FLL-DISCOVERY">FIRST Lego League Discovery</option>
-                    <option value="FLL-EXPLORE">FIRST Lego League Explore</option>
-                    <option value="FLL-CHALLENGE" selected>FIRST Lego League Challenge</option>
+                    <option value="FLL-DISCOVERY">
+                        FIRST Lego League Discovery</option>
+                    <option value="FLL-EXPLORE">
+                        FIRST Lego League Explore</option>
+                    <option value="FLL-CHALLENGE" selected>
+                        FIRST Lego League Challenge</option>
                     <option value="FTC">FIRST Tech Challenge (FTC)</option>
                     <option value="FRC">FIRST Robotics Challenge (FRC)</option>
                 </select>
@@ -204,11 +219,15 @@ To add feature requests or report issues, please go to:
         </tr>
         <tr>
             <td>Program Number</td>
-            <td><input type="number" id="dlgProgramNumber" name="programNumber"></td>
+            <td><input type="number" id="dlgProgramNumber"
+                       name="programNumber">
+            </td>
         </tr>
         <tr>
             <td>Start Date:</td>
-            <td><input id="dlgStartDate" type="date" name="startDate" value="${today_date}" max="${today_date}"/></td>
+            <td><input id="dlgStartDate" type="date" name="startDate"
+                       value="${today_date}" max="${today_date}"/>
+            </td>
         </tr>
     </table>
 </div>

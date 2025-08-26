@@ -305,7 +305,7 @@ class Accounts(Utilities):
                             f"to : {new_role}")
 
     async def remove_user(self, barcode):
-        query = "DELETE from accounts WHERE barcode= ?;"
+        query = "DELETE from accounts WHERE barcode = ?;"
         await self.BD._do_delete_query(query, [(barcode,)])
 
     async def get_users(self):

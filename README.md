@@ -17,7 +17,7 @@ $ sudo apt install build-essential python3.14 python3-setuptools git virtualenvw
 $ sudo apt install sqlitebrowswer
 ```
 
-Now we clone the repository.
+Next we clone the repository.
 
 The first command is used if you have a GitHub account and are logged in and
 the second command is if you do not have a GitHub account.
@@ -28,14 +28,14 @@ $ git clone https://github.com/theforgeinitiative/CheckMeIn.git
 ```
 
 Setup the VE (Virtual Environment). The virtualenvwrapper package is a wrapper
-around virtualenv that provides easy to use tools for virtualenv and will
-install virtualenv for you. I use the `nano` editor but you can use the editor
-of your choice.
+around virtualenv that provides easy to use tools for the virtualenv package
+and will install virtualenv for you. I use the `nano` editor but you can use
+the editor of your choice.
 ```bash
 $ nano .bashrc
 ```
 
-Then add the following lines to the bottom of the .bashrc file.
+Then add the following lines to the bottom of your .bashrc file.
 ```
 # Setup the Python virtual environment.
 VIRTUALENVWRAPPER_PYTHON=/usr/bin/python3
