@@ -4,12 +4,14 @@
 #
 
 import os
+import json
 import unittest
 import cherrypy
 import datetime
 
 from cherrypy.lib import sessions
 from mako.lookup import TemplateLookup
+from cryptography.fernet import Fernet
 
 from src import BASE_DIR
 from src.accounts import Role, Accounts
@@ -124,12 +126,15 @@ class TestAdmin(BaseAsyncTests):
                 result = await self._accounts.get_accounts()
             case self.bd._T_MEMBERS:
                 result = await self._members.get_members()
+            case self.bd._T_TEAMS:
+                result = await self._teams.get_teams()
             case self.bd._T_VISITS:
                 result = await self._visits.get_visits()
             case _:
                 result = {
                     self.bd._T_ACCOUNTS: await self._accounts.get_accounts(),
                     self.bd._T_MEMBERS: await self._members.get_members(),
+                    self.bd._T_TEAMS: await self._teams.get_teams(),
                     self.bd._T_VISITS: await self._visits.get_visits(),
                     }
 
@@ -269,6 +274,84 @@ class TestAdmin(BaseAsyncTests):
         self.assertIn('Member N(100091)', html)
 
     #@unittest.skip("Temporarily disabled")
+    async def test_deactivate_team(self):
+        """
+        Test that the deactivate_team method deactivates a team.
+        """
+        team_id = 2
+        teams = await self.get_data('teams')
+        self.assertEqual(1, [team for team in teams
+                             if team[0] == team_id][0][5])
+
+        with self.assertRaises(cherrypy.HTTPRedirect) as cm:
+            self._was.deactivate_team(team_id)
+
+        teams = await self.get_data('teams')
+        self.assertEqual(0, [team for team in teams
+                             if team[0] == team_id][0][5])
+
+    #@unittest.skip("Temporarily disabled")
+    async def test_activate_team(self):
+        """
+        Test that the activate_team method activates a team.
+        """
+        team_id = 3
+        teams = await self.get_data('teams')
+        self.assertEqual(0, [team for team in teams
+                             if team[0] == team_id][0][5])
+
+        with self.assertRaises(cherrypy.HTTPRedirect) as cm:
+            self._was.activate_team(team_id)
+
+        teams = await self.get_data('teams')
+        self.assertEqual(1, [team for team in teams
+                             if team[0] == team_id][0][5])
+
+    #@unittest.skip("Temporarily disabled")
+    async def test_delete_team(self):
+        """
+        Test that the delete_team method removes a team from the teams
+        table in the database and returns a redirect.
+        """
+        team_id = 2
+        teams = await self.get_data('teams')
+        self.assertTrue([team for team in teams if team[0] == team_id])
+
+        with self.assertRaises(cherrypy.HTTPRedirect) as cm:
+            self._was.delete_team(team_id)
+
+        teams = await self.get_data('teams')
+        self.assertFalse([team for team in teams if team[0] == team_id])
+
+    #@unittest.skip("Temporarily disabled")
+    async def test_edit_team(self):
+        """
+        Test that the edit_team method can edit team values in the teams
+        table in the database and returns a redirect.
+        """
+        team_id = 2
+        teams = await self.get_data('teams')
+        team_name = 'Crazy Contraptions'
+        start_date = datetime.datetime(2020, 5, 1)
+        self.assertEqual(
+            (team_id, 'TFI', 100, team_name, start_date),
+            [team[:5] for team in teams if team[0] == team_id][0])
+
+        program_name = 'New TFI'
+        program_number = 200
+        start_date = "3000-05-01"
+
+        with self.assertRaises(cherrypy.HTTPRedirect) as cm:
+            self._was.edit_team(program_name, program_number, start_date,
+                                team_id)
+
+        teams = await self.get_data('teams')
+        start_date = self._was.date_from_string(start_date)
+        self.assertEqual(
+            (team_id, program_name, program_number, team_name, start_date),
+            [team[:5] for team in teams if team[0] == team_id][0])
+
+    #@unittest.skip("Temporarily disabled")
     async def test_users(self):
         """
         Test that the users method a users.mako HTML page with current users
@@ -320,15 +403,70 @@ class TestAdmin(BaseAsyncTests):
         """
         barcode = '100032'
         accounts = await self.get_data('accounts')
-        self.assertTrue([accounts for account in accounts
+        self.assertTrue([account for account in accounts
                          if account[4] == barcode])
 
-        with self.assertRaises(cherrypy._cperror.HTTPRedirect) as cm:
+        with self.assertRaises(cherrypy.HTTPRedirect) as cm:
             self._was.delete_user(barcode)
 
         accounts = await self.get_data('accounts')
-        self.assertFalse([accounts for account in accounts
+        self.assertFalse([account for account in accounts
                           if account[4] == barcode])
+
+    #@unittest.skip("Temporarily disabled")
+    async def test_change_access(self):
+        """
+        Test that the change_access method changes the access level of a user.
+        """
+        data = (
+            ('100032', False, True, False, False, True),
+            ('100015', True, True, True, True, True),
+            )
+        orig_accounts = await self.get_data('accounts')
+
+        for barcode, admin, keyholder, certifier, coach, steward in data:
+            with self.assertRaises(cherrypy.HTTPRedirect) as cm:
+                self._was.change_access(barcode, admin, keyholder,
+                                        certifier, coach, steward)
+
+            new_accounts = await self.get_data('accounts')
+            orig_user_data = [account for account in orig_accounts
+                              if account[4] == barcode][0]
+            new_user_data = [account for account in new_accounts
+                             if account[4] == barcode][0]
+            self.assertNotEqual(orig_user_data, new_user_data)
+
+    #@unittest.skip("Temporarily disabled")
+    async def test_get_keyholder_json(self):
+        """
+        Test that the get_keyholder_json method returns an encrypted JSON
+        object of user data and devices the user manages.
+        """
+        data = (
+            ('admin', '100091', 'Phone', '87:65:43:21:00:54'),
+            ('Paul', '100015', '', ''),
+            )
+
+        result = self._was.get_keyholder_json()
+        key_file = os.path.join(self._engine.data_path, 'checkmein.key')
+
+        with open(key_file, 'rb') as f:
+            key = f.read()
+
+        f = Fernet(key)
+        decoded = f.decrypt(result)
+        data_str = decoded.decode("utf-8")
+        keyholder_data = json.loads(data_str)
+
+        for idx, (user, barcode, name, mac) in enumerate(data):
+            user_data = keyholder_data[idx]
+            self.assertEqual(user, user_data['user'])
+            self.assertEqual(barcode, user_data['barcode'])
+            devices = user_data['devices']
+
+            for device in devices:
+                self.assertEqual(name, device['name'])
+                self.assertEqual(mac, device['mac'])
 
 
 class TestPageAccess(CPTest):
@@ -414,6 +552,31 @@ class TestPageAccess(CPTest):
             self.assertStatus("200 OK")
 
     @unittest.skip("Temporarily disabled")
+    def test_deactivate_team(self):
+        with self.patch_session():
+            self.getPage("/admin/deactivate_team?teamId=1")
+            self.assertStatus("303 See Other")
+
+    @unittest.skip("Temporarily disabled")
+    def test_activate_team(self):
+        with self.patch_session():
+            self.getPage("/admin/activate_team?teamId=1")
+            self.assertStatus("303 See Other")
+
+    @unittest.skip("Temporarily disabled")
+    def test_delete_team(self):
+        with self.patch_session():
+            self.getPage("/admin/delete_team?teamId=100")
+            self.assertStatus("303 See Other")
+
+    @unittest.skip("Temporarily disabled")
+    def test_edit_team(self):
+        with self.patch_session():
+            self.getPage("/admin/edit_team?teamId=100&programName=FRC"
+                         "&programNumber=3459&startDate=2021-07-31")
+            self.assertStatus("303 See Other")
+
+    @unittest.skip("Temporarily disabled")
     def test_users(self):
         with self.patch_session():
             self.getPage("/admin/users")
@@ -430,41 +593,16 @@ class TestPageAccess(CPTest):
             self.getPage("/admin/delete_user?barcode=100093")
 
     @unittest.skip("Temporarily disabled")
-    def test_deactivateTeam(self):
-        with self.patch_session():
-            self.getPage("/admin/deactivateTeam?teamId=1")
-            self.assertStatus("303 See Other")
-
-    @unittest.skip("Temporarily disabled")
-    def test_activateTeam(self):
-        with self.patch_session():
-            self.getPage("/admin/activateTeam?teamId=1")
-            self.assertStatus("303 See Other")
-
-    @unittest.skip("Temporarily disabled")
-    def test_deleteTeam(self):
-        with self.patch_session():
-            self.getPage("/admin/deleteTeam?teamId=100")
-            self.assertStatus("303 See Other")
-
-    @unittest.skip("Temporarily disabled")
-    def test_editTeam(self):
-        with self.patch_session():
-            self.getPage("/admin/editTeam?teamId=100&programName=FRC"
-                         "&programNumber=3459&startDate=2021-07-31")
-            self.assertStatus("303 See Other")
-
-    @unittest.skip("Temporarily disabled")
-    def test_changeAccess(self):
+    def test_change_access(self):
         with self.patch_session():
             self.getPage(
-                "/admin/changeAccess?barcode=100091&admin=1&keyholder=1")
+                "/admin/change_access?barcode=100091&admin=1&keyholder=1")
             self.assertStatus('303 See Other')
 
     @unittest.skip("Temporarily disabled")
-    def test_getKeyholderJSON(self):
+    def test_get_keyholder_json(self):
         with self.patch_session():
-            self.getPage("/admin/getKeyholderJSON")
+            self.getPage("/admin/get_keyholder_json")
             self.assertStatus('200 OK')
 
     @unittest.skip("Temporarily disabled")

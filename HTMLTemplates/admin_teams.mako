@@ -3,19 +3,19 @@
 <script>
 function deactivateTeam(teamName, team_id){
     if (confirm("OK to deactivate team " + teamName + "?")) {
-        window.location.href = "deactivateTeam?teamId="+team_id;
+        window.location.href = "deactivate_team?teamId="+team_id;
     }
 }
 
 function activateTeam(teamName, team_id) {
     if (confirm("OK to activate team " + teamName + "?")) {
-        window.location.href = "activateTeam?teamId="+team_id;
+        window.location.href = "activate_team?teamId="+team_id;
     }
 }
 
 function deleteTeam(teamName, team_id) {
     if (confirm("OK to delete team " + teamName + "?")) {
-        window.location.href = "deleteTeam?teamId="+team_id;
+        window.location.href = "delete_team?teamId="+team_id;
     }
 }
 
@@ -35,7 +35,7 @@ function editTeam(programName, programNumber, teamName, startDate, team_id){
             },
                   " Ok ": function() {
                       $(this).dialog('close');
-                      requestStr = 'editTeam?teamId=' + team_id +
+                      requestStr = 'edit_team?teamId=' + team_id +
                                    '&programName=' +
                                    $('#dlgProgramName').val() +
                                    "&programNumber=" +

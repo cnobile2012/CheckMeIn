@@ -43,7 +43,7 @@ def getDocumentation():
             returns="Returns the station webpage",
             notes=["This records the door was unlocked and checks the person "
                    "that unlocks it in. For use of door app ONLY"]),
-        Doc("Get Keyholder list", "/admin/getKeyholderJSON",
+        Doc("Get Keyholder list", "/admin/get_keyholder_json",
             returns="Encrypted JSON",
             notes=["This is how the doorapp gets the updated list. It is "
                    "encrypted using Fernet (symmetric) encryption with a 32 "

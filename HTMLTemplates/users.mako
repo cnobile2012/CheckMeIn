@@ -26,7 +26,7 @@ function changeAccess(userName, barcode, keyholder, admin,
             },
                   " Ok ": function() {
                 $(this).dialog('close');
-                requestStr = 'changeAccess?barcode='+barcode+'&admin='
+                requestStr = 'change_access?barcode='+barcode+'&admin='
 
                 if ($('#dlgAdmin').is(':checked')) {
                     requestStr += '1'

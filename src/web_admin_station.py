@@ -133,6 +133,32 @@ class WebAdminStation(WebBase):
         return self.teams(error)
 
     @cherrypy.expose
+    def deactivate_team(self, team_id):
+        self.check_permissions()
+        self.engine.run_async(self.engine.teams.deactivate_team(team_id))
+        raise cherrypy.HTTPRedirect("/admin/teams")
+
+    @cherrypy.expose
+    def activate_team(self, team_id):
+        self.check_permissions()
+        self.engine.run_async(self.engine.teams.activate_team(team_id))
+        raise cherrypy.HTTPRedirect("/admin/teams")
+
+    @cherrypy.expose
+    def delete_team(self, team_id):
+        self.check_permissions()
+        self.engine.run_async(self.engine.teams.delete_team(team_id))
+        raise cherrypy.HTTPRedirect("/admin/teams")
+
+    @cherrypy.expose
+    def edit_team(self, program_name, program_number, start_date, team_id):
+        self.check_permissions()
+        season_start = self.date_from_string(start_date)
+        self.engine.run_async(self.engine.teams.edit_team(
+            program_name, program_number, season_start, team_id))
+        raise cherrypy.HTTPRedirect("/admin/teams")
+
+    @cherrypy.expose
     def users(self, error=''):
         self.check_permissions()
         users = self.engine.run_async(self.engine.accounts.get_users())
@@ -155,7 +181,7 @@ class WebAdminStation(WebBase):
 
         chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
         temp_password = ''.join(random.SystemRandom().choice(chars)
-                               for _ in range(12))
+                                for _ in range(12))
         role = Role()
         role.setAdmin(admin)
         role.setKeyholder(keyholder)
@@ -181,48 +207,24 @@ class WebAdminStation(WebBase):
         raise cherrypy.HTTPRedirect("/admin/users")
 
     @cherrypy.expose
-    def deactivateTeam(self, teamId):
+    def change_access(self, barcode, admin=False, keyholder=False,
+                      certifier=False, coach=False, steward=False):
         self.check_permissions()
-        self.engine.run_async(self.engine.teams.deactivate_team(teamId))
-        raise cherrypy.HTTPRedirect("/admin/teams")
-
-    @cherrypy.expose
-    def activateTeam(self, teamId):
-        self.check_permissions()
-        self.engine.run_async(self.engine.teams.activate_team(teamId))
-        raise cherrypy.HTTPRedirect("/admin/teams")
-
-    @cherrypy.expose
-    def deleteTeam(self, teamId):
-        self.check_permissions()
-        self.engine.run_async(self.engine.teams.delete_team(teamId))
-        raise cherrypy.HTTPRedirect("/admin/teams")
-
-    @cherrypy.expose
-    def editTeam(self, programName, programNumber, startDate, teamId):
-        self.check_permissions()
-        seasonStart = self.date_from_string(startDate)
-        self.engine.run_async(self.engine.teams.edit_team(
-            programName, programNumber, seasonStart, teamId))
-        raise cherrypy.HTTPRedirect("/admin/teams")
-
-    @cherrypy.expose
-    def changeAccess(self, barcode, admin=False, keyholder=False,
-                     certifier=False, coach=False, steward=False):
-        self.check_permissions()
-        newRole = Role()
-        newRole.setAdmin(admin)
-        newRole.setKeyholder(keyholder)
-        newRole.setShopCertifier(certifier)
-        newRole.setCoach(coach)
-        newRole.setShopSteward(steward)
-        self.engine.accounts.change_role(barcode, newRole)
+        new_role = Role()
+        new_role.setAdmin(admin)
+        new_role.setKeyholder(keyholder)
+        new_role.setShopCertifier(certifier)
+        new_role.setCoach(coach)
+        new_role.setShopSteward(steward)
+        self.engine.run_async(self.engine.accounts.change_role(
+            barcode, new_role))
         raise cherrypy.HTTPRedirect("/admin/users")
 
     @cherrypy.expose
-    def getKeyholderJSON(self):
+    def get_keyholder_json(self):
         json_data = ''
-        keyholders = self.engine.accounts.get_key_holders()
+        keyholders = self.engine.run_async(
+            self.engine.accounts.get_key_holders())
 
         for keyholder in keyholders:
             keyholder['devices'] = []
@@ -234,11 +236,11 @@ class WebAdminStation(WebBase):
                     keyholder['devices'].append(
                         {'name': device.name, 'mac': device.mac})
 
-            json_data = json.dumps(keyholders)
-            key = os.path.join(self.engine.data_path, 'checkmein.key')
+        json_data = json.dumps(keyholders)
+        key_file = os.path.join(self.engine.data_path, 'checkmein.key')
 
-            with open(key, 'rb') as f:
-                key = f.read()
+        with open(key_file, 'rb') as f:
+            key = f.read()
 
-            fn = Fernet(key)
-            return fn.encrypt(json_data.encode('utf-8'))
+        fn = Fernet(key)
+        return fn.encrypt(json_data.encode('utf-8'))
