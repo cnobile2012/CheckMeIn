@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# tests/web_admin_test.py
+# tests/web_admin_station_test.py
 #
 
 import os
@@ -30,8 +30,8 @@ from src.web_admin_station import WebAdminStation
 from src.web_base import Cookie
 
 from .base_test import BaseAsyncTests
-from .sample_data import timeAgo, TEST_DATA
 from .base_cp_test import CPTest
+from .sample_data import timeAgo, TEST_DATA
 
 
 class TestAdmin(BaseAsyncTests):
@@ -115,7 +115,7 @@ class TestAdmin(BaseAsyncTests):
             Cookie('role').set(role)
 
             if redirect:
-                with self.assertRaises(expected) as cm:
+                with self.assertRaises(expected):
                     self._was.check_permissions()
             else:
                 self._was.check_permissions()
@@ -283,7 +283,7 @@ class TestAdmin(BaseAsyncTests):
         self.assertEqual(1, [team for team in teams
                              if team[0] == team_id][0][5])
 
-        with self.assertRaises(cherrypy.HTTPRedirect) as cm:
+        with self.assertRaises(cherrypy.HTTPRedirect):
             self._was.deactivate_team(team_id)
 
         teams = await self.get_data('teams')
@@ -300,7 +300,7 @@ class TestAdmin(BaseAsyncTests):
         self.assertEqual(0, [team for team in teams
                              if team[0] == team_id][0][5])
 
-        with self.assertRaises(cherrypy.HTTPRedirect) as cm:
+        with self.assertRaises(cherrypy.HTTPRedirect):
             self._was.activate_team(team_id)
 
         teams = await self.get_data('teams')
@@ -317,7 +317,7 @@ class TestAdmin(BaseAsyncTests):
         teams = await self.get_data('teams')
         self.assertTrue([team for team in teams if team[0] == team_id])
 
-        with self.assertRaises(cherrypy.HTTPRedirect) as cm:
+        with self.assertRaises(cherrypy.HTTPRedirect):
             self._was.delete_team(team_id)
 
         teams = await self.get_data('teams')
@@ -341,7 +341,7 @@ class TestAdmin(BaseAsyncTests):
         program_number = 200
         start_date = "3000-05-01"
 
-        with self.assertRaises(cherrypy.HTTPRedirect) as cm:
+        with self.assertRaises(cherrypy.HTTPRedirect):
             self._was.edit_team(program_name, program_number, start_date,
                                 team_id)
 
@@ -406,7 +406,7 @@ class TestAdmin(BaseAsyncTests):
         self.assertTrue([account for account in accounts
                          if account[4] == barcode])
 
-        with self.assertRaises(cherrypy.HTTPRedirect) as cm:
+        with self.assertRaises(cherrypy.HTTPRedirect):
             self._was.delete_user(barcode)
 
         accounts = await self.get_data('accounts')
@@ -425,7 +425,7 @@ class TestAdmin(BaseAsyncTests):
         orig_accounts = await self.get_data('accounts')
 
         for barcode, admin, keyholder, certifier, coach, steward in data:
-            with self.assertRaises(cherrypy.HTTPRedirect) as cm:
+            with self.assertRaises(cherrypy.HTTPRedirect):
                 self._was.change_access(barcode, admin, keyholder,
                                         certifier, coach, steward)
 
@@ -469,25 +469,26 @@ class TestAdmin(BaseAsyncTests):
                 self.assertEqual(mac, device['mac'])
 
 
+@unittest.skip("Temporarily disabled")
 class TestPageAccess(CPTest):
 
-    @unittest.skip("Temporarily disabled")
+    #@unittest.skip("Temporarily disabled")
     def test_admin(self):
         with self.patch_session():
             self.getPage("/admin/")
             self.assertStatus('200 OK')
 
     # this is done at 2am
-    @unittest.skip("Temporarily disabled")
+    #@unittest.skip("Temporarily disabled")
     def test_empty_building(self):
         self.getPage("/admin/empty_building")
 
-    @unittest.skip("Temporarily disabled")
+    #@unittest.skip("Temporarily disabled")
     def test_change_grace_period(self):
         with self.patch_session():
             self.getPage("/admin/set_grace_period?grace=30")
 
-    @unittest.skip("Temporarily disabled")
+    #@unittest.skip("Temporarily disabled")
     def test_bulk_add_members(self):
         filecontents = (
             '"First Name","Last Name","TFI Barcode for Button",'
@@ -511,13 +512,13 @@ class TestPageAccess(CPTest):
             self.getPage('/admin/bulk_add_members', h, 'POST', b)
             self.assertStatus('200 OK')
 
-    @unittest.skip("Temporarily disabled")
+    #@unittest.skip("Temporarily disabled")
     def test_fix_data(self):
         with self.patch_session():
             self.getPage("/admin/fix_data?date=2018-06-28")
             self.assertStatus('200 OK')
 
-    @unittest.skip("Temporarily disabled")
+    #@unittest.skip("Temporarily disabled")
     def test_fixed_data(self):
         with self.patch_session():
             self.getPage("/admin/fixed_data?output=3%212018-06-28+2%3A25PM%21"
@@ -525,19 +526,19 @@ class TestPageAccess(CPTest):
                          "2018-06-28+11%3A3PM%2C")
             self.assertStatus('200 OK')
 
-    @unittest.skip("Temporarily disabled")
-    def test_fixDataNoOutput(self):
+    #@unittest.skip("Temporarily disabled")
+    def test_fix_data_no_output(self):
         with self.patch_session():
             self.getPage("/admin/fixed_data?output=")
             self.assertStatus('200 OK')
 
-    @unittest.skip("Temporarily disabled")
+    #@unittest.skip("Temporarily disabled")
     def test_oops(self):
         with self.patch_session():
             self.getPage("/admin/oops")
             self.assertStatus('200 OK')
 
-    @unittest.skip("Temporarily disabled")
+    #@unittest.skip("Temporarily disabled")
     def test_admin_teams(self):
         with self.patch_session():
             self.getPage("/admin/teams")
@@ -547,90 +548,96 @@ class TestPageAccess(CPTest):
     def test_add_team(self):
         with self.patch_session():
             self.getPage("/admin/add_team?program_name=TFI"
-                         "&start_date=2021-07-31&program_number=123"
-                         "&team_name=&coach1=100091&coach2=100090")
+                         "&program_number=123&team_name=Building%20Garbage"
+                         "&start_date=2021-07-31&coach1=100091&coach2=100090")
             self.assertStatus("200 OK")
 
     @unittest.skip("Temporarily disabled")
+    def test_add_team_duplicate(self):
+        with self.patch_session():
+            self.getPage("/admin/add_team?program_name=TFI"
+                         "&program_number=123&team_name=Building%20Garbage"
+                         "&start_date=2021-07-31&coach1=100091&coach2=100090")
+            self.assertStatus("200 OK")
+
+    #@unittest.skip("Temporarily disabled")
     def test_deactivate_team(self):
         with self.patch_session():
-            self.getPage("/admin/deactivate_team?teamId=1")
+            self.getPage("/admin/deactivate_team?team_id=1")
             self.assertStatus("303 See Other")
 
-    @unittest.skip("Temporarily disabled")
+    #@unittest.skip("Temporarily disabled")
     def test_activate_team(self):
         with self.patch_session():
-            self.getPage("/admin/activate_team?teamId=1")
+            self.getPage("/admin/activate_team?team_id=1")
             self.assertStatus("303 See Other")
 
-    @unittest.skip("Temporarily disabled")
+    #@unittest.skip("Temporarily disabled")
     def test_delete_team(self):
         with self.patch_session():
-            self.getPage("/admin/delete_team?teamId=100")
+            self.getPage("/admin/delete_team?team_id=100")
             self.assertStatus("303 See Other")
 
-    @unittest.skip("Temporarily disabled")
+    #@unittest.skip("Temporarily disabled")
     def test_edit_team(self):
         with self.patch_session():
-            self.getPage("/admin/edit_team?teamId=100&programName=FRC"
-                         "&programNumber=3459&startDate=2021-07-31")
+            self.getPage("/admin/edit_team?team_id=100&program_name=FRC"
+                         "&program_number=3459&start_date=2021-07-31")
             self.assertStatus("303 See Other")
 
-    @unittest.skip("Temporarily disabled")
+    #@unittest.skip("Temporarily disabled")
     def test_users(self):
         with self.patch_session():
             self.getPage("/admin/users")
             self.assertStatus('200 OK')
 
-    @unittest.skip("Temporarily disabled")
+    #@unittest.skip("Temporarily disabled")
     def test_add_user(self):
         with self.patch_session():
             self.getPage("/admin/add_user?user=Fred&barcode=100093")
+            self.assertStatus("200 OK")
 
-    @unittest.skip("Temporarily disabled")
+    #@unittest.skip("Temporarily disabled")
+    def test_add_user_no_name(self):
+        with self.patch_session():
+            self.getPage("/admin/add_user?user=&barcode=100042")
+            self.assertStatus("200 OK")
+
+    #@unittest.skip("Temporarily disabled")
+    def test_add_user_duplicate(self):
+        with self.patch_session():
+            self.getPage("/admin/add_user?user=Fred&barcode=100093")
+            self.assertStatus('200 OK')
+
+    #@unittest.skip("Temporarily disabled")
     def test_delete_user(self):
         with self.patch_session():
             self.getPage("/admin/delete_user?barcode=100093")
+            self.assertStatus("303 See Other")
 
-    @unittest.skip("Temporarily disabled")
+    #@unittest.skip("Temporarily disabled")
     def test_change_access(self):
         with self.patch_session():
             self.getPage(
                 "/admin/change_access?barcode=100091&admin=1&keyholder=1")
             self.assertStatus('303 See Other')
 
-    @unittest.skip("Temporarily disabled")
+    #@unittest.skip("Temporarily disabled")
+    def test_not_logged_in(self):
+        with self.patch_session_none():
+            self.getPage("/admin/")
+            self.assertStatus('303 See Other')
+
+    #@unittest.skip("Temporarily disabled")
     def test_get_keyholder_json(self):
         with self.patch_session():
             self.getPage("/admin/get_keyholder_json")
             self.assertStatus('200 OK')
 
+    # This is an odd ball test that shouldn't be in this test module.
+    # Also, just passing the barcode=barcode will never work properly.
     @unittest.skip("Temporarily disabled")
-    def test_notloggedIn(self):
-        with self.patch_session_none():
-            self.getPage("/admin/")
-            self.assertStatus('303 See Other')
-
-    @unittest.skip("Temporarily disabled")
-    def test_addUserDuplicate(self):
-        with self.patch_session():
-            self.getPage("/admin/addUser?user=Fred&barcode=100093")
-
-    @unittest.skip("Temporarily disabled")
-    def test_addUserNoName(self):
-        with self.patch_session():
-            self.getPage("/admin/addUser?user=&barcode=100042")
-
-    @unittest.skip("Temporarily disabled")
-    def test_addTeamDuplicate(self):
-        with self.patch_session():
-            self.getPage("/admin/addTeam?programName=TFI&startDate=2021-07-31"
-                         "&programNumber=123&teamName=&coach1=100091"
-                         "&coach2=100090")
-            self.assertStatus("200 OK")
-
-    @unittest.skip("Temporarily disabled")
-    def test_removeFromWhoIsHere(self):
+    def test_remove_from_who_is_here(self):
         with self.patch_session():
             self.getPage("/checkout_who_is_here?100091=100091")
             self.assertStatus("200 OK")

@@ -11,6 +11,9 @@ import cherrypy
 import cherrypy.process.plugins
 
 from src import AppConfig
+from src.accounts import Role
+from src.cherrypy_SSE import Portier
+from src.docs import getDocumentation
 from src.engine import Engine
 from src.web_base import WebBase, Cookie
 from src.webMainStation import WebMainStation
@@ -20,9 +23,6 @@ from src.webTeams import WebTeams
 from src.web_admin_station import WebAdminStation
 from src.webReports import WebReports
 from src.webProfile import WebProfile
-from src.docs import getDocumentation
-from src.accounts import Role
-from src.cherrypy_SSE import Portier
 
 
 class CheckMeIn(WebBase):
@@ -67,11 +67,12 @@ class CheckMeIn(WebBase):
     def whoishere(self):
         _, keyholder_name = self._engine.run_async(
             self._engine.accounts.get_active_key_holder())
+        who_is_here = self._engine.run_async(
+            self._engine.reports.who_is_here())
         return self.template(
             'who_is_here.mako', now=datetime.datetime.now(),
-            keyholder=keyholder_name, whoIsHere=self._engine.run_async(
-                self._engine.reports.who_is_here(),
-                makeForm=self.has_permissions_no_login(Role.KEYHOLDER)))
+            keyholder=keyholder_name, who_is_here=who_is_here,
+            make_form=self.has_permissions_no_login(Role.KEYHOLDER))
 
     @cherrypy.expose
     def checkout_who_is_here(self, **params):
@@ -81,7 +82,7 @@ class CheckMeIn(WebBase):
 
         if self.has_permissions_no_login(Role.KEYHOLDER):
             current_keyholder_bc, _ = self._engine.run_async(
-                self._engine.accounts.get_allactive_key_holders())
+                self._engine.accounts.get_active_key_holders())
             self._engine.run_async(
                 self._engine.checkout(current_keyholder_bc, check_outs))
 
@@ -168,4 +169,4 @@ if __name__ == '__main__':  # pragma: no cover
     # wd = cherrypy.process.plugins.BackgroundTask(15, func)
     # wd.start()
 
-    cherrypy.quickstart(CheckMeIn(), '', options.conf)
+    cherrypy.quickstart(CheckMeIn(), '/', options.conf)

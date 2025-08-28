@@ -4,6 +4,7 @@
 #
 
 import os
+#import logging
 import unittest
 
 from unittest.mock import patch
@@ -41,13 +42,6 @@ class TestFakeServer(unittest.TestCase):
         cherrypy.session = sessions.RamSession()
 
 
-class TestApp:
-
-    @cherrypy.expose
-    def index(self):
-        return
-
-
 class CPTest(helper.CPWebCase):
     TEST_DB = 'testing.db'
 
@@ -64,11 +58,11 @@ class CPTest(helper.CPWebCase):
     def setup_server():
         path = os.path.join('data', 'tests')
         test_config = {'global': {'database.path': path,
-                                  'database.name': CPTest.TEST_DB},
+                                  'database.name': CPTest.TEST_DB,
+                                  },
                        }
         cherrypy.config.update(test_config)
-        cmi = TestApp()
-        #cmi = CheckMeIn()
+        cmi = CheckMeIn()
         cherrypy.tree.mount(cmi, '/', test_config)
         return cmi
 

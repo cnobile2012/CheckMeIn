@@ -4,6 +4,7 @@
 #
 
 import re
+import logging
 import unittest
 import aiosqlite
 

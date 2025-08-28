@@ -8,7 +8,6 @@ import unittest
 from .base_cp_test import CPTest
 
 
-@unittest.skip("Temporarily disabled")
 class StationTest(CPTest):
 
     @unittest.skip("Temporarily disabled")

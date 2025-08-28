@@ -16,7 +16,7 @@ class WebGuestStation(Utilities, WebBase):
 
     def showGuestPage(self, message=''):
         building_guests, recent_guests = self.engine.run_async(
-            self.guests.get_guest_lists())
+            self._engine.guests.get_guest_lists())
         return self.template('guests.mako', message=message,
                              inBuilding=building_guests,
                              guestList=recent_guests)

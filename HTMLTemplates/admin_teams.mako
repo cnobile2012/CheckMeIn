@@ -3,19 +3,19 @@
 <script>
 function deactivateTeam(teamName, team_id){
     if (confirm("OK to deactivate team " + teamName + "?")) {
-        window.location.href = "deactivate_team?teamId="+team_id;
+        window.location.href = "deactivate_team?team_id="+team_id;
     }
 }
 
 function activateTeam(teamName, team_id) {
     if (confirm("OK to activate team " + teamName + "?")) {
-        window.location.href = "activate_team?teamId="+team_id;
+        window.location.href = "activate_team?team_id="+team_id;
     }
 }
 
 function deleteTeam(teamName, team_id) {
     if (confirm("OK to delete team " + teamName + "?")) {
-        window.location.href = "delete_team?teamId="+team_id;
+        window.location.href = "delete_team?team_id="+team_id;
     }
 }
 
@@ -35,10 +35,10 @@ function editTeam(programName, programNumber, teamName, startDate, team_id){
             },
                   " Ok ": function() {
                       $(this).dialog('close');
-                      requestStr = 'edit_team?teamId=' + team_id +
-                                   '&programName=' +
+                      requestStr = 'edit_team?team_id=' + team_id +
+                                   '&program_name=' +
                                    $('#dlgProgramName').val() +
-                                   "&programNumber=" +
+                                   "&program_number=" +
                                    $('#dlgProgramNumber').val() + "&startDate="
                       $('#dlgStartDate').val()
                       window.location.href = requestStr;
@@ -47,12 +47,11 @@ function editTeam(programName, programNumber, teamName, startDate, team_id){
     });
     $("#editTeamDialog").dialog( "open");
 }
-
 </script>			
 </%def>
 <%def name="head()">
-<link href = "https://code.jquery.com/ui/1.10.4/themes/ui-lightness/jquery-ui.css"
-      rel = "stylesheet">
+<link href="https://code.jquery.com/ui/1.10.4/themes/ui-lightness/jquery-ui.css"
+      rel="stylesheet">
 </%def>
 <%def name="title()">CheckMeIn Teams</%def>
 <%inherit file="base.mako"/>
@@ -66,7 +65,7 @@ ${self.logo()}
 	       <tr>
                    <td>Program Type</td>
                    <td>
-                       <select name="programName" id="programName">
+                       <select id="program_name" name="program_name">
 	                   <option value="TFI">Non-FIRST Teams</option>
 		           <option value="FLL-DISCOVERY">
                                FIRST Lego League Discovery</option>
@@ -84,21 +83,21 @@ ${self.logo()}
                <tr>
                    <td>Program Number</td>
 		   <td>
-                       <input type="number" id="programNumber"
-                              name="programNumber">
+                       <input id="program_number" type="number"
+                              name="program_number">
                    </td>
                </tr>
                <tr>
                    <td>Team Name</td>
 		   <td>
-                       <input id="teamName" name="teamName"
+                       <input id="team_name" name="team_name"
                               placeholder="To be determined">
                    </td>
                <tr/>
                <tr>
                    <td>Start Date:</td>
 		   <td>
-                       <input id="start_date" type="date" name="startDate"
+                       <input id="start_date" type="date" name="start_date"
                               value="${today_date}" max="${today_date}"/>
                    </td>
                </tr>

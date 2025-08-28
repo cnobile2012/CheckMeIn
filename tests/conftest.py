@@ -35,27 +35,24 @@ def module_timer(request):
 @pytest.fixture(scope="session", autouse=True)
 def my_own_session_run_at_beginning(request):
     log = AppConfig.start_logging(testing=True)
-    path = 'data'
+    path = os.path.join('data', 'tests')
     db_file = 'testing.db'
-    test_config = {'global': {
-        'database.path': path,
-        'database.name': db_file
-        }
-    }
-    dbpath = os.path.join(path, db_file)
+    test_config = {'global': {'database.path': path,
+                              'database.name': db_file
+                              },
+                   }
+    db_path = os.path.join(path, db_file)
 
     try:
         # Make sure we are starting with a clean database
-        os.remove(dbpath)
+        os.remove(db_path)
     except FileNotFoundError as e:
         log.info("Could not remove, %s", e)
 
-    keypath = os.path.join(path, 'tests')
+    if not os.path.exists(path):
+        os.mkdir(path)
 
-    if not os.path.exists(keypath):
-        os.mkdir(keypath)
-
-    keypath = os.path.join(keypath, 'checkmein.key')
+    keypath = os.path.join(path, 'checkmein.key')
 
     with open(keypath, "w") as f:
         # Obviously not the actual key
