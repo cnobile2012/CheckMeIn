@@ -14,7 +14,7 @@ from src.accounts import Role
 from src.engine import Engine
 from src.web_base import Cookie, WebBase
 
-from .base_cp_test import TestFakeServer
+from .base_test import TestFakeServer
 
 
 class TestCookie(unittest.TestCase):

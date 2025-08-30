@@ -42,12 +42,8 @@ class WebBase:
 
     def __init__(self, lookup, engine, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._lookup = lookup
-        self._engine = engine
-
-    @property
-    def engine(self):
-        return self._engine
+        self.lookup = lookup
+        self.engine = engine
 
     def _get_barcode_no_login(self):
         return Cookie('barcode').get(None)
@@ -55,7 +51,7 @@ class WebBase:
     def template(self, name, **kwargs):
         barcode = self._get_barcode_no_login()
         logo_link = f'/links/?barcode={barcode}' if barcode else '/links/'
-        return self._lookup.get_template(name).render(
+        return self.lookup.get_template(name).render(
             logo_link=logo_link, **kwargs)
 
     def has_permissions_no_login(self, role_check):

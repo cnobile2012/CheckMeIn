@@ -9,10 +9,8 @@ import unittest
 
 from src import BASE_DIR
 from src.base_database import BaseDatabase
-from src.members import Members
-from src.guests import Guests
+from src.engine import Engine
 from src.tracing import Member, Tracing
-from src.visits import Visits
 
 from .base_test import BaseAsyncTests
 from .sample_data import TEST_DATA
@@ -25,8 +23,8 @@ class TestTracing(BaseAsyncTests):
 
     async def asyncSetUp(self):
         self.bd = BaseDatabase()
-        self.bd.db_fullpath = (os.path.join(BASE_DIR, 'data', 'tests'),
-                               self.TEST_DB, False)
+        path = os.path.join(BASE_DIR, 'data', 'tests')
+        self.bd.db_fullpath = (path, self.TEST_DB, False)
         # Create tables and views.
         self.tables_and_views = {
             'tables': (self.bd._T_MEMBERS, self.bd._T_GUESTS,
@@ -34,37 +32,34 @@ class TestTracing(BaseAsyncTests):
             }
         await self.create_database(self.tables_and_views)
         # Populate tables
-        self._guests = Guests()
-        self._members = Members()
+        self._engine = Engine(path, self.TEST_DB, testing=True)
         self._tracing = Tracing()
-        self._visits = Visits()
-        await self._guests.add_guests(TEST_DATA[self.bd._T_GUESTS])
-        await self._members.add_members(TEST_DATA[self.bd._T_MEMBERS])
-        await self._visits.add_visits(TEST_DATA[self.bd._T_VISITS])
+        await self._engine.guests.add_guests(TEST_DATA[self.bd._T_GUESTS])
+        await self._engine.members.add_members(TEST_DATA[self.bd._T_MEMBERS])
+        await self._engine.visits.add_visits(TEST_DATA[self.bd._T_VISITS])
 
     async def asyncTearDown(self):
-        self._members = None
-        self._guests = None
-        self._visits = None
-        self._tracing = None
-        self._path = ''
-        self._db_name = ''
+        self._engine = None
         await self.truncate_all_tables()
         # Clear the Borg state.
         self.bd.clear_state()
         self.bd = None
 
     async def get_data(self, module='all'):
-        if module == self.bd._T_GUESTS:
-            result = await self._guests.get_guests()
-        elif module == self.bd._T_MEMBERS:
-            result = await self._members.get_members()
-        elif module == self.bd._T_VISITS:
-            result = await self._visits.get_visits()
-        else:
-            result = {self.bd._T_GUESTS: await self._guests.get_guests(),
-                      self.bd._T_MEMBERS: await self._members.get_members(),
-                      self.bd._T_VISITS: await self._visits.get_visits()}
+        match module:
+            case self.bd._T_GUESTS:
+                result = await self._engine.guests.get_guests()
+            case self.bd._T_MEMBERS:
+                result = await self._engine.members.get_members()
+            case self.bd._T_VISITS:
+                result = await self._engine.visits.get_visits()
+            case _:
+                result = {
+                    self.bd._T_GUESTS: await self._engine.guests.get_guests(),
+                    self.bd._T_MEMBERS:
+                    await self._engine.members.get_members(),
+                    self.bd._T_VISITS: await self._engine.visits.get_visits()
+                   }
 
         return result
 
@@ -109,7 +104,8 @@ class TestTracing(BaseAsyncTests):
             )
 
         for barcode, num_days, member in data:
-            visits = await self._tracing.get_dict_visits(barcode, num_days)
+            visits = await self._tracing.get_dict_visits(
+                barcode, num_days)
 
             for date, members in visits.items():
                 if members:

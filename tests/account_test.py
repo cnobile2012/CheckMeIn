@@ -9,11 +9,10 @@ import unittest
 import aiosqlite
 from passlib.apps import custom_app_context as pwd_context
 
-from src.accounts import Status, Role, Accounts
+from src import BASE_DIR
+from src.accounts import Status, Role
 from src.base_database import BaseDatabase
-from src.config import Config
-from src.members import Members
-from src.visits import Visits
+from src.engine import Engine
 
 from .base_test import BaseAsyncTests
 from .sample_data import timeAgo, TEST_DATA
@@ -294,8 +293,8 @@ class TestAccounts(BaseAsyncTests):
         current_members view.
         """
         self.bd = BaseDatabase()
-        self.bd.db_fullpath = (os.path.join('data', 'tests'),
-                               self.TEST_DB, False)
+        path = os.path.join(BASE_DIR, 'data', 'tests')
+        self.bd.db_fullpath = (path, self.TEST_DB, False)
         # Create tables and views.
         self.tables_and_views = {
             'tables': (self.bd._T_ACCOUNTS, self.bd._T_MEMBERS,
@@ -304,20 +303,15 @@ class TestAccounts(BaseAsyncTests):
             }
         await self.create_database(self.tables_and_views)
         # Populate tables
-        self._accounts = Accounts()
-        self._config = Config()
-        self._members = Members()
-        self._visits = Visits()
-        await self._accounts.add_accounts(TEST_DATA[self.bd._T_ACCOUNTS])
-        await self._config.add_config(TEST_DATA[self.bd._T_CONFIG])
-        await self._members.add_members(TEST_DATA[self.bd._T_MEMBERS])
-        await self._visits.add_visits(TEST_DATA[self.bd._T_VISITS])
+        self._engine = Engine(path, self.TEST_DB, testing=True)
+        await self._engine.accounts.add_accounts(TEST_DATA[
+            self.bd._T_ACCOUNTS])
+        await self._engine.config.add_config(TEST_DATA[self.bd._T_CONFIG])
+        await self._engine.members.add_members(TEST_DATA[self.bd._T_MEMBERS])
+        await self._engine.visits.add_visits(TEST_DATA[self.bd._T_VISITS])
 
     async def asyncTearDown(self):
-        self._accounts = None
-        self._config = None
-        self._members = None
-        self._visits = None
+        self._engine = None
         await self.truncate_all_tables()
         # Clear the Borg state.
         self.bd.clear_state()
@@ -326,19 +320,21 @@ class TestAccounts(BaseAsyncTests):
     async def get_data(self, module='all'):
         match module:
             case self.bd._T_ACCOUNTS:
-                result = await self._accounts.get_accounts()
+                result = await self._engine.accounts.get_accounts()
             case self.bd._T_CONFIG:
-                result = await self._config.get_config()
+                result = await self._engine.config.get_config()
             case self.bd._T_MEMBERS:
-                result = await self._members.get_members()
+                result = await self._engine.members.get_members()
             case self.bd._T_VISITS:
-                result = await self._visits.get_visits()
+                result = await self._engine.visits.get_visits()
             case _:
                 result = {
-                    self.bd._T_ACCOUNTS: await self._accounts.get_accounts(),
-                    self.bd._T_CONFIG: await self._config.get_config(),
-                    self.bd._T_MEMBERS: await self._members.get_members(),
-                    self.bd._T_VISITS: await self._visits.get_visits()
+                    self.bd._T_ACCOUNTS:
+                    await self._engine.accounts.get_accounts(),
+                    self.bd._T_CONFIG: await self._engine.config.get_config(),
+                    self.bd._T_MEMBERS:
+                    await self._engine.members.get_members(),
+                    self.bd._T_VISITS: await self._engine.visits.get_visits()
                     }
 
         return result
@@ -381,7 +377,7 @@ class TestAccounts(BaseAsyncTests):
                       'barcode': '200001', 'role': 0x40}]
 
         msg = "Expected {} for table 'accounts', found {}."
-        await self._accounts.add_accounts(new_users)
+        await self._engine.accounts.add_accounts(new_users)
 
         for user in new_users:
             username = user['user']
@@ -389,7 +385,7 @@ class TestAccounts(BaseAsyncTests):
             barcode = user['barcode']
             role = user['role']
             expected = (barcode, Role(role))
-            result = await self._accounts.get_barcode_and_role(
+            result = await self._engine.accounts.get_barcode_and_role(
                 username, password)
             self.assertEqual(expected[0], result[0], msg.format(
                 expected[0], result[0]))
@@ -404,7 +400,7 @@ class TestAccounts(BaseAsyncTests):
         Test that the get_accounts method returns all data from all accounts.
         """
         expected = 3  # Two accounts
-        data = await self._accounts.get_accounts()
+        data = await self._engine.accounts.get_accounts()
         result = len(data)
         msg = f"Expected {expected}, found {result}."
         self.assertEqual(expected, result, msg)
@@ -416,7 +412,7 @@ class TestAccounts(BaseAsyncTests):
         table.
         """
         data = ('some_person', 'bad_password', '100016', 0)
-        rowcount = await self._accounts.add_user(*data)
+        rowcount = await self._engine.accounts.add_user(*data)
         self.assertEqual(1, rowcount)
         has_account = any([data[0] in account
                            for account in await self.get_data('accounts')])
@@ -430,7 +426,7 @@ class TestAccounts(BaseAsyncTests):
         """
         params = {'user': 'YuanJi', 'password': 'MyParty',
                   'barcode': '', 'role': 0x00}
-        await self._accounts.add_accounts([params])
+        await self._engine.accounts.add_accounts([params])
         data = (
             ('admin', 'password', '100091', Role(0xFF).cookie_value),
             ('Joe', 'password', '100032', Role(0x40).cookie_value),
@@ -441,7 +437,7 @@ class TestAccounts(BaseAsyncTests):
         msg = "Expected {}, with user '{}', found {}."
 
         for user, password, barcode, role in data:
-            _barcode, _role = await self._accounts.get_barcode_and_role(
+            _barcode, _role = await self._engine.accounts.get_barcode_and_role(
                 user, password)
             self.assertEqual(barcode, _barcode, msg.format(
                 barcode, user, _barcode))
@@ -464,7 +460,7 @@ class TestAccounts(BaseAsyncTests):
         msg = "Expected {} with role {}, found {}."
 
         for role, expected in data:
-            data = await self._accounts.get_members_with_role(role)
+            data = await self._engine.accounts.get_members_with_role(role)
             result = len(data)
             self.assertEqual(expected, result, msg.format(
                 expected, role, result))
@@ -485,7 +481,7 @@ class TestAccounts(BaseAsyncTests):
         msg = "Expected {} with role {}, found {}."
 
         for role, expected in data:
-            data = await self._accounts.get_present_with_role(role)
+            data = await self._engine.accounts.get_present_with_role(role)
             result = len(data)
             self.assertEqual(expected, result, msg.format(
                 expected, role, result))
@@ -503,7 +499,7 @@ class TestAccounts(BaseAsyncTests):
         for idx, (user, password, forgot, forgotTime, barcode, activeKeyholder,
                   role, new_pd) in enumerate(data):
             old_pd = password
-            await self._accounts.change_password(user, new_pd)
+            await self._engine.accounts.change_password(user, new_pd)
             item = await self.get_data('accounts')
             new_pd = item[idx][1]
             self.assertNotEqual(old_pd, new_pd, msg.format(new_pd, user))
@@ -516,7 +512,7 @@ class TestAccounts(BaseAsyncTests):
         tokens = []
 
         for idx in range(8):
-            tokens.append(self._accounts._get_random_id())
+            tokens.append(self._engine.accounts._get_random_id())
 
         t0_size = len(tokens)
         t1_size = len(set(tokens))  # Gets rid of dups.
@@ -541,7 +537,7 @@ class TestAccounts(BaseAsyncTests):
         #print(await self.get_data())
 
         for user, expected in data:
-            result = await self._accounts.forgot_password(user)
+            result = await self._engine.accounts.forgot_password(user)
             self.assertEqual(expected, result, msg.format(
                 expected, user, result))
 
@@ -558,7 +554,7 @@ class TestAccounts(BaseAsyncTests):
         msg = "Expected {}, found {}."
 
         for user, email in data:
-            result = await self._accounts._get_user_from_email(email)
+            result = await self._engine.accounts._get_user_from_email(email)
             self.assertEqual(user, result, msg.format(user, result))
 
     #@unittest.skip("Temporarily skipped")
@@ -575,7 +571,8 @@ class TestAccounts(BaseAsyncTests):
         message = "Some unbearably long message."
 
         for user, expected in data:
-            result = await self._accounts._send_email(user, msg_type, message)
+            result = await self._engine.accounts._send_email(
+                user, msg_type, message)
             self.assertEqual(expected, result, msg.format(
                 expected, user, result))
 
@@ -587,7 +584,7 @@ class TestAccounts(BaseAsyncTests):
         params = {'barcode': 100100, 'displayName': 'Jack F',
                   'firstName': 'Jack', 'lastName': 'Fobi', 'email': '',
                   'membershipExpires': timeAgo(days=7, hours=2)}
-        await self._members.add_members([params])
+        await self._engine.members.add_members([params])
         accounts = await self.get_data('accounts')
         members = await self.get_data('members')
         data = [(account[0], member[4]) for account in accounts
@@ -595,7 +592,7 @@ class TestAccounts(BaseAsyncTests):
         msg = "Expected {} with user {}, found {}."
 
         for user, email in data:
-            result = await self._accounts._get_email(user)
+            result = await self._engine.accounts._get_email(user)
             self.assertEqual(email, result, msg.format(email, user, result))
 
     #@unittest.skip("Temporarily skipped")
@@ -607,7 +604,7 @@ class TestAccounts(BaseAsyncTests):
         async def update_forgot_user(user, forgot_time):
             query = ("UPDATE accounts SET forgot = ?, forgotTime = ? "
                      "WHERE user = ?;")
-            token = self._accounts._get_random_id()
+            token = self._engine.accounts._get_random_id()
             await self.bd._do_update_query(
                 query, [(pwd_context.hash(token), forgot_time, user)])
             return token
@@ -628,7 +625,8 @@ class TestAccounts(BaseAsyncTests):
             if user == 'joe' and token == 'U4G1T6Q1':  # Third test only
                 await update_forgot_user('joe', now)
 
-            result = await self._accounts.verify_forgot(user, token, new_pw)
+            result = await self._engine.accounts.verify_forgot(
+                user, token, new_pw)
             self.assertEqual(expected, result, msg.format(
                 expected, user, result))
 
@@ -648,7 +646,7 @@ class TestAccounts(BaseAsyncTests):
         msg = "Expected {} with barcode {} and role {}, found {}."
 
         for barcode, old_role, new_role in data:
-            await self._accounts.change_role(barcode, Role(new_role))
+            await self._engine.accounts.change_role(barcode, Role(new_role))
             items = await get_user_with_barcode(barcode)
             result = items[0]
             self.assertNotEqual(old_role, result, msg.format(
@@ -668,7 +666,7 @@ class TestAccounts(BaseAsyncTests):
         msg = "Expected {} with barcode {}, found {}."
 
         for barcode in data:
-            await self._accounts.remove_user(barcode)
+            await self._engine.accounts.remove_user(barcode)
 
         items = await self.get_data('accounts')
         self.assertEqual([], items, msg.format([], barcode, items))
@@ -680,7 +678,7 @@ class TestAccounts(BaseAsyncTests):
         """
         data = ('admin', 'Joe', 'Paul',)
         msg = "Expected {} with user {}, found {}."
-        items = await self._accounts.get_users()
+        items = await self._engine.accounts.get_users()
         users = items.keys()
 
         for user in data:
@@ -696,7 +694,7 @@ class TestAccounts(BaseAsyncTests):
         """
         data = ('100090', '100093')
         msg = "Expected {} with barcode {}, found {}."
-        items = await self._accounts.get_non_accounts()
+        items = await self._engine.accounts.get_non_accounts()
         barcodes = items.keys()
 
         for barcode in data:
@@ -715,7 +713,7 @@ class TestAccounts(BaseAsyncTests):
         await self.activate_key_holder()
         msg = "Expected {} with user {}, found {}."
         data = [(item[0], item[5]) for item in await self.get_data('accounts')]
-        await self._accounts.inactivate_all_key_holders()
+        await self._engine.accounts.inactivate_all_key_holders()
         items = {item[0]: item[5] for item in await self.get_data('accounts')}
 
         for user, status in data:
@@ -736,7 +734,7 @@ class TestAccounts(BaseAsyncTests):
         msg = "Expected {} with bc0 {}, and bc1 {}, found {}."
 
         for bc0, bc1, expected in data:
-            result = await self._accounts.activate_key_holder(bc0)
+            result = await self._engine.accounts.activate_key_holder(bc0)
             self.assertEqual(expected, result, msg.format(
                 expected, bc0, bc1, result))
 
@@ -756,7 +754,7 @@ class TestAccounts(BaseAsyncTests):
         test_dn = 'Member N'
         await self.activate_key_holder()
         msg = "Expected {}, found {}."
-        bc, dn = await self._accounts.get_active_key_holder()
+        bc, dn = await self._engine.accounts.get_active_key_holder()
         self.assertEqual(test_barcode, bc, msg.format(test_barcode, bc))
         self.assertEqual(test_dn, dn, msg.format(test_dn, dn))
 
@@ -767,7 +765,7 @@ class TestAccounts(BaseAsyncTests):
         of people that have the key holder role.
         """
         num_key_holders = 2
-        items = await self._accounts.get_key_holders()
+        items = await self._engine.accounts.get_key_holders()
         self.assertEqual(num_key_holders, len(items))
 
     #@unittest.skip("Temporarily skipped")
@@ -777,5 +775,5 @@ class TestAccounts(BaseAsyncTests):
         barcodes for people that have the key holder role.
         """
         num_key_holders = 2
-        items = await self._accounts.get_key_holder_barcodes()
+        items = await self._engine.accounts.get_key_holder_barcodes()
         self.assertEqual(num_key_holders, len(items))

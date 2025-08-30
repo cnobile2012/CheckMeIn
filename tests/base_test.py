@@ -3,14 +3,86 @@
 # tests/base_tests.py
 #
 
+import os
 import re
+import time
 import logging
+import threading
 import unittest
 import aiosqlite
+import cherrypy
+import requests
+
+from unittest.mock import patch
+from cherrypy.lib import sessions
+
+from checkMeIn import CheckMeIn
+from mako.lookup import TemplateLookup
 
 from src import AppConfig
 
-__all__ = ('BaseAsyncTests',)
+__all__ = ('BaseAsyncTests', 'run_server', 'exit_server')
+
+
+def run_server():
+    path = os.path.join('data', 'tests')
+    test_config = {
+        'global': {
+            # Don’t daemonize in tests
+            'database.path': path,
+            'database.name': BaseAsyncTests.TEST_DB,
+            'server.socket_host': '127.0.0.1',
+            'server.socket_port': 8080,
+            'engine.autoreload.on': False,
+            'log.screen': True,  # log to console
+            'log.error_file': '',  # empty string = stderr
+            'log.access_file': None,  # empty string = stdout
+        },
+        '/': {
+            # Show detailed tracebacks in responses
+            'request.show_tracebacks': True,
+            'request.show_mismatched_params': True,
+            # Useful built-in tools
+            "tools.sessions.on": True,
+            "tools.sessions.storage_type": "ram",
+            "tools.sessions.clean_freq": 0,
+            'tools.log_tracebacks.on': True,
+            'tools.log_headers.on': True,
+            # Don’t swallow exceptions in error_page handlers
+            'error_page.default': lambda *a, **k:
+            cherrypy._cperror.format_exc(),
+            },
+        }
+    cherrypy.tree.mount(CheckMeIn(testing=True), "/", config=test_config)
+    # Start CherryPy engine
+    server_thread = threading.Thread(target=cherrypy.engine.start, daemon=True)
+    server_thread.start()
+    # Give CherryPy a moment to spin up
+    time.sleep(0.5)
+
+
+def exit_server():
+    cherrypy.engine.exit()
+    #cherrypy.tree.apps.clear()
+    #self._server_thread.join(timeout=2)
+
+
+class TestFakeServer(unittest.TestCase):
+
+    def setUp(self) -> None:
+        self._lookup = TemplateLookup(directories=['HTMLTemplates'],
+                                      default_filters=['h'])
+        cherrypy.session = {}  # This is a fake session.
+        super().setUp()
+
+    def fake_config(self):
+        # Fake request/response objects
+        cherrypy.serving.request = cherrypy._cprequest.Request(
+            local_host="127.0.0.1", remote_host="127.0.0.1")
+        cherrypy.serving.response = cherrypy._cprequest.Response()
+        cherrypy.serving.request.cookie = {}
+        # Attach a session manually
+        cherrypy.session = sessions.RamSession()
 
 
 class BaseAsyncTests(unittest.IsolatedAsyncioTestCase):
@@ -126,3 +198,75 @@ class BaseAsyncTests(unittest.IsolatedAsyncioTestCase):
                     out.append(line)
 
         return out
+
+    #@classmethod
+    def run_server(self):
+        path = os.path.join('data', 'tests')
+        test_config = {
+            'global': {
+                # Don’t daemonize in tests
+                'database.path': path,
+                'database.name': self.TEST_DB,
+                'server.socket_host': '127.0.0.1',
+                'server.socket_port': 8080,
+                'engine.autoreload.on': False,
+                'log.screen': True,  # log to console
+                'log.error_file': '',  # empty string = stderr
+                'log.access_file': None,  # empty string = stdout
+                },
+            '/': {
+                # Show detailed tracebacks in responses
+                'request.show_tracebacks': True,
+                'request.show_mismatched_params': True,
+                # Useful built-in tools
+                "tools.sessions.on": True,
+                "tools.sessions.storage_type": "ram",
+                "tools.sessions.clean_freq": 0,
+                'tools.log_tracebacks.on': True,
+                'tools.log_headers.on': True,
+                # Don’t swallow exceptions in error_page handlers
+                'error_page.default': lambda *a, **k:
+                cherrypy._cperror.format_exc(),
+                },
+            }
+        cherrypy.tree.mount(CheckMeIn(testing=True), "/", config=test_config)
+        # Start CherryPy engine
+        self._server_thread = threading.Thread(
+            target=cherrypy.engine.start, daemon=True)
+
+        self._server_thread.start()
+
+        # Give CherryPy a moment to spin up
+        #time.sleep(0.5)
+
+    #@classmethod
+    def exit_server(self):
+        cherrypy.engine.exit()
+        cherrypy.tree.apps.clear()
+        #self._server_thread.join(timeout=2)
+
+    def get(self, path, **kwargs):
+        """Helper to GET a path from the test server."""
+        return requests.get(f"http://127.0.0.1:8080{path}", **kwargs)
+
+    def post(self, path, data=None, **kwargs):
+        """Helper to POST to a path from the test server."""
+        return requests.post(f"http://127.0.0.1:8080{path}", data=data,
+                             **kwargs)
+
+    # async def open_client(self):
+    #     self.client = httpx.AsyncClient(base_url="http://127.0.0.1:8080")
+
+    # async def close_client(self):
+    #     await self.client.aclose()
+
+    # def patch_session(self, username='admin', barcode='100091', role=0xFF):
+    #     sess_mock = sessions.RamSession()
+    #     sess_mock['username'] = username
+    #     sess_mock['barcode'] = barcode
+    #     sess_mock['role'] = role
+    #     return patch('cherrypy.session', sess_mock, create=True)
+
+    def patch_session_none(self):
+        sess_mock = sessions.RamSession()
+        return patch('cherrypy.session', sess_mock, create=True)

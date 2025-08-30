@@ -66,6 +66,7 @@ class Engine(BaseDatabase):
         return self._REPO
 
     def _create_schema_and_start_event_loop(self, testing):  # pragma: no cover
+        # Tests need control of when and what tables are created.
         if not testing:
             asyncio.run(self.create_schema())
 

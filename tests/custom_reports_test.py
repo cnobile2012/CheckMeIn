@@ -8,9 +8,6 @@ import unittest
 
 from src.base_database import BaseDatabase
 from src.engine import Engine
-from src.members import Members
-from src.reports import Reports
-from src.custom_reports import CustomReports
 
 from .base_test import BaseAsyncTests
 from .sample_data import timeAgo, TEST_DATA
@@ -36,30 +33,29 @@ class TestCustomReports(BaseAsyncTests):
         await self.create_database(self.tables_and_views)
         # Populate tables
         self._engine = Engine(db_path, self.TEST_DB, testing=True)
-        self._custom_reports = CustomReports()
-        self._members = Members()
-        self._reports = Reports(self._engine)
-        await self._members.add_members(TEST_DATA[self.bd._T_MEMBERS])
-        await self._reports.add_reports(TEST_DATA[self.bd._T_REPORTS])
+        await self._engine.members.add_members(TEST_DATA[self.bd._T_MEMBERS])
+        await self._engine.reports.add_reports(TEST_DATA[self.bd._T_REPORTS])
 
     async def asyncTearDown(self):
         self._engine = None
-        self._custom_reports = None
-        self._members = None
-        self._reports = None
         await self.truncate_all_tables()
         # Clear the Borg state.
         self.bd.clear_state()
         self.bd = None
 
     async def get_data(self, module='all'):
-        if module == self.bd._T_MEMBERS:
-            result = await self._members.get_members()
-        elif module == self.bd._T_REPORTS:
-            result = await self._reports.get_reports()
-        else:
-            result = {self.bd._T_MEMBERS: await self._members.get_members(),
-                      self.bd._T_REPORTS: await self._reports.get_reports()}
+        match module:
+            case self.bd._T_MEMBERS:
+                result = await self._engine.members.get_members()
+            case self.bd._T_REPORTS:
+                result = await self._engine.reports.get_reports()
+            case _:
+                result = {
+                    self.bd._T_MEMBERS:
+                    await self._engine.members.get_members(),
+                    self.bd._T_REPORTS:
+                    await self._engine.reports.get_reports()
+                    }
 
         return result
 
@@ -72,7 +68,7 @@ class TestCustomReports(BaseAsyncTests):
         members_columns = ['barcode', 'displayName', 'firstName', 'lastName',
                            'email', 'membershipExpires']
         query = "SELECT * FROM members;"
-        headers, rows = await self._custom_reports.custom_sql(query)
+        headers, rows = await self._engine.custom_reports.custom_sql(query)
         members = await self.get_data('members')
         self.assertEqual(members, rows)
         self.assertEqual(members_columns, headers)
@@ -93,7 +89,7 @@ class TestCustomReports(BaseAsyncTests):
         msg = "Expected {}, report_id {}, found {}."
 
         for report_id, title, query, columns in data:
-            items = await self._custom_reports.custom_report(report_id)
+            items = await self._engine.custom_reports.custom_report(report_id)
 
             if None not in items:
                 _title = items[0]
@@ -126,7 +122,8 @@ class TestCustomReports(BaseAsyncTests):
         msg = "Expected {}, found {}."
 
         for query, name, expected in data:
-            error = await self._custom_reports.save_custom_sql(query, name)
+            error = await self._engine.custom_reports.save_custom_sql(
+                query, name)
             self.assertEqual(expected, error, msg.format(expected, error))
 
     #@unittest.skip("Temporarily skipped")
@@ -136,7 +133,7 @@ class TestCustomReports(BaseAsyncTests):
         name of the active reports.
         """
         data = (1, 'fred')
-        reports = await self._custom_reports.get_report_list()
+        reports = await self._engine.custom_reports.get_report_list()
 
         for report_id, name in reports:
             self.assertEqual(data[0], report_id)

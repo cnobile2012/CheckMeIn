@@ -8,8 +8,7 @@ import datetime
 
 from src import BASE_DIR
 from src.base_database import BaseDatabase
-from src.config import Config
-from src.members import Members
+from src.engine import Engine
 
 from .base_test import BaseAsyncTests
 from .sample_data import TEST_DATA
@@ -26,8 +25,8 @@ class TestMembers(BaseAsyncTests):
         current_members view.
         """
         self.bd = BaseDatabase()
-        self.bd.db_fullpath = (os.path.join('data', 'tests'),
-                               self.TEST_DB, False)
+        path = os.path.join(BASE_DIR, 'data', 'tests')
+        self.bd.db_fullpath = (path, self.TEST_DB, False)
         # Create tables and views.
         self.tables_and_views = {
             'tables': (self.bd._T_MEMBERS, self.bd._T_CONFIG,),
@@ -35,28 +34,30 @@ class TestMembers(BaseAsyncTests):
             }
         await self.create_database(self.tables_and_views)
         # Populate tables
-        self._config = Config()
-        self._members = Members()
-        await self._config.add_config(TEST_DATA[self.bd._T_CONFIG])
-        await self._members.add_members(TEST_DATA[self.bd._T_MEMBERS])
+        self._engine = Engine(path, self.TEST_DB, testing=True)
+        await self._engine.config.add_config(TEST_DATA[self.bd._T_CONFIG])
+        await self._engine.members.add_members(TEST_DATA[self.bd._T_MEMBERS])
         #print(await self.get_data())
 
     async def asyncTearDown(self):
-        self._config = None
-        self._members = None
+        self._engine = None
         await self.truncate_all_tables()
         # Clear the Borg state.
         self.bd.clear_state()
         self.bd = None
 
     async def get_data(self, module='all'):
-        if module == 'config':
-            result = await self._config.get_config()
-        elif module == 'members':
-            result = await self._members.get_members()
-        else:
-            result = {'config': await self._config.get_config(),
-                      'members': await self._members.get_members()}
+        match module:
+            case self.bd._T_CONFIG:
+                result = await self._engine.config.get_config()
+            case self.bd._T_MEMBERS:
+                result = await self._engine.members.get_members()
+            case _:
+                result = {
+                    self.bd._T_CONFIG: await self._engine.config.get_config(),
+                    self.bd._T_MEMBERS:
+                    await self._engine.members.get_members()
+                    }
 
         return result
 
@@ -68,7 +69,7 @@ class TestMembers(BaseAsyncTests):
         async def do_bulk_all(fo):
             with open(os.path.join(BASE_DIR, 'tests', fo.filename), 'rb') as f:
                 fo.file = f
-                msg = await self._members.bulk_add(fo)
+                msg = await self._engine.members.bulk_add(fo)
                 # *** TODO *** We need to test the msg variable.
 
         class File:
@@ -108,7 +109,7 @@ class TestMembers(BaseAsyncTests):
         Test that the get_active returns all active members.
         """
         num_members = 5
-        items = await self._members.get_active()
+        items = await self._engine.members.get_active()
         result = len(items)
         msg = f"Expected {num_members}, found {result}."
         self.assertEqual(num_members, result, msg)
@@ -127,5 +128,5 @@ class TestMembers(BaseAsyncTests):
         msg = "Expected {}, found {}."
 
         for barcode, expected in data:
-            result = await self._members.get_name(barcode)
+            result = await self._engine.members.get_name(barcode)
             self.assertEqual(expected, result, msg.format(expected, result))

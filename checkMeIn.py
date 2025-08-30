@@ -27,13 +27,14 @@ from src.webProfile import WebProfile
 
 class CheckMeIn(WebBase):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, testing=False, **kwargs):
         AppConfig().start_logging()
         self._lookup = TemplateLookup(directories=['HTMLTemplates'],
                                       default_filters=['h'])
         self.updateChannel = 'updates'
         self._engine = Engine(cherrypy.config["database.path"],
-                              cherrypy.config["database.name"])
+                              cherrypy.config["database.name"],
+                              testing=testing)
         super().__init__(self._lookup, self._engine, *args, **kwargs)
         self.station = WebMainStation(self._lookup, self._engine)
         self.guests = WebGuestStation(self._lookup, self._engine)

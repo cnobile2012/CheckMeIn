@@ -183,6 +183,8 @@ class AppConfig(Borg):
                                               self._TEST_LOG_FILENAME)
                 self._logger = self._TEST_LOGGER_NAME
                 self._level = logging.DEBUG
+                logging.getLogger("cherrypy.error").setLevel(logging.WARNING)
+                logging.getLogger("cherrypy.access").setLevel(logging.WARNING)
             else:
                 self._fullpath = os.path.join(self._LOGGER_PATH,
                                               self._LOG_FILENAME)
@@ -194,9 +196,8 @@ class AppConfig(Borg):
                             initial_msg=False)
             log = logging.getLogger(self._logger)
             # Disable asyncio debug messages.
-            logging.getLogger("asyncio").setLevel(logging.CRITICAL)
+            logging.getLogger("asyncio").setLevel(logging.ERROR)
             # Disable CherryPi debug messages.
-            logging.getLogger("cherrypy.error").setLevel(logging.INFO)
             path, filename = os.path.split(self._fullpath)
             log.info("Logger configured as '%s' with file '%s'.",
                      self._ENVIRONMENT, filename)

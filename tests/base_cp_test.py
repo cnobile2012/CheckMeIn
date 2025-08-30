@@ -24,24 +24,6 @@ from checkMeIn import CheckMeIn
 helper.CPWebCase.interactive = False
 
 
-class TestFakeServer(unittest.TestCase):
-
-    def setUp(self) -> None:
-        self._lookup = TemplateLookup(directories=['HTMLTemplates'],
-                                      default_filters=['h'])
-        cherrypy.session = {}  # This is a fake session.
-        super().setUp()
-
-    def fake_config(self):
-        # Fake request/response objects
-        cherrypy.serving.request = cherrypy._cprequest.Request(
-            local_host="127.0.0.1", remote_host="127.0.0.1")
-        cherrypy.serving.response = cherrypy._cprequest.Response()
-        cherrypy.serving.request.cookie = {}
-        # Attach a session manually
-        cherrypy.session = sessions.RamSession()
-
-
 class CPTest(helper.CPWebCase):
     TEST_DB = 'testing.db'
 
