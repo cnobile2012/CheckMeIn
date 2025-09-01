@@ -29,7 +29,7 @@ def getDocumentation():
                    "get a list of who is in the building and a chance to "
                    "checkout or cancel. (If you wait 30 seconds it will "
                    "cancel on its own)"]),
-        Doc("Make New Keyholder", "/station/makeKeyholder?barcode=<barcode>",
+        Doc("Make New Keyholder", "/station/make_keyholder?barcode=<barcode>",
             returns="Returns the station webpage",
             notes=["This makes the given barcode the active keyholder. If "
                    "that barcode was not checked in, it also checks it in"]),

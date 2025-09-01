@@ -1,21 +1,25 @@
 <%def name="logo()">
-<a href="${logo_link}">
-    <img alt="TFI Logo" SRC="/static/TFI-logo-smaller.png" width="250"/>
-</a>
+        <a href="${logo_link}">
+            <img alt="TFI Logo" SRC="/static/TFI-logo-smaller.png" width="250"/>
+        </a>
 </%def>
 <!DOCTYPE html>
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js">
+</script>
 ${self.scripts()}
 <script>
 function pythonDatetimeToHTML(datetime) {
     var js_datetime = new Date(datetime * 1000);
-    var options = {weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short'};
+    var options = {weekday: 'short', year: 'numeric', month: 'short',
+                   day: 'numeric', hour: 'numeric', minute: '2-digit',
+                   timeZoneName: 'short'};
     return js_datetime.toLocaleString("en-US", options);
 }
 
 function pythonDateToHTML(datetime) {
     var js_datetime = new Date(datetime * 1000);
-    var options = {weekday: 'short', year: 'numeric', month: 'short', day: 'numeric'};
+    var options = {weekday: 'short', year: 'numeric', month: 'short',
+                   day: 'numeric'};
     return js_datetime.toLocaleString("en-US", options);
 }
 
@@ -46,15 +50,16 @@ function escapeHTML(string) {
 </script>
 <html lang="en">
     <head>
+        <title>${self.title()}</title>
         <link rel="stylesheet" type="text/css" href="/static/style.css?ver=1"/>
         <link rel="apple-touch-icon" href="/static/apple-touch-icon.png"/>
-        <link rel="manifest" type="application/manifest+json" href="/static/manifest.json"/>
+        <link rel="manifest" type="application/manifest+json"
+              href="/static/manifest.json"/>
         <meta name="apple-mobile-web-app-title" content="CheckMeIn">
         <meta name="apple-mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-status-bar-style" content="black">
-        <title>${self.title()}</title>
-            ${self.head()}
-            <meta name="viewport" content="width=device-width, initial-scale=1"
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+${self.head()}
     </head>
     <body>
 % if error is not UNDEFINED:

@@ -93,6 +93,7 @@ clean	:
 
 clobber	: clean
 	@(cd $(DOCS_DIR); rm -rf htmlcov)
-	@rm -rf data/tests
 	@rm -rf .pytest_cache
+	@rm -f .coverage
+	@rm -rf data/tests
 	@rm -f logs/testing.log

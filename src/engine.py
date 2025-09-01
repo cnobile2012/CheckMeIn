@@ -55,7 +55,6 @@ class Engine(BaseDatabase):
         self.devices = Devices()
         self.unlocks = Unlocks()
         self.config = Config()
-        # needs path since it will open read only
         self.custom_reports = CustomReports()
         self.certifications = Certifications()
         self.members = Members()

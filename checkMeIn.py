@@ -16,7 +16,7 @@ from src.cherrypy_SSE import Portier
 from src.docs import getDocumentation
 from src.engine import Engine
 from src.web_base import WebBase, Cookie
-from src.webMainStation import WebMainStation
+from src.web_main_station import WebMainStation
 from src.webGuestStation import WebGuestStation
 from src.webCertifications import WebCertifications
 from src.webTeams import WebTeams
@@ -128,9 +128,10 @@ class CheckMeIn(WebBase):
         in_building = self._engine.run_async(
             self._engine.visits.in_building(barcode))
         return self.template('links.mako', barcode=barcode, role=role,
-                             activeTeamsCoached=active_teams_coached,
-                             inBuilding=in_building, displayName=display_name,
-                             activeMembers=active_members)
+                             active_teams_coached=active_teams_coached,
+                             in_building=in_building, display_name=display_name,
+                             active_members=active_members,
+                             repo=self.engine.repository)
 
     @cherrypy.expose
     def updateSSE(self):

@@ -345,11 +345,9 @@ class TestAccounts(BaseAsyncTests):
 
         if barcode:
             params += (barcode,)
-            where += " AND barcode = ?;"
-        else:
-            where += ';'
+            where += " AND barcode = ?"
 
-        query = f"UPDATE accounts SET activeKeyholder = ?{where}"
+        query = f"UPDATE accounts SET activeKeyholder = ? {where};"
         await self.bd._do_update_query(query, [params])
 
     #@unittest.skip("Temporarily skipped")

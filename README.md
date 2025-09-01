@@ -42,6 +42,14 @@ VIRTUALENVWRAPPER_PYTHON=/usr/bin/python3
 source /etc/profile.d/virtualenvwrapper.sh
 ```
 
+Then resource your `.bashrc` file. Either method below works and does the same
+thing.
+```bash
+$ source ~/.bashrc
+
+$ . ~/bashrc
+```
+
 Create a VE for your project. The VE name can be whatever you want and does not
 need to match the actual project's name, but it might be a good idea to keep it
 short so that you can remember it. Use whichever Python version you have in the
@@ -123,6 +131,6 @@ You can connect to your server using a local browser at "http://localhost:8089"
 `sudo apt install libatlas-base-dev` to get numpy to work in python3.
 
 ## Credits
+Primary repo: https://github.com/theforgeinitiative/CheckMeIn<br>
 Original repo: https://github.com/alan412/CheckMeIn<br>
-Second repo: https://github.com/theforgeinitiative/CheckMeIn<br>
-Third repo: https://github.com/cnobile2012/CheckMeIn<br>
+Forked repo: https://github.com/cnobile2012/CheckMeIn<br>

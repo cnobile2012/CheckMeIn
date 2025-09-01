@@ -21,7 +21,6 @@ from src.web_admin_station import WebAdminStation
 from src.web_base import Cookie
 
 from .base_test import BaseAsyncTests, run_server, exit_server
-from .base_cp_test import CPTest
 from .sample_data import timeAgo, TEST_DATA
 
 
@@ -48,21 +47,19 @@ class BaseTestAdmin(BaseAsyncTests):
         # Populate tables
         lookup = TemplateLookup(directories=['HTMLTemplates'],
                                 default_filters=['h'])
-        self._engine = Engine(path, self.TEST_DB, testing=True)
-        self._was = WebAdminStation(lookup, self._engine)
-        await self._engine.accounts.add_accounts(TEST_DATA[
-            self.bd._T_ACCOUNTS])
-        await self._engine.config.add_config(TEST_DATA[self.bd._T_CONFIG])
-        await self._engine.devices.add_bulk_devices(TEST_DATA[
-            self.bd._T_DEVICES])
-        await self._engine.guests.add_guests(TEST_DATA[self.bd._T_GUESTS])
-        await self._engine.log_events.add_log_events(TEST_DATA[
+        self._eng = Engine(path, self.TEST_DB, testing=True)
+        self._was = WebAdminStation(lookup, self._eng)
+        await self._eng.accounts.add_accounts(TEST_DATA[self.bd._T_ACCOUNTS])
+        await self._eng.config.add_config(TEST_DATA[self.bd._T_CONFIG])
+        await self._eng.devices.add_bulk_devices(TEST_DATA[self.bd._T_DEVICES])
+        await self._eng.guests.add_guests(TEST_DATA[self.bd._T_GUESTS])
+        await self._eng.log_events.add_log_events(TEST_DATA[
             self.bd._T_LOG_EVENTS])
-        await self._engine.members.add_members(TEST_DATA[self.bd._T_MEMBERS])
-        await self._engine.teams.add_teams(TEST_DATA[self.bd._T_TEAMS])
-        await self._engine.teams.add_bulk_team_members(
-            TEST_DATA[self.bd._T_TEAM_MEMBERS])
-        await self._engine.visits.add_visits(TEST_DATA[self.bd._T_VISITS])
+        await self._eng.members.add_members(TEST_DATA[self.bd._T_MEMBERS])
+        await self._eng.teams.add_teams(TEST_DATA[self.bd._T_TEAMS])
+        await self._eng.teams.add_bulk_team_members(TEST_DATA[
+            self.bd._T_TEAM_MEMBERS])
+        await self._eng.visits.add_visits(TEST_DATA[self.bd._T_VISITS])
         # Since we are testing the admin page most tests will need
         # these cookies.
         Cookie('role').set(Role.ADMIN)
@@ -71,7 +68,8 @@ class BaseTestAdmin(BaseAsyncTests):
         Cookie('barcode').set('100091')
 
     async def asyncTearDown(self):
-        self._engine = None
+        self._eng = None
+        self._was = None
         await self.truncate_all_tables()
         # Clear the Borg state.
         self.bd.clear_state()
@@ -80,27 +78,32 @@ class BaseTestAdmin(BaseAsyncTests):
     async def get_data(self, module='all'):
         match module:
             case self.bd._T_ACCOUNTS:
-                result = await self._engine.accounts.get_accounts()
+                result = await self._eng.accounts.get_accounts()
+            case self.bd._T_CONFIG:
+                result = await self._eng.config.get_config()
             case self.bd._T_MEMBERS:
-                result = await self._engine.members.get_members()
+                result = await self._eng.members.get_members()
             case self.bd._T_TEAMS:
-                result = await self._engine.teams.get_teams()
+                result = await self._eng.teams.get_teams()
             case self.bd._T_VISITS:
-                result = await self._engine.visits.get_visits()
+                result = await self._eng.visits.get_visits()
             case _:
                 result = {
                     self.bd._T_ACCOUNTS:
-                    await self._engine.accounts.get_accounts(),
-                    self.bd._T_MEMBERS:
-                    await self._engine.members.get_members(),
-                    self.bd._T_TEAMS: await self._engine.teams.get_teams(),
-                    self.bd._T_VISITS: await self._engine.visits.get_visits(),
+                    await self._eng.accounts.get_accounts(),
+                    self.bd._T_CONFIG: await self._eng.config.get_config(),
+                    self.bd._T_MEMBERS: await self._eng.members.get_members(),
+                    self.bd._T_TEAMS: await self._eng.teams.get_teams(),
+                    self.bd._T_VISITS: await self._eng.visits.get_visits(),
                     }
 
         return result
 
 
 class TestAdmin(BaseTestAdmin):
+
+    def __init__(self, name, *args, **kwargs):
+        super().__init__(name, *args, **kwargs)
 
     #@unittest.skip("Temporarily disabled")
     def test_check_permissions(self):
@@ -136,7 +139,7 @@ class TestAdmin(BaseTestAdmin):
         self.assertIn('Member N', html)               # last_bulk_update_name
         self.assertIn('15', html)                     # grace_period
         self.assertIn('admin', html)                  # username
-        self.assertIn(self._engine.repository, html)  # repo (repository)
+        self.assertIn(self._eng.repository, html)  # repo (repository)
 
     #@unittest.skip("Temporarily disabled")
     async def test_empty_building(self):
@@ -144,7 +147,7 @@ class TestAdmin(BaseTestAdmin):
         Test that the empty_building method sets a keyholder inactive and sets
         anyone who forgot to log out of the building to status = 'Forgot'.
         """
-        await self._engine.accounts.activate_key_holder('100015')  # keyholder
+        await self._eng.accounts.activate_key_holder('100015')  # keyholder
         active_kh = [account for account in await self.get_data('accounts')
                      if account[5] == 1]
         self.assertEqual(1, len(active_kh))
@@ -233,7 +236,7 @@ class TestAdmin(BaseTestAdmin):
         self.assertIn('TFI100', html)
         self.assertIn('TFI400', html)
         self.assertIn('Member N(100091)', html)
-        self.assertIn(self._engine.repository, html)
+        self.assertIn(self._eng.repository, html)
 
     #@unittest.skip("Temporarily disabled")
     async def test_add_team(self):
@@ -352,7 +355,7 @@ class TestAdmin(BaseTestAdmin):
         self.assertIn('Keyholder', html)
         self.assertIn('100090 (Daughter N)', html)
         self.assertIn('100093 (Fred N)', html)
-        self.assertIn(self._engine.repository, html)
+        self.assertIn(self._eng.repository, html)
 
     #@unittest.skip("Temporarily disabled")
     async def test_add_user(self):
@@ -430,7 +433,7 @@ class TestAdmin(BaseTestAdmin):
             )
 
         result = self._was.get_keyholder_json()
-        key_file = os.path.join(self._engine.data_path, 'checkmein.key')
+        key_file = os.path.join(self._eng.data_path, 'checkmein.key')
 
         with open(key_file, 'rb') as f:
             key = f.read()

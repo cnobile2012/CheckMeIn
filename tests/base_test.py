@@ -180,6 +180,14 @@ class BaseAsyncTests(unittest.IsolatedAsyncioTestCase):
             return f.read()
 
     def find_text_span(self, data_str: str, start: str, num_lines: int):
+        """
+        Finds text in a file. i.e. log files, but could be any file.
+
+        :param str data_str: A string from a file.
+        :param str start: A starting string, usuallu put in by the test.
+        :param int num_lines: The number of line in `data_str` to include in
+                              the sample. This includeds the start string.
+        """
         out = []
         first_line = self._RE_FIRST_LINE.format(start)
         sre = re.search(first_line, data_str, re.MULTILINE)
