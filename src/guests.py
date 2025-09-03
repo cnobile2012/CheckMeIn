@@ -85,9 +85,9 @@ class Guests:
         query = "SELECT email FROM guests WHERE guest_id = ?;"
         data = await self.BD._do_select_one_query(query, (guest_id,))
 
-        if not data:
+        if not data or data[0] == '':  # data could be ('',)
             email = None
-            error = f"Guest email not found with invalid guest_id: {guest_id}"
+            error = f"Guest email not found with guest_id: {guest_id}"
             self._log.warning(error)
         else:
             # Add code here for inactive

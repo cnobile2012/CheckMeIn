@@ -7,6 +7,7 @@ import re
 import datetime
 import cherrypy
 
+from . import AppConfig
 from .accounts import Role
 
 
@@ -44,6 +45,7 @@ class WebBase:
         super().__init__(*args, **kwargs)
         self.lookup = lookup
         self.engine = engine
+        self._log = AppConfig().log
 
     def _get_barcode_no_login(self):
         return Cookie('barcode').get(None)

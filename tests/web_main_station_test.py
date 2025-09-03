@@ -247,7 +247,7 @@ class TestMainStation(BaseTestMainStation):
                 self.assertIn(expected, html, msg.format(expected, barcode))
 
 
-class StationTest(BaseTestMainStation):
+class TestWebMainStation(BaseTestMainStation):
 
     def __init__(self, name, *args, **kwargs):
         super().__init__(name, *args, **kwargs)

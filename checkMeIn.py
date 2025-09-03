@@ -17,7 +17,7 @@ from src.docs import getDocumentation
 from src.engine import Engine
 from src.web_base import WebBase, Cookie
 from src.web_main_station import WebMainStation
-from src.webGuestStation import WebGuestStation
+from src.web_guest_station import WebGuestStation
 from src.webCertifications import WebCertifications
 from src.webTeams import WebTeams
 from src.web_admin_station import WebAdminStation

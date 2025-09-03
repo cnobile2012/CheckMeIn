@@ -118,7 +118,7 @@ class TestGuests(BaseAsyncTests):
         """
         Test that the get_email method returns (email, None) or (None, error).
         """
-        err_msg0 = "Guest email not found with invalid guest_id: {}"
+        err_msg0 = "Guest email not found with guest_id: {}"
         data = (
             ('202107310001', ('spam1@email.com', None)),
             ('999999999999', (None, err_msg0.format('999999999999'))),

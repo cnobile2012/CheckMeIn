@@ -5,7 +5,6 @@
 
 import cherrypy
 
-from . import AppConfig
 from .accounts import Role
 from .web_base import WebBase
 
@@ -15,7 +14,6 @@ class WebMainStation(WebBase):
 
     def __init__(self, lookup, engine, *args, **kwargs):
         super().__init__(lookup, engine, *args, **kwargs)
-        self._log = AppConfig().log
 
     @cherrypy.expose
     def index(self, error=''):
@@ -65,7 +63,7 @@ class WebMainStation(WebBase):
 
                 if error:
                     self._log.error(error)
-                    #cherrypy.log(error)
+                    # cherrypy.log(error)
 
         raise cherrypy.HTTPRedirect("/station")
 
