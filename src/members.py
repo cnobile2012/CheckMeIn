@@ -106,14 +106,9 @@ class Members:
         return await self.BD._do_select_all_query(query)
 
     async def get_active(self):
-        list_users = []
         query = ("SELECT displayName, barcode "
                  "FROM current_members ORDER BY displayName ASC;")
-
-        for row in await self.BD._do_select_all_query(query):
-            list_users.append((row[0], row[1]))
-
-        return list_users
+        return await self.BD._do_select_all_query(query)
 
     # TODO: should this check for inactive?
 

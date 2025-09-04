@@ -136,8 +136,8 @@ class TestGuestStation(BaseTestGuestStation):
         self._wgs.add_guest(*guest_no_email)
         visits = await self.get_data('visits')
         data = (
-            (202107310001, '', msg.format('Random G.')),
-            (202107310002, 'Thanks all', msg.format('Artie N.')),
+            (202107310001, '', msg.format('Random G')),
+            (202107310002, 'Thanks all', msg.format('Artie N')),
             (300005170003, '', err_msg0.format(300005170003)),
             (visits[-1][2], 'An ERROR', err_msg1.format(visits[-1][2])),
             )
@@ -160,12 +160,13 @@ class TestGuestStation(BaseTestGuestStation):
         msg = "Welcome back, {} we are glad you have returned!"
         err_msg0 = "Guest name not found with invalid guest_id: {}."
         data = (
-            (202107310001, msg.format('Random G.')),
+            (202107310001, msg.format('Random G')),
             (999999999999, err_msg0.format(999999999999)),
             )
 
         for guest_id, expected in data:
             html = self._wgs.return_guest(guest_id)
+            #print(html)
             self.assertIn(expected, html)
 
 

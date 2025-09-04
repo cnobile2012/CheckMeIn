@@ -10,7 +10,7 @@ from enum import IntEnum
 from . import AppConfig
 from .base_database import BaseDatabase
 
-Guest = namedtuple('Guest', ['guest_id', 'displayName'])
+Guest = namedtuple('Guest', ['guest_id', 'display_name'])
 
 
 class Status(IntEnum):

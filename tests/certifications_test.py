@@ -7,13 +7,11 @@ import os
 import unittest
 import datetime
 
+from src import BASE_DIR
+from src.assets import TOOLS
 from src.base_database import BaseDatabase
-from src.certifications import CertificationLevels, ToolUser, Certifications
-from src.config import Config
-from src.members import Members
-from src.teams import Teams
-from src.settings import TOOLS
-from src.visits import Visits
+from src.certifications import CertificationLevels, ToolUser
+from src.engine import Engine
 
 from .base_test import BaseAsyncTests
 from .sample_data import TEST_DATA
@@ -94,18 +92,17 @@ class TestToolUser(unittest.TestCase):
         html_date = f"{now}"[:7]
         data = (
             # tool_id, date, level
-            (1, now, CertificationLevels.NONE,
-             '<TD class="clNone"></TD>'),
+            (1, now, CertificationLevels.NONE, '<td class="clNone"></td>'),
             (2, now, CertificationLevels.BASIC,
-             f'<TD class="clBasic">BASIC<br/>{html_date}</TD>'),
+             f'<td class="clBasic">BASIC<br/>{html_date}</td>'),
             (3, now, CertificationLevels.CERTIFIED,
-             f'<TD class="clCertified">CERTIFIED<br/>{html_date}</TD>'),
+             f'<td class="clCertified">CERTIFIED<br/>{html_date}</td>'),
             (4, now, CertificationLevels.DOF,
-             f'<TD class="clDOF">DOF<br/>{html_date}</TD>'),
+             f'<td class="clDOF">DOF<br/>{html_date}</td>'),
             (5, now, CertificationLevels.INSTRUCTOR,
-             f'<TD class="clInstructor">Instructor<br/>{html_date}</TD>'),
+             f'<td class="clInstructor">Instructor<br/>{html_date}</td>'),
             (6, now, CertificationLevels.CERTIFIER,
-             f'<TD class="clCertifier">Certifier<br/>{html_date}</TD>'),
+             f'<td class="clCertifier">Certifier<br/>{html_date}</td>'),
             (7, now, 100, "Key: 100"),  # Nonexistant level
             )
         msg = "Expected {}, with date {}, and level {}, found {}."
@@ -126,8 +123,8 @@ class TestCertifications(BaseAsyncTests):
 
     async def asyncSetUp(self):
         self.bd = BaseDatabase()
-        self.bd.db_fullpath = (os.path.join('data', 'tests'),
-                               self.TEST_DB, False)
+        path = os.path.join(BASE_DIR, 'data', 'tests')
+        self.bd.db_fullpath = (path, self.TEST_DB, False)
         # Create tables and views.
         self.tables_and_views = {
             'tables': (self.bd._T_CERTIFICATIONS, self.bd._T_CONFIG,
@@ -138,58 +135,53 @@ class TestCertifications(BaseAsyncTests):
             }
         await self.create_database(self.tables_and_views)
         # Populate tables
-        self._certs = Certifications()
-        self._members = Members()
-        self._config = Config()
-        self._teams = Teams()
-        self._visits = Visits()
-        await self._certs.add_certifications(
-            TEST_DATA[self.bd._T_CERTIFICATIONS])
-        await self._config.add_config(TEST_DATA[self.bd._T_CONFIG])
-        await self._members.add_members(TEST_DATA[self.bd._T_MEMBERS])
-        await self._teams.add_teams(TEST_DATA[self.bd._T_TEAMS])
-        await self._teams.add_bulk_team_members(
-            TEST_DATA[self.bd._T_TEAM_MEMBERS])
-        await self._certs.add_tools(TOOLS)
-        await self._visits.add_visits(TEST_DATA[self.bd._T_VISITS])
+        self._eng = Engine(path, self.TEST_DB, testing=True)
+        await self._eng.certifications.add_certifications(TEST_DATA[
+            self.bd._T_CERTIFICATIONS])
+        await self._eng.certifications.add_tools(TOOLS)
+        await self._eng.config.add_config(TEST_DATA[self.bd._T_CONFIG])
+        await self._eng.members.add_members(TEST_DATA[self.bd._T_MEMBERS])
+        await self._eng.teams.add_teams(TEST_DATA[self.bd._T_TEAMS])
+        await self._eng.teams.add_bulk_team_members(TEST_DATA[
+            self.bd._T_TEAM_MEMBERS])
+        await self._eng.visits.add_visits(TEST_DATA[self.bd._T_VISITS])
 
     async def asyncTearDown(self):
-        self._cert = None
-        self._config = None
-        self._members = None
-        self._teams = None
-        self._visits = None
+        self._eng = None
         await self.truncate_all_tables()
         # Clear the Borg state.
         self.bd.clear_state()
         self.bd = None
 
     async def get_data(self, module='all'):
-        if module == self.bd._T_CERTIFICATIONS:
-            result = await self._certs.get_certifications()
-        elif module == self.bd._T_CONFIG:
-            result = await self._config.get_config()
-        elif module == self.bd._T_MEMBERS:
-            result = await self._members.get_members()
-        elif module == self.bd._T_TEAMS:
-            result = await self._teams.get_teams()
-        elif module == self.bd._T_TEAM_MEMBERS:
-            result = await self._teams.get_team_members()
-        elif module == self.bd._T_TOOLS:
-            result = await self._certs.get_tools()
-        elif module == self.bd._T_VISITS:
-            result = await self._visits.get_visits()
-        else:
-            result = {
-                self.bd._T_CERTIFICATIONS:
-                await self._certs.get_certifications(),
-                self.bd._T_CONFIG: await self._config.get_config(),
-                self.bd._T_MEMBERS: await self._members.get_members(),
-                self.bd._T_TEAMS: await self._teams.get_teams(),
-                self.bd._T_TEAM_MEMBERS: await self._teams.get_team_members(),
-                self.bd._T_TOOLS: await self._certs.get_tools(),
-                self.bd._T_VISITS: await self._visits.get_visits()
-                }
+        match module:
+            case self.bd._T_CERTIFICATIONS:
+                result = await self._eng.certifications.get_certifications()
+            case self.bd._T_CONFIG:
+                result = await self._config.get_config()
+            case self.bd._T_MEMBERS:
+                result = await self._eng.members.get_members()
+            case self.bd._T_TEAMS:
+                result = await self._eng.teams.get_teams()
+            case self.bd._T_TEAM_MEMBERS:
+                result = await self._eng.teams.get_team_members()
+            case self.bd._T_TOOLS:
+                result = await self._eng.certifications.get_tools()
+            case self.bd._T_VISITS:
+                result = await self._eng.visits.get_visits()
+            case _:
+                result = {
+                    self.bd._T_CERTIFICATIONS:
+                    await self._eng.certifications.get_certifications(),
+                    self.bd._T_CONFIG: await self._config.get_config(),
+                    self.bd._T_MEMBERS: await self._eng.members.get_members(),
+                    self.bd._T_TEAMS: await self._eng.teams.get_teams(),
+                    self.bd._T_TEAM_MEMBERS:
+                    await self._eng.teams.get_team_members(),
+                    self.bd._T_TOOLS:
+                    await self._eng.certifications.get_tools(),
+                    self.bd._T_VISITS: await self._eng.visits.get_visits()
+                    }
 
         return result
 
@@ -198,7 +190,7 @@ class TestCertifications(BaseAsyncTests):
         """
         Test that the get_certifications method returns all certifications.
         """
-        result = await self._certs.get_certifications()
+        result = await self._eng.certifications.get_certifications()
         result_size = len(result)
         self.assertEqual(3, result_size)
 
@@ -208,32 +200,27 @@ class TestCertifications(BaseAsyncTests):
         Test that the add_tools method correctly adds a new certification.
         """
         data = (
-            {'id': 100, 'grouping': 10, 'name': 'Plasma Rail Gun',
-             'restriction': 5, 'comments': 'For shoot down satellites.'},
-            {'id': 101, 'grouping': 10, 'name': 'Planet Killer',
-             'restriction': 5, 'comments': 'Never use this.'},
+            {'name': 'Plasma Rail Gun', 'restriction': 5,
+             'comment': 'For shoot down satellites.'},
+            {'name': 'Planet Killer', 'restriction': 5,
+             'comment': 'Never use this.'},
             )
-        msg = ("Expected {}, with tool_id {}, found {}.")
-        await self._certs.add_tools(data)
+        msg = "Expected {}, found {}."
+        await self._eng.certifications.add_tools(data)
         results = await self.get_data('tools')
 
         for tools in data:
-            tool_id = tools['id']
-            grouping = tools['grouping']
             name = tools['name']
             restriction = tools['restriction']
-            comments = tools['comments']
+            comment = tools['comment']
 
             for item in results:
-                if tool_id == item[0]:
-                    self.assertEqual(grouping, item[1], msg.format(
-                        grouping, item[0], item[1]))
-                    self.assertEqual(name, item[2], msg.format(
-                        name, item[0], item[2]))
-                    self.assertEqual(restriction, item[3], msg.format(
-                        restriction, item[0], item[3]))
-                    self.assertEqual(comments, item[4], msg.format(
-                        comments, item[0], item[4]))
+                if name == item[1]:
+                    self.assertEqual(name, item[1], msg.format(name, item[1]))
+                    self.assertEqual(restriction, item[2], msg.format(
+                        restriction, item[2]))
+                    self.assertEqual(comment, item[3], msg.format(
+                        comment, item[3]))
 
     #@unittest.skip("Temporarily skipped")
     async def test_add_new_certification(self):
@@ -248,7 +235,7 @@ class TestCertifications(BaseAsyncTests):
         msg = "Expected {} with barcode {}, found {}."
 
         for new_barcode, tool_id, level, cert, expected in data:
-            result = await self._certs.add_new_certification(
+            result = await self._eng.certifications.add_new_certification(
                 new_barcode, tool_id, level, cert)
             self.assertEqual(expected, result, msg.format(
                 expected, new_barcode, result))
@@ -260,7 +247,7 @@ class TestCertifications(BaseAsyncTests):
         to a users certification status.
         """
         data = ('100032', '100091')
-        users = await self._certs.get_all_user_list()
+        users = await self._eng.certifications.get_all_user_list()
         self.assertEqual(len(data), len(users))
 
         for user_id in data:
@@ -273,7 +260,7 @@ class TestCertifications(BaseAsyncTests):
         changes to a users certification status.
         """
         data = ('100032', '100091')
-        users = await self._certs.get_in_building_user_list()
+        users = await self._eng.certifications.get_in_building_user_list()
         self.assertEqual(len(data), len(users))
 
         for user_id in data:
@@ -296,7 +283,7 @@ class TestCertifications(BaseAsyncTests):
         msg = "Expected {}, with barcode {}, found {}."
 
         for team_id, barcode, d_name, date_type, _level in data:
-            users = await self._certs. get_team_user_list(team_id)
+            users = await self._eng.certifications. get_team_user_list(team_id)
             tu = users[barcode]
             self.assertEqual(d_name, tu.display_name, msg.format(
                 d_name, barcode, tu.display_name))
@@ -321,7 +308,7 @@ class TestCertifications(BaseAsyncTests):
         msg = "Expected {}, with barcode {}, found {}."
 
         for user_id, d_name in data:
-            users = await self._certs.get_user_list(user_id)
+            users = await self._eng.certifications.get_user_list(user_id)
             tu = users.get(user_id)
 
             if tu:
@@ -329,12 +316,36 @@ class TestCertifications(BaseAsyncTests):
                     d_name, user_id, tu.display_name))
 
     #@unittest.skip("Temporarily skipped")
-    async def test_get_all_tools(self):
+    async def test_get_tools(self):
         """
-        Test that the get_all_tools method returns all tools.
+        Test that the get_tools method returns all tools.
         """
-        for tool in await self._certs.get_all_tools():
-            self.assertIn(tool[0], range(1, 19))
+        data = (
+            (1, 'Sheet Metal Brake'),
+            (2, 'Blind Rivet Gun'),
+            (3, 'Stretcher Shrinker'),
+            (4, '3D printers'),
+            (5, 'Power Hand Drill'),
+            (6, 'Solder Iron'),
+            (7, 'Dremel'),
+            (8, 'Horizontal Band Saw'),
+            (9, 'Drill Press'),
+            (10, 'Grinder / Sander'),
+            (11, 'Scroll Saw'),
+            (12, 'Table Mounted Jig Saw'),
+            (13, 'Vertical Band Saw'),
+            (14, 'Jig Saw'),
+            (15, 'CNC router'),
+            (16, 'Metal Lathe'),
+            (17, 'Table Saw'),
+            (18, 'Power Miter Saw'),
+            (19, 'Wood Lathe'),
+            )
+        tools = await self._eng.certifications.get_tools()
+
+        for idx, (pk, name) in enumerate(data):
+            self.assertEqual(pk, tools[idx][0])
+            self.assertEqual(name, tools[idx][1])
 
     #@unittest.skip("Temporarily skipped")
     async def test_get_tools_from_list(self):
@@ -342,12 +353,13 @@ class TestCertifications(BaseAsyncTests):
         Test that the get_tools_from_list method returns the tools when an
         underscore seperated list of tool ID numbers is provided.
         """
-        tool_str = '0_1_2_3_4_5_6_7_8_9_10_11_12_13_14_15_16_17_18_19'
-        tool_str_ids = [int(id) for id in tool_str.split('_')]
-        tools = await self._certs.get_tools_from_list(tool_str)
-        tool_ids = [tool[0] for tool in tools]
-        diff = set(tool_str_ids) - set(tool_ids)
-        self.assertEqual({0, 19}, diff)
+        tool_str = '1_2_3_4_5_6_7_8_9_10_11_12_13_14_15_16_17_18_19'
+        tool_str_pks = [int(pk) for pk in tool_str.split('_')]
+        tools = await self._eng.certifications.get_tools_from_list(tool_str)
+        tool_pks = [tool[0] for tool in tools]
+        diff = set(tool_str_pks) - set(tool_pks)
+        self.assertEqual(set(), diff,
+                         f"Expected {tool_str_pks}, found {tool_pks}.")
 
     #@unittest.skip("Temporarily skipped")
     async def test_get_list_certify_tools(self):
@@ -365,7 +377,8 @@ class TestCertifications(BaseAsyncTests):
         msg = "Expected {}, found {}."
 
         for user_id, tool_id, name in data:
-            tools = await self._certs.get_list_certify_tools(user_id)
+            tools = await self._eng.certifications.get_list_certify_tools(
+                user_id)
 
             for id, t_name in tools:
                 self.assertEqual(tool_id, id, msg.format(tool_id, id))
@@ -377,11 +390,11 @@ class TestCertifications(BaseAsyncTests):
         Test that the get_tool_name method returns the tool names using
         the tool ID.
         """
-        data = [(tool['id'], tool['name']) for tool in TOOLS]
+        data = [(pk, tool['name']) for pk, tool in enumerate(TOOLS, start=1)]
         msg = "Expected {}, with tool_id {}, found {}."
 
         for tool_id, t_name in data:
-            name = await self._certs.get_tool_name(tool_id)
+            name = await self._eng.certifications.get_tool_name(tool_id)
             self.assertEqual(t_name, name, msg.format(t_name, tool_id, name))
 
     #@unittest.skip("Temporarily skipped")
@@ -401,7 +414,7 @@ class TestCertifications(BaseAsyncTests):
         msg = "Expected {}, found {}."
 
         for level, l_name in data:
-            name = self._certs.get_level_name(level)
+            name = self._eng.certifications.get_level_name(level)
             self.assertEqual(l_name, name, msg.format(l_name, name))
 
     #@unittest.skip("Temporarily skipped")
@@ -415,10 +428,11 @@ class TestCertifications(BaseAsyncTests):
         # Test values only.
         member_name = 'Daughter N'
         tool_name = 'Sheet Metal Brake'
-        level_name = self._certs._levels[CertificationLevels.BASIC]
+        level_name = self._eng.certifications._levels[
+            CertificationLevels.BASIC]
         cert_name = 'Member N'
-        self._certs.email_certifiers(member_name, tool_name, level_name,
-                                     cert_name)
+        self._eng.certifications.email_certifiers(member_name, tool_name,
+                                                  level_name, cert_name)
         msg = ("Daughter N was just certified as BASIC on the "
                "'Sheet Metal Brake' by Member N.")
         full_log = self.read_text_file(self.full_log_path, mode='rb')

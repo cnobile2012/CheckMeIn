@@ -118,11 +118,10 @@ class BaseDatabase(Borg):
             'CONSTRAINT unq UNIQUE (program_name, program_number, start_date)'
             ),
         _T_TOOLS: (
-            'id INTEGER NOT NULL PRIMARY KEY',
-            'grouping INTEGER',
-            'name TEXT',
+            'pk INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT',
+            'name TEXT NOT NULL UNIQUE',
             'restriction INTEGER DEFAULT 0',
-            'comments TEXT'),
+            'comment TEXT'),
         _T_UNLOCKS: (
             'time DATETIME',
             'location TEXT',

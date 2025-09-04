@@ -1,13 +1,10 @@
 
-<form action = "leave_guest">
-    <br/>
+<form action="leave_guest">
     We hope you enjoyed your time here. Please select your name from the list.
     <br/>
     <select name="guest_id">
 % for guest in in_building:
-        <option value="${guest.guest_id}">
-            ${guest.displayName}
-        </option>
+        <option value="${guest.guest_id}">${guest.display_name}</option>
 % endfor
     </select>
     <br/><br/>

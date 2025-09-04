@@ -18,7 +18,7 @@ from src.engine import Engine
 from src.web_base import WebBase, Cookie
 from src.web_main_station import WebMainStation
 from src.web_guest_station import WebGuestStation
-from src.webCertifications import WebCertifications
+from src.web_certifications import WebCertifications
 from src.webTeams import WebTeams
 from src.web_admin_station import WebAdminStation
 from src.webReports import WebReports
@@ -129,7 +129,8 @@ class CheckMeIn(WebBase):
             self._engine.visits.in_building(barcode))
         return self.template('links.mako', barcode=barcode, role=role,
                              active_teams_coached=active_teams_coached,
-                             in_building=in_building, display_name=display_name,
+                             in_building=in_building,
+                             display_name=display_name,
                              active_members=active_members,
                              repo=self.engine.repository)
 

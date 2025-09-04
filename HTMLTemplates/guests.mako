@@ -23,7 +23,7 @@
             </tr>
         </table>
 %if message:
-        <h1>${message}</h1>
+        <center><h1>${message}</h1></center>
 %endif
         <table class="header">
             <tr>
@@ -85,6 +85,7 @@ $(document).ready(function () {
         $("#modal-header").html("Leaving Building");
         let formHtml = $("#modal-leaving-guest").html();
         $("#modal-body").html(formHtml);
+        modal.style.display = "block";
     });
 });
 

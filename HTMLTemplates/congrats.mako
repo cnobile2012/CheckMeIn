@@ -4,8 +4,10 @@
 </%def>
 <%def name="title()">Congratulations!!!</%def>
 <%inherit file="base.mako"/>
-
-<H1> ${memberName} is now certified as ${level} on ${tool}!!!</H1> 
-
-<A HREF="/certifications/certify">Certify another</A></br>
-<A HREF="/links?barcode=${certifier_id}">My links</A></br>
+        <center>
+            <h1>${member_name} is now certified as ${level} on ${tool}!</h1>
+        </center>
+        <a href="/certifications/certify">Certify another</a>
+        </br>
+        <a href="/links?barcode=${certifier_id}">My links</a>
+        </br>

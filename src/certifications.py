@@ -72,17 +72,17 @@ class ToolUser:
         date = str(date_obj)[:7]  # Just the year-month as in (2025-08).
         html_details = {
             CertificationLevels.NONE:
-            '<TD class="clNone"></TD>',
+            '<td class="clNone"></td>',
             CertificationLevels.BASIC:
-            f'<TD class="clBasic">BASIC<br/>{date}</TD>',
+            f'<td class="clBasic">BASIC<br/>{date}</td>',
             CertificationLevels.CERTIFIED:
-            f'<TD class="clCertified">CERTIFIED<br/>{date}</TD>',
+            f'<td class="clCertified">CERTIFIED<br/>{date}</td>',
             CertificationLevels.DOF:
-            f'<TD class="clDOF">DOF<br/>{date}</TD>',
+            f'<td class="clDOF">DOF<br/>{date}</td>',
             CertificationLevels.INSTRUCTOR:
-            f'<TD class="clInstructor">Instructor<br/>{date}</TD>',
+            f'<td class="clInstructor">Instructor<br/>{date}</td>',
             CertificationLevels.CERTIFIER:
-            f'<TD class="clCertifier">Certifier<br/>{date}</TD>'
+            f'<td class="clCertifier">Certifier<br/>{date}</td>'
             }
         return html_details.get(level, f"Key: {level}")
 
@@ -125,24 +125,19 @@ class Certifications(Utilities):
         Do a bulk insert or update with values from the settings.py file.
 
         :param list tools: A list of tools to add or update. The list is in
-                           the form of: [{'id': <value>, 'grouping': <value>,
+                           the form of: [{'id': <value>,
                            'name': <value>, 'restriction': <value>,
                            'comments': <value>}, ...]
         """
-        query = ("INSERT INTO tools "
-                 "VALUES (:id, :grouping, :name, :restriction, :comments) "
-                 "ON CONFLICT(id) DO UPDATE SET "
-                 "grouping = excluded.grouping, name = excluded.name, "
-                 "restriction = excluded.restriction, "
-                 "comments = excluded.comments "
-                 "WHERE excluded.grouping IS NOT tools.grouping "
-                 "OR excluded.name IS NOT tools.name "
-                 "OR excluded.restriction IS NOT tools.restriction "
-                 "OR excluded.comments IS NOT tools.comments;")
+        query = ("INSERT INTO tools (name, restriction, comment) "
+                 "VALUES (:name, :restriction, :comment) "
+                 "ON CONFLICT(name) DO UPDATE "
+                 "SET restriction = excluded.restriction, "
+                 "comment = excluded.comment;")
         await self.BD._do_insert_query(query, tools)
 
     async def get_tools(self):
-        query = "SELECT * FROM tools;"
+        query = "SELECT * FROM tools ORDER BY pk ASC;"
         return await self.BD._do_select_all_query(query)
 
     async def add_new_certification(self, mbr_id, tool_id, level, cert):
@@ -218,43 +213,26 @@ class Certifications(Utilities):
 
         return users
 
-    async def get_all_tools(self):
-        tools = []
-        query = ("SELECT id, name, grouping FROM tools "
-                 "ORDER BY grouping, id ASC;")
-        rows = await self.BD._do_select_all_query(query)
-
-        for id, name, grouping in rows:
-            tools.append([id, name, grouping])
-
-        return tools
-
     async def get_tools_from_list(self, input_str):
         """
+        Returns a list of tools based on the `input_str` argument.
         """
-        tools = await self.get_all_tools()
-        input_tools = input_str.split("_")
-        new_tool_list = []
-
-        for tool in tools:
-            if str(tool[0]) in input_tools:
-                new_tool_list.append(tool)
-
-        return new_tool_list
+        tools = await self.get_tools()
+        input_tools = [int(pk) for pk in input_str.split("_")]
+        return [tool for tool in tools if tool[0] in input_tools]
 
     async def get_list_certify_tools(self, user_id):
         """
         Return a list of all tools that a certifier can operate.
         """
         query = ("SELECT c.tool_id, t.name FROM certifications c "
-                 "INNER JOIN tools t ON c.tool_id = t.id "
+                 "INNER JOIN tools t ON c.tool_id = t.pk "
                  "WHERE c.user_id = ? AND c.level >= ? ORDER BY t.name ASC;")
         certifier = CertificationLevels.CERTIFIER
-        rows = await self.BD._do_select_all_query(query, (user_id, certifier))
-        return [(row[0], row[1]) for row in rows]
+        return await self.BD._do_select_all_query(query, (user_id, certifier))
 
     async def get_tool_name(self, tool_id):
-        query = "SELECT name FROM tools WHERE id = ?;"
+        query = "SELECT name FROM tools WHERE pk = ?;"
         data = await self.BD._do_select_one_query(query, (tool_id,))
         return data[0]
 

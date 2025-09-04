@@ -56,14 +56,14 @@ function escapeHTML(string) {
         <link rel="manifest" type="application/manifest+json"
               href="/static/manifest.json"/>
         <meta name="apple-mobile-web-app-title" content="CheckMeIn">
-        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-status-bar-style" content="black">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 ${self.head()}
     </head>
     <body>
 % if error is not UNDEFINED:
-        <h1 class="error" id="error">${error}</h1>
+        <center><h1 class="error" id="error">${error}</h1></center>
 % endif
         <div id="modal" class="modal">
             <div class="modal-content">

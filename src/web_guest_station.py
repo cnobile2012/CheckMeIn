@@ -50,7 +50,7 @@ class WebGuestStation(Utilities, WebBase):
         return self._show_guest_page(msg)
 
     @cherrypy.expose
-    def leave_guest(self, guest_id, comments=""):
+    def leave_guest(self, guest_id=None, comments=""):
         error = ''
         self.engine.run_async(self.engine.visits.leave_guest(guest_id))
         name, msg = self.engine.run_async(
@@ -64,19 +64,27 @@ class WebGuestStation(Utilities, WebBase):
                                 f'Comments from {name}',
                                 f'Comments left:\n{comments}', name, email)
 
-            msg = f"Goodbye {name}. We hope to see you again soon!"
+            msg = f"Goodbye {name} We hope to see you again soon!"
             # Could have a get_email error, so we added it to our message.
             msg = f"{msg} {error}" if error else msg
 
         return self._show_guest_page(msg)
 
     @cherrypy.expose
-    def return_guest(self, guest_id):
+    def return_guest(self, guest_id=None):
+        """
+        Endpoint for returning guests.
+
+        param int guest_id: The guest ID, set to None so if there are no
+                            guests the frontend will not cause errors.
+        :returns: An updatyed guest HTML page.
+        :rtype: str
+        """
         self.engine.run_async(self.engine.visits.enter_guest(guest_id))
         name, msg = self.engine.run_async(
             self.engine.guests.get_name(guest_id))
 
         if not msg:
-            msg = f"Welcome back, {name}. we are glad you have returned!"
+            msg = f"Welcome back, {name} we are glad you have returned!"
 
         return self._show_guest_page(msg)

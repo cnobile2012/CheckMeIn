@@ -35,12 +35,12 @@ class TestGuests(BaseAsyncTests):
             }
         await self.create_database(self.tables_and_views)
         # Populate tables
-        self._engine = Engine(path, self.TEST_DB, testing=True)
-        await self._engine.guests.add_guests(TEST_DATA[self.bd._T_GUESTS])
-        await self._engine.visits.add_visits(TEST_DATA[self.bd._T_VISITS])
+        self._eng = Engine(path, self.TEST_DB, testing=True)
+        await self._eng.guests.add_guests(TEST_DATA[self.bd._T_GUESTS])
+        await self._eng.visits.add_visits(TEST_DATA[self.bd._T_VISITS])
 
     async def asyncTearDown(self):
-        self._engine = None
+        self._eng = None
         await self.truncate_all_tables()
         # Clear the Borg state.
         self.bd.clear_state()
@@ -49,14 +49,13 @@ class TestGuests(BaseAsyncTests):
     async def get_data(self, module='all'):
         match module:
             case self.bd._T_GUESTS:
-                result = await self._engine.guests.get_guests()
+                result = await self._eng.guests.get_guests()
             case self.bd._T_VISITS:
-                result = await self._engine.visits.get_visits()
+                result = await self._eng.visits.get_visits()
             case _:
                 result = {
-                    self.bd._T_GUESTS: await
-                    self._engine.guests.get_accounts(),
-                    self.bd._T_VISITS: await self._engine.visits.get_visits()
+                    self.bd._T_GUESTS: await self._eng.guests.get_accounts(),
+                    self.bd._T_VISITS: await self._eng.visits.get_visits()
                     }
 
         return result
@@ -67,7 +66,7 @@ class TestGuests(BaseAsyncTests):
         Test that the get_guests method restuns all guests.
         """
         data = ('Random G', 'Artie N')
-        guests = await self._engine.guests.get_guests()
+        guests = await self._eng.guests.get_guests()
 
         for item in guests:
             self.assertIn(item[1], data)
@@ -91,7 +90,7 @@ class TestGuests(BaseAsyncTests):
 
         for (d_name, email, f_name, l_name,
              w_found, n_letter, expected) in data:
-            result = await self._engine.guests.add_guest(
+            result = await self._eng.guests.add_guest(
                 d_name, f_name, l_name, email, w_found, n_letter)
             self.assertEqual(expected, result, msg.format(
                 expected, d_name, result))
@@ -110,7 +109,7 @@ class TestGuests(BaseAsyncTests):
         msg = "Expected {}, found {}."
 
         for guest_id, expected in data:
-            result = await self._engine.guests.get_name(guest_id)
+            result = await self._eng.guests.get_name(guest_id)
             self.assertEqual(expected, result, msg.format(expected, result))
 
     #@unittest.skip("Temporarily skipped")
@@ -126,7 +125,7 @@ class TestGuests(BaseAsyncTests):
         msg = "Expected {}, found {}."
 
         for guest_id, expected in data:
-            result = await self._engine.guests.get_email(guest_id)
+            result = await self._eng.guests.get_email(guest_id)
             self.assertEqual(expected, result, msg.format(expected, result))
 
     #@unittest.skip("Temporarily skipped")
@@ -138,7 +137,7 @@ class TestGuests(BaseAsyncTests):
             Guest('202107310001', 'Random G'),
             Guest('202107310002', 'Artie N'),
             )
-        guests = await self._engine.guests.get_all_guests()
+        guests = await self._eng.guests.get_all_guests()
 
         for guest in guests:
             self.assertIn(guest, data)
@@ -156,8 +155,7 @@ class TestGuests(BaseAsyncTests):
             )
 
         for num_days, expected in data:
-            guests = await self._engine.guests.guests_last_in_building(
-                num_days)
+            guests = await self._eng.guests.guests_last_in_building(num_days)
 
             for guest in guests:
                 self.assertIn((num_days, guest), data)
@@ -169,11 +167,11 @@ class TestGuests(BaseAsyncTests):
         in the building.
         """
         data = ('202107310001', 'Random G')
-        guests = await self._engine.guests.guests_in_building()
+        guests = await self._eng.guests.guests_in_building()
 
         for idx, guest in enumerate(guests):
             self.assertEqual(guest.guest_id, data[0])
-            self.assertEqual(guest.displayName, data[1])
+            self.assertEqual(guest.display_name, data[1])
 
     #@unittest.skip("Temporarily skipped")
     async def test_get_guest_lists(self):
@@ -182,12 +180,12 @@ class TestGuests(BaseAsyncTests):
         data0 = ('202107310001', 'Random G')
         data1 = ('202107310002', 'Artie N')
         (building_guests,
-         guests_not_here) = await self._engine.guests.get_guest_lists()
+         guests_not_here) = await self._eng.guests.get_guest_lists()
 
         for guest in building_guests:
             self.assertEqual(guest.guest_id, data0[0])
-            self.assertEqual(guest.displayName, data0[1])
+            self.assertEqual(guest.display_name, data0[1])
 
         for guest in guests_not_here:
             self.assertEqual(guest.guest_id, data1[0])
-            self.assertEqual(guest.displayName, data1[1])
+            self.assertEqual(guest.display_name, data1[1])
