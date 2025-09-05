@@ -189,7 +189,7 @@ class BaseAsyncTests(unittest.IsolatedAsyncioTestCase):
                               the sample. This includeds the start string.
         """
         out = []
-        first_line = self._RE_FIRST_LINE.format(start)
+        first_line = self._RE_FIRST_LINE.format(re.escape(start))
         sre = re.search(first_line, data_str, re.MULTILINE)
 
         if sre:

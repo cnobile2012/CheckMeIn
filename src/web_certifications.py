@@ -50,8 +50,8 @@ class WebCertifications(WebBase):
             member_id, tool_id, level, certifier_id))
         member_name, error = self.engine.run_async(
             self.engine.members.get_name(member_id))
-        certifier_name = self.engine.run_async(self.engine.members.get_name(
-            certifier_id))
+        certifier_name, error = self.engine.run_async(
+            self.engine.members.get_name(certifier_id))
         level = self.engine.certifications.get_level_name(level)
         tool = self.engine.run_async(
             self.engine.certifications.get_tool_name(tool_id))

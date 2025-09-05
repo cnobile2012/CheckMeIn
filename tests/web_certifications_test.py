@@ -154,9 +154,17 @@ class TestCertifications(BaseTestCertifications):
         Test that the add_certification method renders the congrats.mako
         correctly.
         """
+        start = "Start test_add_certification"
+        self._log.info(start)
         msg = "Member N is now certified as CERTIFIER on Sheet Metal Brake!"
         html = self._wc.add_certification('100091', 1, 40)
         self.assertIn(msg, html)
+        # Test that email was sent.
+        msg = ("Member N was just certified as CERTIFIER on the "
+               "'Sheet Metal Brake' by Member N.")
+        full_log = self.read_text_file(self.full_log_path, mode='rb')
+        sub_log = self.find_text_span(full_log, start, 10)
+        self.assertIn(msg, sub_log[-1])
 
     #@unittest.skip("Temporarily disabled")
     def test_index(self):
@@ -194,6 +202,7 @@ class TestCertifications(BaseTestCertifications):
             (0, True, True, True, False, 'Sheet Metal Brake'),
             (0, True, False, False, True, 'Average J'),
             (0, False, False, False, True, 'Sheet Metal Brake'),
+            (10, True, True, True, False, '')
             )
         tools = '1_2_3_4_5_6_7_8_9_10_11_12_13_14_15_16_17_18_19'
 
@@ -235,6 +244,7 @@ class TestCertifications(BaseTestCertifications):
             ('9', True),
             ('FaLsE', False),
             ('JERK', True),
+            (object, True),
             )
 
         for term, expected in data:

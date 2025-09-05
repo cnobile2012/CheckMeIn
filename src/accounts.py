@@ -193,6 +193,13 @@ class Accounts(Utilities):
         chars = string.ascii_uppercase + string.digits
         return ''.join(random.SystemRandom().choice(chars) for _ in range(8))
 
+    async def _update_forgot(self, username, token):
+        query = ("UPDATE accounts SET forgot = ?, forgotTime = ? "
+                 "WHERE user = ?;")
+        hashed_token = pwd_context.hash(token)
+        now = datetime.datetime.now()
+        await self.BD._do_update_query(query, [(hashed_token, now, username)])
+
     async def forgot_password(self, username):
         """
         Handles forgotten passwords.
@@ -225,15 +232,11 @@ class Accounts(Utilities):
                 return msg
 
         token = self._get_random_id()
-        query = ("UPDATE accounts SET forgot = ?, forgotTime = ? "
-                 "WHERE user = ?;")
-        await self.BD._do_update_query(
-            query, [(pwd_context.hash(token), datetime.datetime.now(),
-                     username)])
+        await self._update_forgot(username, token)
         safe_username = urllib.parse.quote_plus(username)
         msg_type = 'Forgotten Password'
         msg = ("Please go to http://tfi.checkmein.site/profile/"
-               f"resetPasswordToken?user={safe_username}&token={token} "
+               f"reset_password_token?user={safe_username}&token={token} "
                "to reset your password. If you did not request a password "
                "reset you can safely ignore this e-mail. This link expires "
                f"in 24 hours. Your username is {safe_username}.\n\n"
