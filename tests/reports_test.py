@@ -160,9 +160,9 @@ class TestStatistics(BaseAsyncTests):
         self.assertEqual(total_hours, result)
 
     #@unittest.skip("Temporarily skipped")
-    async def test__get_member_visits(self):
+    async def test_get_member_visits(self):
         """
-        Test that the _get_member_visits method and the unique_visitors,
+        Test that the get_member_visits method and the unique_visitors,
         avg_time, median_time, and sorted_list properties.
         """
         now = datetime.now()
@@ -182,7 +182,7 @@ class TestStatistics(BaseAsyncTests):
         for (b_date, e_date, unique_visitors, avg_time,
              median_time, sorted_list) in data:
             s = Statistics(b_date, e_date)
-            building_usage = await s._get_member_visits()
+            building_usage = await s.get_member_visits()
             self.assertEqual(unique_visitors, s.unique_visitors, msg.format(
                 unique_visitors, s.unique_visitors))
             self.assertEqual(avg_time, s.avg_time, msg.format(
@@ -271,16 +271,17 @@ class TestReports(BaseAsyncTests):
         """
         # report_id, name, sql_text, parameters, active
         data = (
-            (1, 'fred', 'SELECT * FROM members;', '', 1),
+            (1, 'Get All Members', 'SELECT * FROM members;', '', 1),
             )
         reports = await self._engine.reports.get_reports()
 
-        for idx, item in enumerate(reports):
-            self.assertEqual(data[idx][0], item[0])
-            self.assertEqual(data[idx][1], item[1])
-            self.assertEqual(data[idx][2], item[2])
-            self.assertEqual(data[idx][3], item[3])
-            self.assertEqual(data[idx][4], item[4])
+        for idx, (report_id, name, sql, parms, active) in enumerate(data):
+            report = reports[idx]
+            self.assertEqual(report_id, report[0])
+            self.assertEqual(name, report[1])
+            self.assertEqual(sql, report[2])
+            self.assertEqual(parms, report[3])
+            self.assertEqual(active, report[4])
 
     #@unittest.skip("Temporarily skipped")
     async def test_who_is_here(self):

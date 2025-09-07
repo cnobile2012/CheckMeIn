@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 
 from . import AppConfig
 from .base_database import BaseDatabase
+from .web_base import WebBase
 
 
 Transaction = namedtuple('Transaction', ['name', 'time', 'description'])
@@ -123,7 +124,7 @@ class Statistics:
     def total_hours(self):
         return self._total_hours
 
-    async def _get_member_visits(self):
+    async def get_member_visits(self):
         visitors = {}
         building_usage = BuildingUsage()
         query = ("SELECT v0.enter_time, v0.exit_time, m.displayName, "
@@ -172,28 +173,28 @@ class Statistics:
     @property
     def unique_visitors(self):
         assert hasattr(self, '_unique_visitors'), (
-            "Programming error, _get_member_visits() must be called "
+            "Programming error, get_member_visits() must be called "
             "before using this property.")
         return self._unique_visitors
 
     @property
     def avg_time(self):
         assert hasattr(self, '_avg_time'), (
-            "Programming error, _get_member_visits() must be called "
+            "Programming error, get_member_visits() must be called "
             "before using this property.")
         return self._avg_time
 
     @property
     def median_time(self):
         assert hasattr(self, '_median_time'), (
-            "Programming error, _get_member_visits() must be called "
+            "Programming error, get_member_visits() must be called "
             "before using this property.")
         return self._median_time
 
     @property
     def sorted_list(self):
         assert hasattr(self, '_sorted_list'), (
-            "Programming error, _get_member_visits() must be called "
+            "Programming error, get_member_visits() must be called "
             "before using this property.")
         return self._sorted_list
 
@@ -204,7 +205,7 @@ class Statistics:
                                    self.end_date + datetime.timedelta(days=1)):
             begin_period = datetime.datetime.combine(
                 day, datetime.datetime.min.time())
-            building_usage = await self._get_member_visits()
+            building_usage = await self.get_member_visits()
 
             # Care about 8am-10pm
             for start_hour in range(8, 22):
@@ -227,7 +228,7 @@ class Statistics:
 
         fig, ax = plt.subplots()
         plt.plot(dates, values, "r-")
-        # Tell Matplotlib the x-axis is dates
+        # Tell Matplotlib the x-axis is dates.
         ax.xaxis_date()
         title_text = ("Building usage\n"
                       f"{self._begin_date.strftime('%b %e, %G')}")
@@ -356,16 +357,8 @@ class Reports:
         return await self._unique_visitors(start_date, end_date)
 
     def get_stats(self, begin_date_str, end_date_str):
-        start_date = datetime.datetime(int(begin_date_str[0:4]),
-                                       int(begin_date_str[5:7]),
-                                       int(begin_date_str[8:10])).replace(
-                                           hour=0, minute=0, second=0,
-                                           microsecond=0)
-        end_date = datetime.datetime(int(end_date_str[0:4]),
-                                     int(end_date_str[5:7]),
-                                     int(end_date_str[8:10])).replace(
-                                         hour=23, minute=59, second=59,
-                                         microsecond=999999)
+        start_date = WebBase.date_from_string(begin_date_str)
+        end_date = WebBase.date_from_string(end_date_str)
         return Statistics(start_date, end_date)
 
     async def get_earliest_date(self):
@@ -388,8 +381,7 @@ class Reports:
         return dates
 
     async def get_data(self, date_str):
-        date = datetime.datetime(int(date_str[0:4]), int(date_str[5:7]),
-                                 int(date_str[8:10]))
+        date = WebBase.date_from_string(date_str)
         start_date = date.replace(hour=0, minute=0, second=0, microsecond=0)
         end_date = date.replace(hour=23, minute=59, second=59,
                                 microsecond=999999)

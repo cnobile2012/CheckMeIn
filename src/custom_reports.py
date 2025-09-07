@@ -3,6 +3,8 @@
 # src/custom_reports.py
 #
 
+import aiosqlite
+
 from . import AppConfig
 from .base_database import BaseDatabase
 
@@ -15,24 +17,41 @@ class CustomReports:
         self._log = AppConfig().log
 
     async def custom_sql(self, sql):
-        rows, description = await self.BD._do_select_read_only(sql)
-        header = [column[0] for column in description]
-        return header, rows
+        try:
+            rows, description = await self.BD._do_select_read_only(sql)
+        except aiosqlite.OperationalError as e:
+            error = "Invalid SQL: "
+            self._log.error(error + "%s, %s", sql, e)
+            error += str(e)
+            rows = None
+            header = None
+        else:
+            error = ''
+            header = [column[0] for column in description]
+
+        return header, rows, error
 
     async def custom_report(self, report_id):
+        error = ""
         query = ("SELECT name, sql_text, parameters, active "
                  "FROM reports WHERE report_id = ?;")
-        data, columns = await self.BD._do_select_read_only(query, (report_id,),
-                                                           fetchone=True)
+        data, columns = await self.BD._do_select_read_only(
+            query, (report_id,), fetchone=True)
 
         if data:
-            title = data[0]
+            name = data[0]
             sql = data[1]
-            header, rows = await self.custom_sql(sql)
-            ret = (title, sql, header, rows)
+            header, rows, error = await self.custom_sql(sql)
+
+            # Probably don't need to test all three, but it gives me the
+            # warm fuzzies.
+            if header is None or rows is None or error:
+                ret = (name, sql, None, None, error)
+            else:
+                ret = (name, sql, header, rows, error)
         else:
-            ret = (f"Couldn't find report with report_id '{report_id}'.", "",
-                   None, None)
+            error = f"Could not find report with report_id '{report_id}'."
+            ret = ("", "", None, None, error)
 
         return ret
 

@@ -58,7 +58,7 @@ class BaseProfileTest(BaseAsyncTests):
 
     async def asyncTearDown(self):
         self._eng = None
-        self._wc = None
+        self._wp = None
         await self.truncate_all_tables()
         # Clear the Borg state.
         self.bd.clear_state()

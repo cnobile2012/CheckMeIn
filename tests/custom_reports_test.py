@@ -68,7 +68,8 @@ class TestCustomReports(BaseAsyncTests):
         members_columns = ['barcode', 'displayName', 'firstName', 'lastName',
                            'email', 'membershipExpires']
         query = "SELECT * FROM members;"
-        headers, rows = await self._engine.custom_reports.custom_sql(query)
+        headers, rows, error = await self._engine.custom_reports.custom_sql(
+            query)
         members = await self.get_data('members')
         self.assertEqual(members, rows)
         self.assertEqual(members_columns, headers)
@@ -79,34 +80,35 @@ class TestCustomReports(BaseAsyncTests):
         Test that the custom_report method returns the correct data for the
         custom report query.
         """
-        err_msg0 = "Couldn't find report with report_id '{}'."
+        err_msg0 = "Invalid SQL: no such table: invalid_table"
+        err_msg1 = "Could not find report with report_id '{}'."
+        rows = await self.get_data('members')
         data = (
-            (1, 'fred', 'SELECT * FROM members;',
+            (1, 'Get All Members', 'SELECT * FROM members;',
              ['barcode', 'displayName', 'firstName', 'lastName', 'email',
-              'membershipExpires']),
-            (2, 'No Report', '', []),
+              'membershipExpires'], rows, ''),
+            (2, 'Invalid SQL', 'SELECT * FROM invalid_table;', None, None,
+             err_msg0),
+            (9, '', '', None, None, err_msg1.format(9)),
             )
         msg = "Expected {}, report_id {}, found {}."
 
-        for report_id, title, query, columns in data:
+        for report_id, title, query, columns, rows, error in data:
             items = await self._engine.custom_reports.custom_report(report_id)
-
-            if None not in items:
-                _title = items[0]
-                _query = items[1]
-                _columns = items[2]
-                _rows = items[3]
-                self.assertEqual(title, _title, msg.format(
-                    title, report_id, _title))
-                self.assertEqual(query, _query, msg.format(
-                    query, report_id, _query))
-                self.assertEqual(columns, _columns, msg.format(
-                    columns, report_id, _columns))
-                rows = await self.get_data('members')
-                self.assertEqual(rows, _rows, msg.format(
-                    rows, report_id, _rows))
-            else:
-                self.assertEqual(err_msg0.format(report_id), items[0])
+            _title = items[0]
+            _query = items[1]
+            _columns = items[2]
+            _rows = items[3]
+            _error = items[4]
+            self.assertEqual(title, _title, msg.format(
+                title, report_id, _title))
+            self.assertEqual(query, _query, msg.format(
+                query, report_id, _query))
+            self.assertEqual(columns, _columns, msg.format(
+                columns, report_id, _columns))
+            self.assertEqual(rows, _rows, msg.format(
+                rows, report_id, _rows))
+            self.assertEqual(error, _error)
 
     #@unittest.skip("Temporarily skipped")
     async def test_save_custom_sql(self):
@@ -132,9 +134,13 @@ class TestCustomReports(BaseAsyncTests):
         Test that the get_report_list method returns the report_id and
         name of the active reports.
         """
-        data = (1, 'fred')
-        reports = await self._engine.custom_reports.get_report_list()
+        data = (
+            (1, 'Get All Members'),
+            (2, 'Invalid SQL'),
+            )
 
-        for report_id, name in reports:
-            self.assertEqual(data[0], report_id)
-            self.assertEqual(data[1], name)
+        for idx, (report_id, name) in enumerate(data):
+            reports = await self._engine.custom_reports.get_report_list()
+            report = reports[idx]
+            self.assertEqual(report_id, report[0])
+            self.assertEqual(name, report[1])

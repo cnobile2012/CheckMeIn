@@ -21,7 +21,7 @@ from src.web_main_station import WebMainStation
 from src.web_guest_station import WebGuestStation
 from src.web_certifications import WebCertifications
 from src.web_profile import WebProfile
-from src.webReports import WebReports
+from src.web_reports import WebReports
 from src.webTeams import WebTeams
 
 

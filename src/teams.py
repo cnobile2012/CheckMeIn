@@ -76,6 +76,7 @@ class TeamInfo:
         self._program_number = program_number
         self._team_name = team_name
         self._start_date = start_date
+        self._members = None
 
     @property
     def team_id(self):
@@ -96,6 +97,16 @@ class TeamInfo:
     @property
     def start_date(self):
         return self._start_date
+
+    @property
+    def members(self):
+        assert self._members is not None, ("The member setter must be called "
+                                           "before the getter.")
+        return self._members
+
+    @members.setter
+    def members(self, value):
+        self._members = value
 
     @property
     def program_id(self):
