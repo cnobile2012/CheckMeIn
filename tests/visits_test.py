@@ -91,13 +91,13 @@ class TestVisits(BaseAsyncTests):
         self.assertEqual(1, rowcount)
 
     #@unittest.skip("Temporarily skipped")
-    async def test_check_out_member(self):
+    async def test_checkout_member(self):
         """
-        Test that the check_out_member method just calls the leave_guest
+        Test that the checkout_member method just calls the leave_guest
         method so both have the same test.
         """
         await self._engine.visits.enter_guest('202107310002')
-        rowcount = await self._engine.visits.check_out_member('202107310002')
+        rowcount = await self._engine.visits.checkout_member('202107310002')
         self.assertEqual(1, rowcount)
 
     #@unittest.skip("Temporarily skipped")

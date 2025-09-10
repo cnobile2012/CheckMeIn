@@ -106,7 +106,7 @@ class TestWebBase(TestFakeServer):
         """
         data = (
             (Role.ADMIN, '/admin', False, None),
-            (0, '/admin', True, cherrypy._cperror.HTTPRedirect),
+            (0, '/admin', True, cherrypy.HTTPRedirect),
             )
 
         for role, source, redirect, expected in data:
@@ -114,7 +114,7 @@ class TestWebBase(TestFakeServer):
             Cookie('source').set(source)
 
             if redirect:
-                with self.assertRaises(expected) as cm:
+                with self.assertRaises(expected):
                     self._web_base.check_permissions(role, source)
             else:
                 result = self._web_base.check_permissions(role, source)
@@ -129,7 +129,7 @@ class TestWebBase(TestFakeServer):
         data = (
             ('barcode', '100091', Role.ADMIN, '/admin', False, None),
             ('username', 'admin', Role.ADMIN, '/admin', False, None),
-            ('', '', 0, '/admin', True, cherrypy._cperror.HTTPRedirect),
+            ('', '', 0, '/admin', True, cherrypy.HTTPRedirect),
             )
 
         for cookie, value, role, source, redirect, expected in data:
@@ -138,7 +138,7 @@ class TestWebBase(TestFakeServer):
             Cookie(cookie).set(value)
 
             if redirect:
-                with self.assertRaises(expected) as cm:
+                with self.assertRaises(expected):
                     self._web_base._get_cookie(cookie, source)
             else:
                 result = self._web_base._get_cookie(cookie, source)
@@ -152,7 +152,7 @@ class TestWebBase(TestFakeServer):
         """
         data = (
             ('100091', Role.ADMIN, '/admin', False, None),
-            ('', 0, '/admin', True, cherrypy._cperror.HTTPRedirect),
+            ('', 0, '/admin', True, cherrypy.HTTPRedirect),
             )
 
         for value, role, source, redirect, expected in data:
@@ -161,7 +161,7 @@ class TestWebBase(TestFakeServer):
             Cookie('barcode').set(value)
 
             if redirect:
-                with self.assertRaises(expected) as cm:
+                with self.assertRaises(expected):
                     self._web_base.get_barcode(source)
             else:
                 result = self._web_base.get_barcode(source)
@@ -175,7 +175,7 @@ class TestWebBase(TestFakeServer):
         """
         data = (
             ('admin', Role.ADMIN, '/admin', False, None),
-            ('', 0, '/admin', True, cherrypy._cperror.HTTPRedirect),
+            ('', 0, '/admin', True, cherrypy.HTTPRedirect),
             )
 
         for value, role, source, redirect, expected in data:
@@ -184,7 +184,7 @@ class TestWebBase(TestFakeServer):
             Cookie('username').set(value)
 
             if redirect:
-                with self.assertRaises(expected) as cm:
+                with self.assertRaises(expected):
                     self._web_base.get_user(source)
             else:
                 result = self._web_base.get_user(source)
@@ -198,7 +198,7 @@ class TestWebBase(TestFakeServer):
         """
         data = (
             (Role.ADMIN, Role.ADMIN, '/admin', False, None),
-            ('', 0, '/admin', True, cherrypy._cperror.HTTPRedirect),
+            ('', 0, '/admin', True, cherrypy.HTTPRedirect),
             )
 
         for value, role, source, redirect, expected in data:
@@ -207,7 +207,7 @@ class TestWebBase(TestFakeServer):
             Cookie('role').set(value)
 
             if redirect:
-                with self.assertRaises(expected) as cm:
+                with self.assertRaises(expected):
                     self._web_base.get_role(source)
             else:
                 result = self._web_base.get_role(source)

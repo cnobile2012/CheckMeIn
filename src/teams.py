@@ -235,21 +235,36 @@ class Teams:
         data = await self.BD._do_select_one_query(query, (team_id, ))
         return data[0] if data else ""
 
-    async def add_member(self, team_id, barcode, type):
+    async def add_member(self, team_id, barcode, member_type):
         query = "INSERT INTO team_members VALUES (?, ?, ?);"
-        rowcount = await self.BD._do_insert_query(query, (team_id, barcode,
-                                                          type))
+        rowcount = await self.BD._do_insert_query(
+            query, (team_id, barcode, member_type))
+
         if rowcount == 0:
-            self._log.info("The barcode '%s' is already in this team, ("
-                           "team_id: %s).", barcode, team_id)
+            self._log.warning("The barcode '%s' is already in this team, "
+                              "team_id: %s.", barcode, team_id)
+
+        return rowcount
 
     async def remove_member(self, team_id, barcode):
         query = "DELETE FROM team_members WHERE team_id = ? AND barcode = ?;"
-        return await self.BD._do_delete_query(query, (team_id, barcode))
+        rowcount = await self.BD._do_delete_query(query, (team_id, barcode))
+
+        if rowcount == 0:
+            self._log.warning("The barcode '%s' was not removed for this "
+                              "team, team_id: %s.", barcode, team_id)
+
+        return rowcount
 
     async def rename_team(self, team_id, new_name):
         query = "UPDATE teams SET team_name = ? where team_id = ?;"
-        return await self.BD._do_update_query(query, (new_name, team_id))
+        rowcount = await self.BD._do_update_query(query, (new_name, team_id))
+
+        if rowcount == 0:
+            self._log.warning("The team name '%s' was not updated for this "
+                              "team, team_id: %s.", new_name, team_id)
+
+        return rowcount
 
     async def get_team_members(self, team_id):
         query = ("SELECT m.displayName, tm.barcode, tm.type, v.status "

@@ -111,7 +111,7 @@ class TestReports(BaseReportsTest):
         """
         data = (
             (Role.ADMIN, '/reports', False, None),
-            (0, '/reports', True, cherrypy._cperror.HTTPRedirect),
+            (0, '/reports', True, cherrypy.HTTPRedirect),
             )
 
         for role, source, redirect, expected in data:
@@ -119,7 +119,7 @@ class TestReports(BaseReportsTest):
             Cookie('source').set(source)
 
             if redirect:
-                with self.assertRaises(expected) as cm:
+                with self.assertRaises(expected):
                     self._wr.check_permissions(source)
             else:
                 result = self._wr.check_permissions(source)

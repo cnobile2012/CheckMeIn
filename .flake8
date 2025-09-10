@@ -10,4 +10,4 @@ exclude =
 per-file-ignores =
     src/*: E129, E252, E275, E402
     src/reports.py: E129, E402
-    tests/*: E265, E275, F401, E402, F841
+    tests/*: E265, E275, F401, E402

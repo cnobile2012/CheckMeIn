@@ -79,7 +79,7 @@ class Visits:
         # For now members and guests are the same.
         return await self.enter_guest(barcode)
 
-    async def check_out_member(self, barcode):
+    async def checkout_member(self, barcode):
         # For now members and guests are the same.
         return await self.leave_guest(barcode)
 

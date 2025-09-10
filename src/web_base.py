@@ -84,17 +84,38 @@ class WebBase:
         return Role(self._get_cookie('role', source))
 
     @staticmethod
-    def date_from_string(input_str):
+    def date_from_string(input_str, date=False):
         """
-        Just return the date portion of the ISO string.
+        Return the date portion of the ISO string.
 
         :param str input_str: An ISO date and time string.
         :returns: The date portion of the ISO input string as a
                   datetime object.
         :rtype: datetime.datetime
         """
-        date = re.split(r'T| ', input_str)
-        date_str = re.sub(r'\.|/', '-', date[0])
+        dt = re.split(r'T| ', input_str)
+        date_str = re.sub(r'\.|/', '-', dt[0])
         ds = date_str.split('-')
         date_str = f"{ds[0]:>04s}-{ds[1]:>02s}-{ds[2]:>02s}"
-        return datetime.datetime.fromisoformat(date_str)
+
+        if date:
+            ret = datetime.date.fromisoformat(date_str)
+        else:
+            ret = datetime.datetime.fromisoformat(date_str)
+
+        return ret
+
+    @staticmethod
+    def time_from_string(input_str):
+        """
+        Return the time portion of the ISO string.
+
+        :param str input_str: An ISO date and time string.
+        :returns: The time portion of the ISO input string as a
+                  datetime object.
+        :rtype: datetime.time
+        """
+        dt = re.split(r'T| ', input_str)
+        ts = dt[0].split(':') if len(dt) == 1 else dt[1].split(':')
+        time_str = f"{ts[0]:>02s}:{ts[1]:>02s}:{ts[2]:>02s}"
+        return datetime.time.fromisoformat(time_str)

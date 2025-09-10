@@ -110,7 +110,7 @@ class Engine(BaseDatabase):
             if barcode == current_kh_bc:
                 barcode_kh_leaving = current_kh_bc
             else:  # Returns a rowcount, but we should be able to ignore it.
-                await self.visits.check_out_member(barcode)
+                await self.visits.checkout_member(barcode)
 
         return barcode_kh_leaving
 

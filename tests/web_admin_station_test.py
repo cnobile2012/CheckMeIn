@@ -214,8 +214,8 @@ class TestAdmin(BaseTestAdmin):
         as to what to enter except that there are three fields.
         See async def test_fix() in tests/visits_test.py.
         """
-        output = ''
-        html = self._was.fixed_data()
+        #output = ''
+        #html = self._was.fixed_data()
 
     #@unittest.skip("Temporarily disabled")
     async def test_oops(self):

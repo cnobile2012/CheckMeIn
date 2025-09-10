@@ -148,8 +148,8 @@ class BaseDatabase(Borg):
         # 'CREATE INDEX idx_accounts_role ON accounts(role);',
         # ('CREATE INDEX idx_accounts_activeKeyholder '
         #  'ON accounts(activeKeyholder);'),
-        # 'CREATE INDEX idx_visits_barcode ON visits(barcode);',
-        # 'CREATE INDEX idx_members_barcode ON members(barcode);',
+        'CREATE INDEX idx_visits_barcode ON visits(barcode);',
+        'CREATE INDEX idx_members_barcode ON members(barcode);',
         )
     _DETECT_TYPES = sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES
 

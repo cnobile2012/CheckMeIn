@@ -22,7 +22,7 @@ from src.web_guest_station import WebGuestStation
 from src.web_certifications import WebCertifications
 from src.web_profile import WebProfile
 from src.web_reports import WebReports
-from src.webTeams import WebTeams
+from src.web_teams import WebTeams
 
 
 class CheckMeIn(WebBase):

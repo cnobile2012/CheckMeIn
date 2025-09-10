@@ -49,8 +49,7 @@ def run_server():
             'tools.log_tracebacks.on': True,
             'tools.log_headers.on': True,
             # Don’t swallow exceptions in error_page handlers
-            'error_page.default': lambda *a, **k:
-            cherrypy._cperror.format_exc(),
+            'error_page.default': lambda *a, **k: cherrypy.format_exc(),
             },
         }
     cherrypy.tree.mount(CheckMeIn(testing=True), "/", config=test_config)
@@ -233,8 +232,7 @@ class BaseAsyncTests(unittest.IsolatedAsyncioTestCase):
                 'tools.log_tracebacks.on': True,
                 'tools.log_headers.on': True,
                 # Don’t swallow exceptions in error_page handlers
-                'error_page.default': lambda *a, **k:
-                cherrypy._cperror.format_exc(),
+                'error_page.default': lambda *a, **k: cherrypy.format_exc(),
                 },
             }
         cherrypy.tree.mount(CheckMeIn(testing=True), "/", config=test_config)
