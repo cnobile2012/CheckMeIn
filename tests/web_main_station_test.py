@@ -131,21 +131,31 @@ class TestMainStation(BaseTestMainStation):
         start = "Start test_scanned"
         self._log.info(start)
         data = (
-            ('100091', True),
-            ('100032', False),
-            ('100015', False),
+            ('100091', True, ()),
+            #('100091', True, ('100032', '202107310001')),
+            ('100032', False, ()),
+            ('100015', False, ()),
             )
         await self.activate_key_holder()
 
-        for barcode, verify in data:
-            if not verify:
+        for barcode, verify, remove in data:
+            if verify:
+                if remove:
+                    for bc in remove:
+                        await self._eng.visits.checkout_member(bc)
+
+                    html = self._wms.scanned(barcode)
+                    self.assertNotIn('Average J', html)
+                    self.assertNotIn('Member N(Keyholder)', html)
+                    self.assertNotIn('Random G', html)
+                else:
+                    html = self._wms.scanned(barcode)
+                    self.assertIn('Average J', html)
+                    self.assertIn('Member N(Keyholder)', html)
+                    self.assertIn('Random G', html)
+            else:
                 with self.assertRaises(cherrypy.HTTPRedirect):
                     self._wms.scanned(barcode)
-            else:
-                html = self._wms.scanned(barcode)
-                self.assertIn('Average J', html)
-                self.assertIn('Member N(Keyholder)', html)
-                self.assertIn('Random G', html)
 
         err_msg = "Found more than one active key holder"
         full_log = self.read_text_file(self.full_log_path, mode='rb')

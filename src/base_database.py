@@ -5,7 +5,6 @@
 
 import os
 import datetime
-import shutil
 import sqlite3
 import aiosqlite
 
@@ -202,15 +201,6 @@ class BaseDatabase(Borg):
             fullpath = os.path.join(fullpath, filename)
 
         self._db_fullpath = fullpath
-
-    def _remove_test_path(self) -> None:
-        """
-        Remove the entire test path and files under it.
-        """
-        try:
-            shutil.rmtree(self._DATA_TEST_PATH)
-        except OSError:
-            pass
 
     @property
     async def has_schema(self) -> bool:

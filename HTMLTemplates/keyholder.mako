@@ -19,7 +19,7 @@ ${self.logo()}
 % if len(who_is_here) > 0:
                 <br/>
                 <b>Make sure you are the only one in the building.</b>  The
-                   following people haven't checked out:
+                   following people have not checked out:
         <ul>
 % for member in who_is_here:
             <li>${member.display_name}</li>
