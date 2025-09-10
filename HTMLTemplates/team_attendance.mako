@@ -9,7 +9,10 @@ ${self.logo()}
         <h1>${team_name}</h1>
         <form action="attendance">
             <fieldset>
-                <legend>See who was here during a team meeting</legend>
+                <legend>
+                    See who was here during a team meeting. (The date may be
+                    the next day if the time is after midnight.)
+                </legend>
                 <br />
                 <input type="hidden" name="team_id" value="${team_id}">
                 <input id="date" type="date" name="date" value="${date}"

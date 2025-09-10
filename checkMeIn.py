@@ -12,7 +12,7 @@ import cherrypy.process.plugins
 
 from src import AppConfig
 from src.accounts import Role
-from src.cherrypy_SSE import Portier
+from src.cherrypy_sse import Portier
 from src.docs import getDocumentation
 from src.engine import Engine
 from src.web_admin_station import WebAdminStation

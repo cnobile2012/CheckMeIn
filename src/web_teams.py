@@ -59,8 +59,14 @@ class WebTeams(WebBase):
         date_obj = self.date_from_string(date, date=True)
         start_obj = self.time_from_string(start_time)
         end_obj = self.time_from_string(end_time)
+
+        if end_obj < start_obj:
+            other_date_obj = date_obj.replace(day=date_obj.day+1)
+        else:
+            other_date_obj = date_obj
+
         begin_meeting_time = datetime.datetime.combine(date_obj, start_obj)
-        end_meeting_time = datetime.datetime.combine(date_obj, end_obj)
+        end_meeting_time = datetime.datetime.combine(other_date_obj, end_obj)
         members_here = self.engine.run_async(
             self.engine.reports.which_team_members_here(
                 team_id, begin_meeting_time, end_meeting_time))

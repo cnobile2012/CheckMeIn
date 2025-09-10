@@ -140,7 +140,7 @@ class TestTeams(BaseTeamsTest):
         with self.assertRaises(cherrypy.HTTPRedirect):
             self._wt.certifications('100091')
 
-    @unittest.skip("Temporarily disabled")
+    #@unittest.skip("Temporarily disabled")
     def test_attendance(self):
         """
         Test that the attendance method returns a rendered

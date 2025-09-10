@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# src/cherrypy_SSEE.py
+# src/cherrypy_sse.py
 #
 
 import threading
@@ -15,11 +15,11 @@ class Portier(threading.Thread):
 
     channel: the cherrypy bus channel to listen to.
     """
-    def __init__(self, channel):
-        super().__init__()
+    def __init__(self, channel, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self._channel = channel
         self._e = threading.Event()
-        #self.name = f"Portier-{self.name}"
+        # self.name = f"Portier-{self.name}"
         cherrypy.engine.subscribe(channel, self._msgs)
 
     @property
@@ -45,7 +45,7 @@ class Portier(threading.Thread):
         while True:
             self._e.wait()
             yield self._message
-            self._e.clear()
+            self._e.clear()  # pragma: no cover
 
     def _msgs(self, message):
         """

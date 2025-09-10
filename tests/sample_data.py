@@ -146,11 +146,11 @@ TEST_DATA = {
     "unlocks": [{"time": timeAgo(hours=1),
                  "location": "TFI",
                  "barcode": "100091"}],
-    "visits": [{"enter_time": timeAgo(days=7, hours=1),  # Member Name (admin)
+    "visits": [{"enter_time": timeAgo(days=7, hours=1),  # Member N (admin)
                 "exit_time": timeAgo(days=7, hours=0),
                 "barcode": "100091",
                 "status": "Out"},
-               {"enter_time": timeAgo(days=7, hours=1),  # Average Joe
+               {"enter_time": timeAgo(days=7, hours=1),  # Average J
                 "exit_time": timeAgo(days=7, hours=0),
                 "barcode": "100032",
                 "status": "Out"},
@@ -158,20 +158,20 @@ TEST_DATA = {
                 "exit_time": timeAgo(days=7, hours=0.5),
                 "barcode": "202107310001",
                 "status": "Out"},
-               {"enter_time": timeAgo(hours=1),  # Member Name (admin)
+               {"enter_time": timeAgo(hours=1),  # Member N (admin)
                 "barcode": "100091",
                 "status": "In"},
-               {"enter_time": timeAgo(hours=1),  # Random Guest (Visitor)
+               {"enter_time": timeAgo(hours=1),  # Random G (Visitor)
                 "barcode": "202107310001",
                 "status": "In"},
-               {"enter_time": timeAgo(hours=1),  # Average Joe
+               {"enter_time": timeAgo(hours=1),  # Average J
                 "barcode": "100032",
                 "status": "In"},
-               {"enter_time": timeAgo(hours=1),  # Paul Flintstone
+               {"enter_time": timeAgo(hours=1),  # Paul F
                 "exit_time": timeAgo(hours=0.5),
                 "barcode": "100015",
                 "status": "Out"},
-               {"enter_time": timeAgo(days=32),  # Artie Nobody (Visitor)
+               {"enter_time": timeAgo(days=32),  # Artie N (Visitor)
                 "exit_time": timeAgo(days=31, hours=22),
                 "barcode": "202107310002",
                 "status": "Out"},
