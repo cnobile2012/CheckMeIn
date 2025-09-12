@@ -3,6 +3,7 @@
 # src/base_database.py
 #
 
+import configparser
 import os
 import datetime
 import sqlite3
@@ -147,10 +148,13 @@ class BaseDatabase(Borg):
         # 'CREATE INDEX idx_accounts_role ON accounts(role);',
         # ('CREATE INDEX idx_accounts_activeKeyholder '
         #  'ON accounts(activeKeyholder);'),
-        'CREATE INDEX idx_visits_barcode ON visits(barcode);',
-        'CREATE INDEX idx_members_barcode ON members(barcode);',
+        # ('CREATE UNIQUE INDEX IF NOT EXISTS idx_visits_barcode '
+        #  'ON visits(barcode);'),
+        # ('CREATE UNIQUE INDEX IF NOT EXISTS idx_members_barcode '
+        #  'ON members(barcode);'),
         )
     _DETECT_TYPES = sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES
+    _log = AppConfig().log
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -159,7 +163,27 @@ class BaseDatabase(Borg):
                         if var.startswith('_T_')]
         self._VIEWS = [getattr(self, var) for var in dir(self)
                        if var.startswith('_V_')]
-        self._log = AppConfig().log
+
+    @classmethod
+    def read_config(cls, fullpath, section, key):
+        """
+        Read the CherryPi config files. These are INI files but with a .conf
+        extention.
+        """
+        config = configparser.ConfigParser()
+        result = config.read(fullpath)
+
+        if result == []:
+            cls._log.error("An invalid config file or path, found %s",
+                           fullpath)
+
+        try:
+            value = config[section][key]
+        except KeyError:
+            cls._log.error("Invalid section and/or key, section: %s, key: %s",
+                           section, key)
+        else:
+            return value
 
     @property
     def db_fullpath(self) -> str:

@@ -156,6 +156,14 @@ class Accounts(Utilities):
                 'role': role}
         return await self.add_accounts([data])
 
+    async def get_user(self, username='', email='', barcode=''):
+        query = ("SELECT a.user, m.email, a.barcode, m.displayName, "
+                 "m.firstName, m.lastName, a.role FROM accounts a "
+                 "INNER JOIN members m ON m.barcode = a.barcode "
+                 "WHERE a.user = ? OR m.email = ? OR a.barcode = ?;")
+        return await self.BD._do_select_one_query(query, (username, email,
+                                                          barcode))
+
     async def get_barcode_and_role(self, user, password):
         query = ("SELECT password, barcode, role FROM accounts "
                  "WHERE user = ?;")

@@ -8,6 +8,7 @@ exclude =
     txt
 
 per-file-ignores =
+    manage.py: F401
     src/*: E129, E252, E275, E402
     src/reports.py: E129, E402
     tests/*: E265, E275, F401, E402

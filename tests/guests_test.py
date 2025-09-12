@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# tests/guest_tests.py
+# tests/guests_tests.py
 #
 
 import os

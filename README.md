@@ -13,7 +13,7 @@ for Ubuntu. This updated version of `CheckMeIn` can work with Python 3.10 -
 3.14 only. I'm assuming python 3.14 throughout this document. `sqlitebrowswer`
 is only needed in development environments.
 ```bash
-$ sudo apt install build-essential python3.14 python3-setuptools git virtualenvwrapper
+$ sudo apt install build-essential python3.14 python3-setuptools git virtualenvwrapper libreadline8
 $ sudo apt install sqlitebrowswer
 ```
 

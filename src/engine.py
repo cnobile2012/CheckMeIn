@@ -70,8 +70,8 @@ class Engine(BaseDatabase):
             asyncio.run(self.create_schema())
 
         # Async event loop
-        # (CherryPi cannot work with async directly, so we put all async
-        #  code in a separate thread.)
+        # CherryPi cannot work with async directly, so we put all async
+        # code in a separate thread.
         self.__loop = asyncio.new_event_loop()
         threading.Thread(target=self.__start_event_loop, daemon=True).start()
 
