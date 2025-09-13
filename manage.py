@@ -7,12 +7,13 @@
 import os
 import re
 import sys
+import datetime
 import readline
 
 from getpass import getpass
 from string import ascii_lowercase, ascii_uppercase, digits
 
-from src import BASE_DIR
+from src import BASE_DIR, AppConfig
 from src.base_database import BaseDatabase
 from src.accounts import Role
 from src.engine import Engine
@@ -22,7 +23,7 @@ class Manage:
     """
     This class can be used for managing the Check Me In application.
     """
-    # This is the RFC-5322 complient email regex.
+    # This is the RFC-5322 compliant email regex.
     _EMAIL = re.compile(
         r"(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+"
         r"(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*"
@@ -44,6 +45,8 @@ class Manage:
     def __init__(self, options, testing=False, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._options = options
+        self._ac = AppConfig()
+        self._log = self._ac.log
 
         if testing:
             config = 'development.conf'
@@ -52,104 +55,170 @@ class Manage:
 
         path = os.path.join(BASE_DIR, 'data')
         fullpath = os.path.join(path, config)
-        print(BASE_DIR, path, fullpath)
         db_name = BaseDatabase.read_config(fullpath, 'global',
                                            'database.name')
         if db_name is None:
-            print("Failed to initilize, invalid config file, see log file.")
+            print("Failed to initialize, invalid config file, see log file.")
         else:
             self._eng = Engine(path, db_name.strip("'"))
 
-    async def start(self):
+    def start(self):
         match self._options.options:
-            case 'create_super_user':
-                await self._create_super_user()
+            case 'create_admin_user':
+                self._create_admin_user()
+            case 'update_admin_user':
+                self._update_admin_user()
             case _:
                 return
 
-    async def _create_super_user(self):
+    def _create_admin_user(self):
         """
-        Create a super user (admin) account.
+        Create an admin user account.
         """
         print("Please enter the following information or press Ctrl c at "
               "anytime to exit.")
         password = ''
-        result = input("Are you currently a member? (y or N): ")
-        result = result.upper()
-        y_n = False if result == '' else True if result == 'Y' else False
+        given_name = self._enter_info("given name")
+        surname = self._enter_info("surname")
+        username = self._enter_info("username")
+        self._print_password_criteria()
+        password = self._enter_password()
+        email = self._enter_info("email")
+        self._create_db_records(given_name, surname, username, password, email)
 
-        if y_n:
-            print('Update member')
-        else:
-            while True:
-                given_name = input("Please enter your given name: ")
-
-                if given_name:
-                    break
-
-            while True:
-                surname = input("Please enter your surname: ")
-
-                if surname:
-                    break
-
-            while True:
-                username = input("Please enter a username: ")
-
-                if username:
-                    break
-
-            self._print_password_criteria()
-
-            while True:
-                password0 = getpass(prompt="Enter your password: ")
-                password1 = getpass(prompt="Enter your password again: ")
-
-                if self._validate_password(password0, password1):
-                    password = password0
-                    break
-
-            while True:
-                email = input("Enter your email: ")
-
-                if bool(self._EMAIL.fullmatch(email)):
-                    break
-
-        # First see if the user exists.
-        user_info = await self._eng.accounts.get_user(username, email)
+    def _update_admin_user(self):
+        """
+        Update an admin user account.
+        """
+        print("You can update the following information or press Ctrl c at "
+              "anytime to exit.")
+        info = self._enter_info("username, email, or barcode")
+        user_info = self._eng.run_async(self._eng.accounts.get_user(
+            username=info, email=info, barcode=info))
 
         if user_info:
-            self._eng._log.warning("The user %s already existed when trying "
-                                   "to create a super user account.", username)
+            username = user_info[0]
+            email = user_info[1]
+            barcode = user_info[2]
+            given_name = user_info[4]
+            surname = user_info[5]
+            print(f"You can change the following information:\n"
+                  f"    1. email '{email}'\n"
+                  f"    2. given name '{given_name}'\n"
+                  f"    3. surname '{surname}'"
+                  f"    4. username '{username}'\n"
+                  f"    5. password")
+            print("Pressing the Enter key will skip the field.")
+            info = self._enter_info("email", enter_key_exit=True)
+            email = info if info else email
+            info = self._enter_info("given name", enter_key_exit=True)
+            given_name = info if info else given_name
+            info = self._enter_info("surname", enter_key_exit=True)
+            surname = info if info else surname
+            info = self._enter_info("username", enter_key_exit=True)
+            username = info if info else username
+            password = self._enter_password(enter_key_exit=True)
+
+            if any([True for info in (email, given_name, surname, username,
+                                      password) if info != ""]):
+                data = {'barcode': barcode, 'user': username,
+                        'password': password, 'firstName': given_name,
+                        'lastName': surname, 'email': email}
+                rowcount = self._update_db_records(data)
+
+                if rowcount != 2:
+                    print("There was an error with updating your information.")
+                else:
+                    print("Your information has updated successfully.")
+
+            else:
+                print("No information was changed.")
+        else:
+            print("Could not find a user account with the criteria you "
+                  "provided.")
+
+    def _enter_info(self, text, enter_key_exit=False):
+        while True:
+            field = input(f"Please enter your {text}: ")
+
+            if field or (enter_key_exit and field == ''):
+                break
+
+        return field
+
+    def _enter_password(self, enter_key_exit=False):
+        while True:
+            password0 = getpass(prompt="Enter your password: ")
+            password1 = getpass(prompt="Enter your password again: ")
+
+            if enter_key_exit and not password0 or not password1:
+                password = ""
+                break
+            elif self._validate_password(password0, password1):
+                password = password0
+                break
+
+        return password
+
+    def _create_db_records(self, given_name, surname, username, password,
+                           email):
+        # First see if the user exists.
+        user_info = self._eng.run_async(self._eng.accounts.get_user(
+            username, email))
+
+        if user_info:
+            self._log.warning("The user %s already existed when trying to "
+                              "create an admin user account.", username)
             role = Role(user_info[-1])
             print("You already have a user account with username "
                   f"'{username}', email '{email}', barcode '{user_info[2]}' "
                   f"with role {role}.")
         else:
-            admins = await self._eng.accounts.get_members_with_role(Role.ADMIN)
+            admins = self._eng.run_async(
+                self._eng.accounts.get_members_with_role(Role.ADMIN))
             barcodes = [admin[-1] for admin in admins]
             barcodes.sort()
             available_bcs = set(self._AVAILABLE_BARCODES) - set(barcodes)
 
             if not available_bcs:
-                self._eng._log.warning("All super user barcodes have been "
-                                       "used.")
-                print("Sorry, all super user barcodes have been used.")
+                self._log.warning("All admin user barcodes have been used.")
+                print("Sorry, all admin user barcodes have been used.")
             else:
                 available_bcs = list(available_bcs)
                 available_bcs.sort()
-                print(available_bcs, barcodes)
                 barcode = available_bcs[0]
-                await self._eng.accounts.add_user(
-                    username, password, barcode, Role.ADMIN)
-                print(f"You should now be able to log in as {username}, your "
-                      f"barcode is {barcode}.")
+                rowcount = self._eng.run_async(self._eng.accounts.add_user(
+                    username, password, barcode, Role.ADMIN))
+
+                if rowcount > 0:
+                    display_name = self._make_display_name(given_name, surname)
+                    me_date = datetime.datetime.now()
+                    me_date = me_date.replace(year=me_date.year + 1)
+                    data = {'barcode': barcode, 'displayName': display_name,
+                            'firstName': given_name, 'lastName': surname,
+                            'email': email, 'membershipExpires': me_date}
+                    rowcount = self._eng.run_async(
+                        self._eng.members.add_members(data))
+
+                    if rowcount > 0:
+                        print("You should now be able to log in as "
+                              f"{username}, your barcode is {barcode}.")
+                        return
+
+                print("Could not create an admin account, check the "
+                      "{self._ac.full_log_path} file for errors.")
+
+    def _update_db_records(self, data):
+        given_name = data['firstName']
+        surname = data['lastName']
+        data['displayName'] = self._make_display_name(given_name, surname)
+        return self._eng.run_async(self._eng.accounts.update_user(data))
 
     def _print_password_criteria(self):
-        print("\nAll super users (admins) passwords must comply with these "
-              "criteria. Must be at\nleast 12 characters long. Must have at "
-              "least one upper case, lower case, and\ndigit character. Must "
-              "have at least one of these special characters\n"
+        print("\nAll admin users passwords must comply with these criteria. "
+              "Must be at\nleast 12 characters long. Must have at least one "
+              "upper case, lower case, and\ndigit character. Must have at "
+              "least one of these special characters\n"
               f"{self._SPECIAL_CHARS}.\n")
 
     def _validate_password(self, pw0, pw1):
@@ -181,8 +250,8 @@ class Manage:
 
         return ret
 
-    def green(self, text):
-        pass
+    def _make_display_name(self, given_name, surname):
+        return f"{given_name} {surname[0]}"
 
 
 class Color:
@@ -210,10 +279,10 @@ if __name__ == "__main__":
     ret = 0
     choices = (  # Color headers green.
         ('\nAvailable commands:', ''),
-        (f'\n{Color.GREEN}[admin]{Color.RESET}', ''),
-        ('change_password:', 'Change a users password.'),
-        ('create_super_user:', 'Create a super user (admin).'),
-        (f'\n{Color.GREEN}Miscellaneous]{Color.RESET}', ''),
+        (f'\n{Color.GREEN}[Admin]{Color.RESET}', ''),
+        ('create_admin_user:', 'Create an admin user.'),
+        ('update_admin_user:', 'Update admin user information.'),
+        (f'\n{Color.GREEN}[Miscellaneous]{Color.RESET}', ''),
         ('help:', 'This thingy.'),
         )
 
@@ -232,14 +301,9 @@ if __name__ == "__main__":
          for choice, msg in choices]
     else:
         try:
-            m = Manage(options)
+            m = Manage(options).start()
         except KeyboardInterrupt:
             print()
             ret = 1
-        else:
-            if not hasattr(m, '_eng'):
-                ret = 2
-            else:
-                m._eng.run_async(m.start())
 
     sys.exit(ret)

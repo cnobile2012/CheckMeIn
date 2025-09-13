@@ -113,9 +113,18 @@ that is before each test. This can also be done for an entire test class.
 
 ## Launching the server on your test platform
 Before the first start of the server create an admin account with the provided
-script, following the instruction. *** TODO  This script is not written yet.***
+script, following the on screen instruction.
 ```bash
-$ ./scripts/create_admin.py
+$ ./manage.py
+
+Available commands:
+
+[Admin]
+create_admin_user: Create an admin user.
+update_admin_user: Update admin user information.
+
+[Miscellaneous]
+help:              This thingy.
 ```
 
 Once you are satisfied that you have the dependencies met, and the unit tests

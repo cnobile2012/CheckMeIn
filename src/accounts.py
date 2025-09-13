@@ -154,15 +154,54 @@ class Accounts(Utilities):
     async def add_user(self, user, password, barcode, role):
         data = {'user': user, 'password': password, 'barcode': barcode,
                 'role': role}
-        return await self.add_accounts([data])
+        rowcount = await self.add_accounts([data])
+
+        if rowcount < 1:  # pragma: no cover
+            self._log.error("User '%s' already exists.", user)
+
+        return rowcount
 
     async def get_user(self, username='', email='', barcode=''):
-        query = ("SELECT a.user, m.email, a.barcode, m.displayName, "
-                 "m.firstName, m.lastName, a.role FROM accounts a "
-                 "INNER JOIN members m ON m.barcode = a.barcode "
-                 "WHERE a.user = ? OR m.email = ? OR a.barcode = ?;")
-        return await self.BD._do_select_one_query(query, (username, email,
-                                                          barcode))
+        query = (
+            "SELECT COALESCE(a.user, '') AS user, "
+            "COALESCE(m.email, '') AS email, "
+            "COALESCE(a.barcode, m.barcode, '') AS barcode, "
+            "COALESCE(m.displayName, '') AS displayName, "
+            "COALESCE(m.firstName, '') AS firstName, "
+            "COALESCE(m.lastName, '') AS lastName, "
+            "COALESCE(a.role, 0) AS role FROM accounts a "
+            "LEFT JOIN members m ON m.barcode = a.barcode "
+            "WHERE (:user IS NOT NULL AND a.user = :user) "
+            "OR (:barcode IS NOT NULL AND a.barcode = :barcode) "
+            "UNION "
+            "SELECT COALESCE(a.user, '') AS user, "
+            "COALESCE(m.email, '') AS email, "
+            "COALESCE(m.barcode, a.barcode, '') AS barcode, "
+            "COALESCE(m.displayName, '') AS displayName, "
+            "COALESCE(m.firstName, '') AS firstName, "
+            "COALESCE(m.lastName, '') AS lastNamer, "
+            "COALESCE(a.role, 0) AS role FROM members m "
+            "LEFT JOIN accounts a ON a.barcode = m.barcode "
+            "WHERE (:email IS NOT NULL AND m.email = :email) "
+            "OR (:barcode IS NOT NULL AND m.barcode = :barcode);"
+            )
+        data = {'user': username, 'email': email, 'barcode': barcode}
+        return await self.BD._do_select_one_query(query, data)
+
+    async def update_user(self, data: dict):
+        query = ("UPDATE accounts SET user = :user, password = :password "
+                 "WHERE barcode = :barcode;"
+                 "UPDATE members SET displayName = :displayName, "
+                 "firstName = :firstName, lastName = :lastName, "
+                 "email = :email WHERE barcode = :barcode;")
+        data['password'] = pwd_context.hash(data['password'])
+        rowcount = await self.BD._do_update_query(query, data)
+
+        if rowcount != 2:
+            self._log.error("Multiple updates should result in 2 rows being "
+                            "changed for barcode '%s'.", data['barcode'])
+
+        return rowcount
 
     async def get_barcode_and_role(self, user, password):
         query = ("SELECT password, barcode, role FROM accounts "

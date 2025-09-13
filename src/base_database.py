@@ -145,13 +145,8 @@ class BaseDatabase(Borg):
             ),
         }
     _SCHEMA_INDEXES = (
-        # 'CREATE INDEX idx_accounts_role ON accounts(role);',
-        # ('CREATE INDEX idx_accounts_activeKeyholder '
-        #  'ON accounts(activeKeyholder);'),
-        # ('CREATE UNIQUE INDEX IF NOT EXISTS idx_visits_barcode '
-        #  'ON visits(barcode);'),
-        # ('CREATE UNIQUE INDEX IF NOT EXISTS idx_members_barcode '
-        #  'ON members(barcode);'),
+        ('CREATE INDEX IF NOT EXISTS idx_visits_barcode '
+         'ON visits(barcode);'),
         )
     _DETECT_TYPES = sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES
     _log = AppConfig().log
@@ -383,6 +378,8 @@ class BaseDatabase(Borg):
                   exception was raised.
         :rtype: int or None
         """
+        assert ';' in query, "The query {query} does not end with a ';'"
+
         # Normalize: single row -> list of one row
         if data and (isinstance(data, dict) or
                      not isinstance(data, (list, tuple)) or
@@ -392,14 +389,25 @@ class BaseDatabase(Borg):
 
         async with aiosqlite.connect(self.db_fullpath,
                                      detect_types=self._DETECT_TYPES) as db:
+            rowcount = 0
+            queries = [q.strip() for q in query.split(";") if q.strip()]
+
             try:
-                cursor = await db.executemany(query, data)
+                if len(queries) > 1:
+                    await db.execute("BEGIN;")
+
+                for stmt in queries:
+                    if not stmt:
+                        continue
+
+                    cursor = await db.executemany(stmt, data)
+                    rowcount += cursor.rowcount
+
+                await db.commit()
             except Exception as e:
+                await db.rollback()
                 self._log.error("Error with data %s, %s", data, e,
                                 exc_info=True)
                 rowcount = 0
-            else:
-                await db.commit()
-                rowcount = cursor.rowcount
 
         return rowcount

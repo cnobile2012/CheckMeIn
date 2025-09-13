@@ -110,9 +110,10 @@ class Members:
                  "FROM current_members ORDER BY displayName ASC;")
         return await self.BD._do_select_all_query(query)
 
-    # TODO: should this check for inactive?
-
     async def get_name(self, barcode):
+        """
+        TODO: should this check for inactive?
+        """
         query = "SELECT displayName FROM members WHERE barcode = ?;"
         data = await self.BD._do_select_one_query(query, (barcode,))
 

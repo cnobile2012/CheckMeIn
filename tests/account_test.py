@@ -425,15 +425,44 @@ class TestAccounts(BaseAsyncTests):
             ('', 'fake1@email.com', '', 'Member N', 'Member', 'Name',
              Role.ADMIN),
             ('', '', '100091', 'Member N', 'Member', 'Name', Role.ADMIN),
+            ('', '', '100090', 'Daughter N', 'Daughter', 'Name', 0),
             )
 
         for username, email, barcode, d_name, given, surname, role in data:
-            user_info = await self._eng.accounts.get_user(username, email,
-                                                          barcode)
-            self.assertEqual(user_info[3], d_name)
-            self.assertEqual(user_info[4], given)
-            self.assertEqual(user_info[5], surname)
-            self.assertEqual(user_info[6], role)
+            info = await self._eng.accounts.get_user(username, email, barcode)
+            self.assertEqual(info[3], d_name)
+            self.assertEqual(info[4], given)
+            self.assertEqual(info[5], surname)
+            self.assertEqual(info[6], role)
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_update_user(self):
+        """
+        Test that the update_user method updates the available user info.
+        """
+        data = (
+            ({'barcode': '100090', 'user': 'csmall',
+              'password': 'ThIsIsBaD+10', 'firstName': 'Cindy',
+              'lastName': 'Small', 'displayName': 'Cindy S',
+              'email': 'cindy.small@noplace.org'}, 1),
+            ({'barcode': '100032', 'user': 'csmall',
+              'password': 'ThIsIsBaD+10', 'firstName': 'Joseph',
+              'lastName': 'Sorgoni', 'displayName': 'Joseph S',
+              'email': 'joseph.sorgoni@noplace.org'}, 2),
+            )
+
+        for items, rc in data:
+            rowcount = await self._eng.accounts.update_user(items)
+            self.assertEqual(rc, rowcount)
+            info = await self._eng.accounts.get_user(barcode=items['barcode'])
+
+            if rc == 2:
+                self.assertEqual(items['user'], info[0])
+
+            self.assertEqual(items['firstName'], info[4])
+            self.assertEqual(items['lastName'], info[5])
+            self.assertEqual(items['displayName'], info[3])
+            self.assertEqual(items['email'], info[1])
 
     #@unittest.skip("Temporarily skipped")
     async def test_get_barcode_and_role(self):
