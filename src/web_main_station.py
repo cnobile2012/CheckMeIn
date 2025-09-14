@@ -68,8 +68,8 @@ class WebMainStation(WebBase):
         raise cherrypy.HTTPRedirect("/station")
 
     @cherrypy.expose
-    def checkin(self, barcodes, called=False):
-        barcodes = [barcode.strip() for barcode in barcodes.split()]
+    def checkin(self, barcode, called=False):
+        barcodes = [bc.strip() for bc in barcode.split()]
         self.engine.run_async(self.engine.checkin(barcodes))
 
         if not called:

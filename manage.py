@@ -105,7 +105,7 @@ class Manage:
             print(f"You can change the following information:\n"
                   f"    1. email '{email}'\n"
                   f"    2. given name '{given_name}'\n"
-                  f"    3. surname '{surname}'"
+                  f"    3. surname '{surname}'\n"
                   f"    4. username '{username}'\n"
                   f"    5. password")
             print("Pressing the Enter key will skip the field.")
@@ -117,7 +117,7 @@ class Manage:
             surname = info if info else surname
             info = self._enter_info("username", enter_key_exit=True)
             username = info if info else username
-            password = self._enter_password(enter_key_exit=True)
+            password = self._enter_password(username, enter_key_exit=True)
 
             if any([True for info in (email, given_name, surname, username,
                                       password) if info != ""]):
@@ -146,10 +146,13 @@ class Manage:
 
         return field
 
-    def _enter_password(self, enter_key_exit=False):
+    def _enter_password(self, user, enter_key_exit=False):
+        if not self._options.password:
+            self._get_old_password(user)
+
         while True:
-            password0 = getpass(prompt="Enter your password: ")
-            password1 = getpass(prompt="Enter your password again: ")
+            password0 = getpass(prompt="Enter new password: ")
+            password1 = getpass(prompt="Enter new password again: ")
 
             if enter_key_exit and not password0 or not password1:
                 password = ""
@@ -159,6 +162,26 @@ class Manage:
                 break
 
         return password
+
+    def _get_old_password(self, user):
+        ret = False
+
+        while True:
+            while True:
+                old_pass = getpass(prompt="Enter current password: ")
+
+                if old_pass:
+                    break
+
+            barcode, role = self._eng.run_async(
+                self._eng.accounts.get_barcode_and_role(user, old_pass))
+
+            if not barcode:
+                break
+
+            ret = True
+
+        return ret
 
     def _create_db_records(self, given_name, surname, username, password,
                            email):
@@ -290,8 +313,11 @@ if __name__ == "__main__":
         description=("Manage the Check Me In application."))
     parser.add_argument(
         'options', nargs='?',
-        choices=[choice.rstrip(':')for choice, msg in choices if msg != ''],
+        choices=[choice.rstrip(':') for choice, msg in choices if msg != ''],
         help="Operation to perform.")
+    parser.add_argument(
+        '-p', '--pass', action='store_true', default=False, dest='password',
+        help="Not for your eyes.")
 
     options = parser.parse_args()
 

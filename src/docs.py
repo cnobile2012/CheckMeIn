@@ -12,7 +12,7 @@ class Doc:
         self.notes = notes
 
 
-def getDocumentation():
+def get_documentation():
     return [
         Doc("CheckIn", "/station/checkin?barcode=<barcode>",
             returns="Returns Links",

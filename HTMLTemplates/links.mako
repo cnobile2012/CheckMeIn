@@ -6,7 +6,7 @@
 <%inherit file="base.mako"/>
 ${self.logo()}
         <br/>
-% if barcode==None:
+% if barcode == None:
         <h2>Links per member</h2>
         <form action="/links">
             <tr>
@@ -15,11 +15,11 @@ ${self.logo()}
                         <option disabled selected value>
                             -- select a member --
                         </option>
-% for user in active_members:
+  % for user in active_members:
                         <option value="${user[1]}">
                             ${user[0]} - ${user[1]}
                         </option>
-% endfor
+  % endfor
                     </select>
                 </td>
             </tr>
@@ -31,24 +31,24 @@ ${self.logo()}
         <fieldset>
             <legend>Personal</legend>
             <ul>
-% if in_building:
+  % if in_building:
                 <li><a href="/station/checkout?barcode=${barcode}">
                     Check out of the Forge</a>
                 </li>
-% else:
+  % else:
                 <li><a href="/station/checkin?barcode=${barcode}">
                     Check into the Forge</a>
                 </li>
-% endif
+  % endif
                 <li><a href="/certifications/user?barcode=${barcode}">
                     My Shop Certifications</a>
                 </li>
-% if role.cookie_value != 0:
+  % if role.cookie_value != 0:
                 <li><a href="/profile/">Change Password</a></li>
                 <li><a href="/profile/logout">Logout</a></li>
-% else:
+  % else:
                 <li><a href="/profile/login">Login</a></li>
-% endif
+  % endif
         </fieldset>
         <br/>
         <fieldset>
@@ -56,47 +56,47 @@ ${self.logo()}
             <ul>
                 <li><a href="/whoishere">See who is at the The Forge</a></li>
                 <li><a href="https://calendar.google.com/calendar/embed?src=h75eigkfjvngvpff1dq0af74mk%40group.calendar.google.com&ctz=America%2FNew_York">
+                        TFI Calendar</a>
                 </li>
-                    TFI Calendar</a>
                 <li><a href="https://app.theforgeinitiative.org/">
-                    Forge Member App</a>
+                        Forge Member App</a>
                 </li>
             </ul>
         </fieldset>
         <br/>
-% if role.isKeyholder():
+  % if role.isKeyholder():
         <fieldset>
             <legend>Keyholder</legend>
             <ul>
-                <li><a href="http://192.168.1.10">
+                <li><a href="${suite_204}">
                     Suite 205 Door (Works ONLY when at the The Forge)</a>
                 </li>
                 <li><a href="/station/make_keyholder?barcode=${barcode}">
                     Make ME Keyholder</a></li>
-                <li><a href="/station/updatePresent">
+                <li><a href="/admin/update_present">
                     Update who is in the building.</a>
                 </li>
-                <li><a href="/admin/oops">
+                <li><a href="/admin/update_present">
                     Oops, didn't mean to close the building.</a>
                 </li>
         </fieldset>
         <br/>
-% endif
-% if role.isCoach():
+  % endif
+  % if role.isCoach():
         <fieldset>
             <legend>Coach</legend>
             <ul>
-% for team in active_teams_coached:
+    % for team in active_teams_coached:
                 <li><a href="/teams?team_id=${team.team_id}">
                     ${team.program_id()} - ${team.name}</a>
                 </li>
-% endfor
+    % endfor
             </ul>
         </fieldset>
         <br/>
-% endif
+  % endif
 
-% if role.isShopCertifier():
+  % if role.isShopCertifier():
         <fieldset>
             <legend>Shop Certifier</legend>
             <ul>
@@ -113,10 +113,10 @@ ${self.logo()}
                     See list of all certifications</a>
                 </li>
             </ul>
-% endif
+  % endif
         </fieldset>
         <br/>
-% if role.isAdmin():
+  % if role.isAdmin():
         <fieldset>
             <legend>Admin</legend>
             <ul>
@@ -127,7 +127,7 @@ ${self.logo()}
             </ul>
         </fieldset>
         <br/>
-% endif
+  % endif
 % endif
         <fieldset>
             <legend>The Forge Stations</legend>

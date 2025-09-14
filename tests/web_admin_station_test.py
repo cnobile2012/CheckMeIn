@@ -218,11 +218,11 @@ class TestAdmin(BaseTestAdmin):
         #html = self._was.fixed_data()
 
     #@unittest.skip("Temporarily disabled")
-    async def test_oops(self):
+    async def test_update_present(self):
         """
-        Test that the oops method fixes the forgot to logout visits.
+        Test that the update_present method fixes the forgot to logout visits.
         """
-        html = self._was.oops()
+        html = self._was.update_present()
         self.assertIn('Oops is fixed. :-)', html)
 
     #@unittest.skip("Temporarily disabled")
@@ -527,9 +527,9 @@ class TestPageAccess(BaseTestAdmin):
             self.assertStatus('200 OK')
 
     @unittest.skip("Temporarily disabled")
-    async def test_oops(self):
+    async def test_update_present(self):
         with self.patch_session():
-            self.getPage("/admin/oops")
+            self.getPage("/admin/update_present")
             self.assertStatus('200 OK')
 
     @unittest.skip("Temporarily disabled")
@@ -538,21 +538,21 @@ class TestPageAccess(BaseTestAdmin):
             self.getPage("/admin/teams")
             self.assertStatus("200 OK")
 
-    # @unittest.skip("Temporarily disabled")
-    # async def test_add_team(self):
-    #     with self.patch_session():
-    #         self.getPage("/admin/add_team?program_name=TFI"
-    #                      "&program_number=123&team_name=Building%20Garbage"
-    #                      "&start_date=2021-07-31&coach1=100091&coach2=100090")
-    #         self.assertStatus("200 OK")
+    @unittest.skip("Temporarily disabled")
+    async def test_add_team(self):
+        with self.patch_session():
+            self.getPage("/admin/add_team?program_name=TFI"
+                         "&program_number=123&team_name=Building%20Garbage"
+                         "&start_date=2021-07-31&coach1=100091&coach2=100090")
+            self.assertStatus("200 OK")
 
-    # @unittest.skip("Temporarily disabled")
-    # async def test_add_team_duplicate(self):
-    #     with self.patch_session():
-    #         self.getPage("/admin/add_team?program_name=TFI"
-    #                      "&program_number=123&team_name=Building%20Garbage"
-    #                      "&start_date=2021-07-31&coach1=100091&coach2=100090")
-    #         self.assertStatus("200 OK")
+    @unittest.skip("Temporarily disabled")
+    async def test_add_team_duplicate(self):
+        with self.patch_session():
+            self.getPage("/admin/add_team?program_name=TFI"
+                         "&program_number=123&team_name=Building%20Garbage"
+                         "&start_date=2021-07-31&coach1=100091&coach2=100090")
+            self.assertStatus("200 OK")
 
     @unittest.skip("Temporarily disabled")
     async def test_deactivate_team(self):

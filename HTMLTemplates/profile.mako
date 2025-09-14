@@ -20,13 +20,13 @@ ${self.logo()}
         <form action="change_password">
             <fieldset>
                 <legend>Change Password</legend>
-                <input class="password" type="password" name="oldPass"
+                <input class="password" type="password" name="old_pass"
                        placeholder="Old Password" />
                 <br />
-                <input class="password" type="password" name="newPass1"
+                <input class="password" type="password" name="new_pass1"
                        placeholder="New Password" />
                 <br />
-                <input class="password" type="password" name="newPass2"
+                <input class="password" type="password" name="new_pass2"
                        placeholder="New Password (again)" />
                 <br />
                 <input type="submit" value="Login"/>

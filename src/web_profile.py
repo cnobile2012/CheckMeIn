@@ -86,13 +86,12 @@ class WebProfile(WebBase):
         user = self.get_user('/profile')
 
         if new_pass1 == new_pass2:
-            result = self.engine.run_async(
+            barcode, role = self.engine.run_async(
                 self.engine.accounts.get_barcode_and_role(user, old_pass))
-            barcode, error = result
 
             if barcode:
-                self.engine.run_async(self.engine.accounts.change_password(
-                    user, new_pass1))
+                self.engine.run_async(
+                    self.engine.accounts.change_password(user, new_pass1))
                 error = ""
             else:
                 error = "Incorrect password, please try again."

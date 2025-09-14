@@ -82,7 +82,7 @@ class WebAdminStation(WebBase):
         return self.index()
 
     @cherrypy.expose
-    def oops(self):
+    def update_present(self):
         super().check_permissions(Role.KEYHOLDER, "/")
         self.engine.run_async(self.engine.visits.oops_forgot())
         return self.index('Oops is fixed. :-)')

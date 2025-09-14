@@ -84,7 +84,13 @@ class WebCertifications(WebBase):
         tools = self.engine.run_async(self.engine.certifications.get_tools())
         certifications = self.engine.run_async(
             self.engine.certifications.get_user_list(user_id=barcode))
-        message = f"Certifications for {certifications[barcode].display_name}."
+        certs = certifications.get(barcode)
+
+        if certs:
+            message = f"Certifications for {certs.display_name}."
+        else:
+            message = f"There were no certifications for barcode '{barcode}'."
+
         return self._show_certifications(message, tools, certifications,
                                          show_left_names=False,
                                          show_right_names=False)

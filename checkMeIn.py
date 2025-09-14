@@ -13,7 +13,7 @@ import cherrypy.process.plugins
 from src import AppConfig
 from src.accounts import Role
 from src.cherrypy_sse import Portier
-from src.docs import getDocumentation
+from src.docs import get_documentation
 from src.engine import Engine
 from src.web_admin_station import WebAdminStation
 from src.web_base import WebBase, Cookie
@@ -26,6 +26,7 @@ from src.web_teams import WebTeams
 
 
 class CheckMeIn(WebBase):
+    SUITE_204 = 'http://192.168.1.10'
 
     def __init__(self, *args, testing=False, **kwargs):
         AppConfig().start_logging()
@@ -91,7 +92,7 @@ class CheckMeIn(WebBase):
 
     @cherrypy.expose
     def docs(self):
-        return self.template("docs.mako", docs=getDocumentation()),
+        return self.template("docs.mako", docs=get_documentation()),
 
     @cherrypy.expose
     def unlock(self, location, barcode):
@@ -114,7 +115,7 @@ class CheckMeIn(WebBase):
                 role = Role(Cookie('role').get(0))
 
             display_name = self._engine.run_async(
-                self._engine.members.get_name(barcode)[1])
+                self._engine.members.get_name(barcode))[0]
             active_members = {}
 
             if role.isCoach():
@@ -132,16 +133,16 @@ class CheckMeIn(WebBase):
                              in_building=in_building,
                              display_name=display_name,
                              active_members=active_members,
-                             repo=self.engine.repository)
+                             repo=self.engine.repository,
+                             suite_204=self.SUITE_204)
 
     @cherrypy.expose
-    def updateSSE(self):
+    def update_sse(self):
         """
         Publishes data from the subscribed channel.
         """
         # print("Entering SSE")
         doorman = Portier(self.updateChannel)
-
         cherrypy.response.headers["Content-Type"] = "text/event-stream"
 
         def pub():
@@ -153,11 +154,11 @@ class CheckMeIn(WebBase):
                     # cherrypy shuts down the generator when the client
                     # disconnects. Catch disconnect and unsubscribe to clean up
                     doorman.unsubscribe()
-                    return
+                    break
 
         return pub()
 
-    updateSSE._cp_config = {'response.stream': True}
+    update_sse._cp_config = {'response.stream': True}
 
 
 if __name__ == '__main__':  # pragma: no cover

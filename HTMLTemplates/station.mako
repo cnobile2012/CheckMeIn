@@ -4,7 +4,7 @@
 window.onload = setTimeout(function(){location.href="/station"},1000*60);
 /*
 document.addEventListener('DOMContentLoaded', function () {
-    var source = new EventSource('/updateSSE');
+    var source = new EventSource('/update_sse');
     source.addEventListener('update', function (event) {
         location.href="/station";
     });

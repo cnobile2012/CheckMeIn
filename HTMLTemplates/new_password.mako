@@ -13,10 +13,10 @@ ${self.logo()}
                 <input type="hidden" name="user" value="${user}" />
                 <input type="hidden" name="token" value="${token}" />
                 <input id="pass1" class="password" type="password"
-                       name="newPass1" placeholder="Password" />
+                       name="new_pass1" placeholder="Password" />
                 <br />
                 <input id="pass2" class="password" type="password"
-                       name="newPass2" placeholder="Password (again)" />
+                       name="new_pass2" placeholder="Password (again)" />
                 <br />
                 <input type="submit" value="Login" />
             </fieldset>

@@ -323,32 +323,32 @@ class TestWebProfile(BaseProfileTest):
     @unittest.skip("Temporarily disabled")
     def test_change_password(self):
         with self.patch_session():
-            self.getPage("/profile/change_password?oldPass=password"
-                         "&newPass1=password&newPass2=password")
+            self.getPage("/profile/change_password?old_pass=password"
+                         "&new_pass1=password&new_pass2=password")
 
     @unittest.skip("Temporarily disabled")
     def test_change_password_wrong(self):
         with self.patch_session():
-            self.getPage("/profile/change_password?oldPass=wrong"
-                         "&newPass1=password&newPass2=password")
+            self.getPage("/profile/change_password?old_pass=wrong"
+                         "&new_pass1=password&new_pass2=password")
 
     @unittest.skip("Temporarily disabled")
     def test_change_password_mimatch(self):
         with self.patch_session():
-            self.getPage("/profile/change_password?oldPass=password"
-                         "&newPass1=pass&newPass2=password")
+            self.getPage("/profile/change_password?old_pass=password"
+                         "&new_pass1=pass&new_pass2=password")
 
     @unittest.skip("Temporarily disabled")
     def test_new_password(self):
         with self.patch_session():
             self.getPage("/profile/new_password?user=admin"
-                         "&token=123456&newPass1=password&newPass2=password")
+                         "&token=123456&new_pass1=password&new_pass2=password")
 
     @unittest.skip("Temporarily disabled")
     def test_new_password_mismatch(self):
         with self.patch_session():
             self.getPage("/profile/new_password?user=admin"
-                         "&token=123456&newPass1=password&newPass2=pass")
+                         "&token=123456&new_pass1=password&new_pass2=pass")
 
     @unittest.skip("Temporarily disabled")
     def test_add_device(self):  # Has warnings
