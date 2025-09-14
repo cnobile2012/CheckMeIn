@@ -42,8 +42,7 @@ VIRTUALENVWRAPPER_PYTHON=/usr/bin/python3
 source /etc/profile.d/virtualenvwrapper.sh
 ```
 
-Then resource your `.bashrc` file. Either method below works and does the same
-thing.
+Then resource your `.bashrc` file. Either method below does the same thing.
 ```bash
 $ source ~/.bashrc
 

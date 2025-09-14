@@ -5,6 +5,7 @@ source =
 omit =
     */tests/*
     */mock/*
+    */HTMLTemplates/*
 
 [report]
 show_missing = True
