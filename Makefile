@@ -12,7 +12,6 @@ TODAY		= $(shell date +"%Y-%m-%dT%H:%M:%S.%N%:z")
 RM_REGEX	= '(^.*.pyc$$)|(^.*.wsgic$$)|(^.*~$$)|(.*\#$$)|(^.*,cover$$)|(^.*__pycache__$$)'
 RM_CMD		= find $(PREFIX) -regextype posix-egrep -regex $(RM_REGEX) \
                   -exec rm -rf {} +
-COVERAGE_FILE	= $(PREFIX)/.coveragerc
 TEST_TAG	=
 PIP_ARGS	= # Pass variables for pip install.
 TEST_PATH	= # The path to run tests on.
@@ -49,11 +48,10 @@ tar	: clobber
 tests	: clobber test_setup
 	@rm -rf $(DOCS_DIR)/htmlcov
 	@mkdir -p $(LOGS_DIR)
-	@coverage erase --rcfile=$(COVERAGE_FILE)
-	@coverage run --rcfile=$(COVERAGE_FILE) -m pytest tests --capture=tee-sys \
-        $(TEST_PATH)
-	@coverage report -m --rcfile=$(COVERAGE_FILE)
-	@coverage html --rcfile=$(COVERAGE_FILE)
+	@coverage erase
+	@coverage run -m pytest tests --capture=tee-sys $(TEST_PATH)
+	@coverage report -m
+	@coverage html
 	@echo $(TODAY)
 
 test_setup:

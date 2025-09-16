@@ -3,11 +3,12 @@
 # src/base_database.py
 #
 
-import configparser
 import os
 import datetime
 import sqlite3
 import aiosqlite
+
+from configparser import ConfigParser
 
 from . import Borg, BASE_DIR, AppConfig
 
@@ -160,25 +161,40 @@ class BaseDatabase(Borg):
                        if var.startswith('_V_')]
 
     @classmethod
-    def read_config(cls, fullpath, section, key):
+    def read_config(cls, fullpath: str, section_key: dict):
         """
         Read the CherryPi config files. These are INI files but with a .conf
         extention.
+
+        :param str fullpath: Path to the config file.
+        :param dict section_key: A dictionary od section and keys in the
+                                 following form:
+                                 {<section0>: (<key0>, <key1>, ...),
+                                  <section1>: (<key0>, <key1>, ...)}
+        :returns: A dictionary in the following form:
+                  {<section0>: {<key0>: <value0>, <key1>: <value1>, ...),
+                   <section1>: {<key0>: <value0>, <key1>: <value1>, ...)}
         """
-        config = configparser.ConfigParser()
+        items = {}
+        config = ConfigParser()
         result = config.read(fullpath)
 
         if result == []:
             cls._log.error("An invalid config file or path, found %s",
                            fullpath)
 
-        try:
-            value = config[section][key]
-        except KeyError:
-            cls._log.error("Invalid section and/or key, section: %s, key: %s",
-                           section, key)
-        else:
-            return value
+        for section, keys in section_key.items():
+            for key in keys:
+                try:
+                    value = eval(config[section][key])
+                except KeyError:
+                    cls._log.error("Invalid section and/or key, section: "
+                                   "%s, key: %s", section, key)
+                else:
+                    values = items.setdefault(section, {})
+                    values[key] = value
+
+        return items
 
     @property
     def db_fullpath(self) -> str:

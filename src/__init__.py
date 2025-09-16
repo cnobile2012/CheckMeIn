@@ -57,32 +57,6 @@ class Borg:
         self._instances.clear()
 
 
-class DeferredRotatingFileHandler(RotatingFileHandler):
-    """
-    'task_file': {
-        'class': 'realm.common.loghandlers.DeferredRotatingFileHandler',
-        'level': 'DEBUG',
-        'formatter': 'verbose',
-        'filename': '/dev/null',
-        'maxBytes': 50000000, # 50 Meg bytes
-        'backupCount': 5,
-        }
-
-    RotatingFileHandler args:
-    filename, mode='a', maxBytes=0, backupCount=0, encoding=None,
-    delay=False, errors=None
-    """
-
-    def __init__(self, filename, *args, **kwargs):
-        self.filename = filename
-        kwargs['delay'] = True
-        RotatingFileHandler.__init__(self, "/dev/null", *args, **kwargs)
-
-    def _open(self):
-        self.baseFilename = self.filename
-        return RotatingFileHandler._open(self)
-
-
 class Logger:
     """
     Setup some basic logging. This uses the borg pattern, it's kind of like a
@@ -95,8 +69,8 @@ class Logger:
         self._format = format_str if format_str else self._DEFAULT_FORMAT
         self.logger = None
 
-    def config(self, logger_name=None, file_path=None, level=logging.INFO,
-               initial_msg=True):
+    def config(self, logger_name=None, file_path=None, max_bytes=50000000,
+               backup_count=5, level=logging.INFO, initial_msg=True):
         """
         Config the logger.
 
@@ -117,7 +91,8 @@ class Logger:
 
             if not self.logger.handlers:
                 self.logger.setLevel(level)
-                handler = logging.FileHandler(file_path)
+                handler = RotatingFileHandler(file_path, maxBytes=max_bytes,
+                                              backupCount=backup_count)
                 formatter = logging.Formatter(self._format)
                 handler.setFormatter(formatter)
                 self.logger.addHandler(handler)

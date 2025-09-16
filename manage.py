@@ -10,6 +10,7 @@ import sys
 import datetime
 import readline
 
+from configparser import ConfigParser
 from getpass import getpass
 from string import ascii_lowercase, ascii_uppercase, digits
 
@@ -40,7 +41,7 @@ class Manage:
         re.IGNORECASE
         )
     _SPECIAL_CHARS = '!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'
-    _AVAILABLE_BARCODES = [f'{barcode}' for barcode in range(999990, 1000000)]
+    _AVAILABLE_BARCODES = [str(barcode) for barcode in range(999990, 1000000)]
 
     def __init__(self, options, testing=False, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -50,19 +51,22 @@ class Manage:
 
         if testing:
             config = 'development.conf'
-        else:
+        else:  # pragma: no cover
             config = 'production.conf'
 
         path = os.path.join(BASE_DIR, 'data')
         fullpath = os.path.join(path, config)
-        db_name = BaseDatabase.read_config(fullpath, 'global',
-                                           'database.name')
-        if db_name is None:
+        sections = {'global': ('database.path', 'database.name')}
+        items = BaseDatabase.read_config(fullpath, sections)
+
+        if not items:
             print("Failed to initialize, invalid config file, see log file.")
         else:
-            self._eng = Engine(path, db_name.strip("'"))
+            db_path = items['global']['database.path']
+            db_name = items['global']['database.name']
+            self._eng = Engine(db_path, db_name, testing=testing)
 
-    def start(self):
+    def start(self):  # pragma: no cover
         match self._options.options:
             case 'create_admin_user':
                 self._create_admin_user()
@@ -81,7 +85,6 @@ class Manage:
         given_name = self._enter_info("given name")
         surname = self._enter_info("surname")
         username = self._enter_info("username")
-        self._print_password_criteria()
         password = self._enter_password()
         email = self._enter_info("email")
         self._create_db_records(given_name, surname, username, password, email)
@@ -146,20 +149,29 @@ class Manage:
 
         return field
 
-    def _enter_password(self, user, enter_key_exit=False):
-        if not self._options.password:
-            self._get_old_password(user)
+    def _enter_password(self, user=None, enter_key_exit=False):
+        old_pw = True
+        password = ""
 
-        while True:
-            password0 = getpass(prompt="Enter new password: ")
-            password1 = getpass(prompt="Enter new password again: ")
+        if user and not self._options.password:  # pragma: no cover
+            old_pw = self._get_old_password(user)
 
-            if enter_key_exit and not password0 or not password1:
-                password = ""
-                break
-            elif self._validate_password(password0, password1):
-                password = password0
-                break
+        if old_pw:
+            print("\nAll admin users passwords must comply with these "
+                  "criteria. Must be at\nleast 12 characters long. Must have "
+                  "at least one upper case, lower case, and\ndigit character. "
+                  "Must have at least one of these special characters\n"
+                  f"{self._SPECIAL_CHARS}.\n")
+
+            while True:
+                password0 = getpass(prompt="Enter new password: ")
+                password1 = getpass(prompt="Re-enter new password: ")
+
+                if enter_key_exit and not password0 or not password1:
+                    break
+                elif self._validate_password(password0, password1):
+                    password = password0
+                    break
 
         return password
 
@@ -176,18 +188,17 @@ class Manage:
             barcode, role = self._eng.run_async(
                 self._eng.accounts.get_barcode_and_role(user, old_pass))
 
-            if not barcode:
+            if barcode:
+                ret = True
                 break
-
-            ret = True
 
         return ret
 
     def _create_db_records(self, given_name, surname, username, password,
                            email):
         # First see if the user exists.
-        user_info = self._eng.run_async(self._eng.accounts.get_user(
-            username, email))
+        user_info = self._eng.run_async(
+            self._eng.accounts.get_user(username, email))
 
         if user_info:
             self._log.warning("The user %s already existed when trying to "
@@ -197,52 +208,58 @@ class Manage:
                   f"'{username}', email '{email}', barcode '{user_info[2]}' "
                   f"with role {role}.")
         else:
-            admins = self._eng.run_async(
-                self._eng.accounts.get_members_with_role(Role.ADMIN))
-            barcodes = [admin[-1] for admin in admins]
-            barcodes.sort()
-            available_bcs = set(self._AVAILABLE_BARCODES) - set(barcodes)
+            if (barcode := self._get_barcode()) is not None:
+                display_name = self._make_display_name(given_name, surname)
+                me_date = datetime.datetime.now()
+                me_date = me_date.replace(year=me_date.year + 1)
+                data = {'username': username, 'password': password,
+                        'barcode': barcode, 'displayName': display_name,
+                        'firstName': given_name, 'lastName': surname,
+                        'email': email, 'membershipExpires': me_date}
+                self._create_account(data)
 
-            if not available_bcs:
-                self._log.warning("All admin user barcodes have been used.")
-                print("Sorry, all admin user barcodes have been used.")
-            else:
-                available_bcs = list(available_bcs)
-                available_bcs.sort()
-                barcode = available_bcs[0]
-                rowcount = self._eng.run_async(self._eng.accounts.add_user(
-                    username, password, barcode, Role.ADMIN))
+    def _get_barcode(self):
+        admins = self._eng.run_async(
+            self._eng.accounts.get_members_with_role(Role.ADMIN))
+        barcodes = [admin[-1] for admin in admins]
+        barcodes.sort()
+        available_bcs = set(self._AVAILABLE_BARCODES) - set(barcodes)
+        available_bcs = list(available_bcs)
+        available_bcs.sort()
+        print(admins)
 
-                if rowcount > 0:
-                    display_name = self._make_display_name(given_name, surname)
-                    me_date = datetime.datetime.now()
-                    me_date = me_date.replace(year=me_date.year + 1)
-                    data = {'barcode': barcode, 'displayName': display_name,
-                            'firstName': given_name, 'lastName': surname,
-                            'email': email, 'membershipExpires': me_date}
-                    rowcount = self._eng.run_async(
-                        self._eng.members.add_members(data))
+        if not available_bcs:
+            self._log.warning("All admin user barcodes have been used.")
+            print("Sorry, all admin user barcodes have been used.")
+            barcode = None
+        else:
+            barcode = available_bcs[0]
 
-                    if rowcount > 0:
-                        print("You should now be able to log in as "
-                              f"{username}, your barcode is {barcode}.")
-                        return
+        return barcode
 
-                print("Could not create an admin account, check the "
-                      "{self._ac.full_log_path} file for errors.")
+    def _create_account(self, data):
+        username = data.pop('username')
+        password = data.pop('password')
+        barcode = data['barcode']
+        rowcount = self._eng.run_async(self._eng.accounts.add_user(
+            username, password, barcode, Role.ADMIN))
+
+        if rowcount > 0:
+            rowcount = self._eng.run_async(self._eng.members.add_members(data))
+
+            if rowcount > 0:
+                print("You should now be able to log in as "
+                      f"{username}, your barcode is {barcode}.")
+                return
+
+        print("Could not create an admin account, check the "
+              f"{self._ac.full_log_path} file for errors.")
 
     def _update_db_records(self, data):
         given_name = data['firstName']
         surname = data['lastName']
         data['displayName'] = self._make_display_name(given_name, surname)
         return self._eng.run_async(self._eng.accounts.update_user(data))
-
-    def _print_password_criteria(self):
-        print("\nAll admin users passwords must comply with these criteria. "
-              "Must be at\nleast 12 characters long. Must have at least one "
-              "upper case, lower case, and\ndigit character. Must have at "
-              "least one of these special characters\n"
-              f"{self._SPECIAL_CHARS}.\n")
 
     def _validate_password(self, pw0, pw1):
         ret = False

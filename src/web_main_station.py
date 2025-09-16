@@ -78,8 +78,8 @@ class WebMainStation(WebBase):
         return barcodes[0]
 
     @cherrypy.expose
-    def checkout(self, barcodes, called=False):
-        barcodes = [barcode.strip() for barcode in barcodes.split()]
+    def checkout(self, barcode, called=False):
+        barcodes = [bc.strip() for bc in barcode.split()]
         current_keyholder_bc, _ = self.engine.run_async(
             self.engine.accounts.get_active_key_holder())
         leaving_keyholder_bc = self.engine.run_async(

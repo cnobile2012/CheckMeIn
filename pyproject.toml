@@ -15,7 +15,25 @@ description = "An application for checking people in and out of a building."
 readme = "README.md"
 license = {file = "LICENSE"}
 
-
 [project.urls]
 #url = "https://github.com/"
 #Repository = "https://github.com/"
+
+[tool.coverage.run]
+include = ['src/**', 'manage.py']  # , 'checkMeIn.py'
+omit = ['*/tests/*', '*/HTMLTemplates/*']
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+precision = 3
+
+exclude_also = [
+    "if __name__ == .__main__.:",
+    # All lines between # no cover: start and # no cover: stop will be excluded.
+    'no cover: start(?s:.)*?no cover: stop',
+    ]
+
+[tool.coverage.html]
+title = "The Forge Initiative Check In & Out"
+directory = "docs/htmlcov"
