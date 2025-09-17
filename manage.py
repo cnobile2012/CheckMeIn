@@ -179,17 +179,15 @@ class Manage:
         ret = False
 
         while True:
-            while True:
-                old_pass = getpass(prompt="Enter current password: ")
+            old_pass = getpass(prompt="Enter current password: ")
 
-                if old_pass:
-                    break
+            if old_pass:
+                barcode, role = self._eng.run_async(
+                    self._eng.accounts.get_barcode_and_role(user, old_pass))
 
-            barcode, role = self._eng.run_async(
-                self._eng.accounts.get_barcode_and_role(user, old_pass))
+                if barcode != '':
+                    ret = True
 
-            if barcode:
-                ret = True
                 break
 
         return ret

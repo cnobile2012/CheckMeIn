@@ -37,7 +37,7 @@ class TestManage(BaseAsyncTests):
         # Create tables and views.
         self.tables_and_views = {
             'tables': (self.bd._T_ACCOUNTS, self.bd._T_MEMBERS,
-                       self.bd._T_CONFIG, #self.bd._T_VISITS
+                       self.bd._T_CONFIG,
                        ),
             'views': (self.bd._V_CURRENT_MEMBERS,)
             }
@@ -47,7 +47,6 @@ class TestManage(BaseAsyncTests):
         await self._eng.accounts.add_accounts(TEST_DATA[self.bd._T_ACCOUNTS])
         await self._eng.config.add_config(TEST_DATA[self.bd._T_CONFIG])
         await self._eng.members.add_members(TEST_DATA[self.bd._T_MEMBERS])
-        # await self._eng.visits.add_visits(TEST_DATA[self.bd._T_VISITS])
 
     async def asyncTearDown(self):
         self._eng = None
@@ -118,11 +117,25 @@ class TestManage(BaseAsyncTests):
                 output = mock_stdout.getvalue()
                 self.assertIn(expected, output)
 
-    @unittest.skip("Temporarily skipped")
-    def test__get_old_password(self):
+    #@unittest.skip("Temporarily skipped")
+    @patch("manage.getpass")
+    def test__get_old_password(self, mock_getpass):
         """
-        Test that the _get_old_password method 
+        Test that the _get_old_password method returns a boolean depending
+        on if the current password was corrent or not.
         """
+        data = (
+            ('admin', 'password', True),
+            ('Joe', 'password', True),
+            ('hacker', 'password', False),
+            )
+        msg = "Expected {}, with username {}, found {}."
+
+        for username, password, expected in data:
+            mock_getpass.side_effect = (password,)
+            result = self.mng._get_old_password(username)
+            self.assertEqual(expected, result, msg.format(
+                expected, username, result))
 
     @unittest.skip("Temporarily skipped")
     def test__create_db_records(self):
@@ -169,11 +182,38 @@ class TestManage(BaseAsyncTests):
                 output = mock_stdout.getvalue()
                 self.assertIn(expected[1], output)
 
-    @unittest.skip("Temporarily skipped")
+    #@unittest.skip("Temporarily skipped")
     def test__create_account(self):
         """
-        Test that the _create_account method 
+        Test that the _create_account method returns a success or an
+        error message.
         """
+        msg0 = "You should now be able to log in as {}, your barcode is {}."
+        err_msg0 = ("Could not create an admin account, check the /home/"
+                    "cnobile/src/GitHub/CheckMeIn/logs/testing.log file "
+                    "for errors.")
+        me_date = datetime.datetime.now()
+        me_date = me_date.replace(year=me_date.year + 1)
+        items = {'username': None, 'barcode': None, 'displayName': None,
+                 'firstName': None, 'lastName': None,
+                 'email': 'fake@email.com', 'membershipExpires': me_date}
+        data = (
+            ('999990', 'fstone', 'Fred F', 'Fred', 'Flintstone',
+             msg0.format('fstone', '999990')),
+            ('999990', 'hacker', 'Hack N', 'Hack', 'Nobody', err_msg0),
+            )
+
+        for barcode, username, d_name, g_name, surname, expected in data:
+            with patch("sys.stdout", new_callable=io.StringIO) as mock_stdout:
+                items['barcode'] = barcode
+                items['username'] = username
+                items['password'] = 'password'
+                items['displayName'] = d_name
+                items['firstName'] = g_name
+                items['lastName'] = surname
+                self.mng._create_account(items)
+                output = mock_stdout.getvalue()
+                self.assertIn(expected, output)
 
     @unittest.skip("Temporarily skipped")
     def test__update_db_records(self):
