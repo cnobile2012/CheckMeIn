@@ -141,26 +141,37 @@ class TestTeams(BaseTeamsTest):
             self._wt.certifications('100091')
 
     #@unittest.skip("Temporarily disabled")
-    def test_attendance(self):
+    async def test_attendance(self):
         """
         Test that the attendance method returns a rendered
         team_attendance.mako template.
         """
-        now = datetime.datetime.now()
-        str_today = datetime.date.today().isoformat()
-        delta = datetime.timedelta(hours=2)
-        str_start = (now - delta).time().strftime('%H:%M:%S')
-        str_end = (now + delta).time().strftime('%H:%M:%S')
+        team_data = (
+            {'barcode': '100091', 'status': 'In'},  # Member N
+            {'barcode': '100032', 'status': 'In'},  # Average J
+            {'barcode': '100015', 'status': 'In'},  # Paul F
+            )
+
         data = (
-            (1, str_today, str_start, str_end,
+            (1, '2025-01-01', '18:00:00', '20:00:00',
+             ('Total: 3', 'Average J', 'Member N', 'Paul F')),
+            (1, '2025-06-01', '20:00:00', '00:10:00',
+             ('Total: 3', 'Average J', 'Member N', 'Paul F')),
+            (1, '2025-09-01', '23:00:00', '01:10:00',
              ('Total: 3', 'Average J', 'Member N', 'Paul F')),
             )
 
         for team_id, date, start_time, end_time, expected in data:
+            for team_member in team_data:
+                et_str = f"{date}T{start_time}"
+                dt = datetime.datetime.fromisoformat(et_str)
+                team_member['enter_time'] = dt
+
+            await self._eng.visits.add_visits(team_data)
             html = self._wt.attendance(team_id, date, start_time, end_time)
 
-            for name in expected:
-                self.assertIn(name, html)
+            for item in expected:
+                self.assertIn(item, html)
 
     #@unittest.skip("Temporarily disabled")
     def test_index(self):

@@ -25,7 +25,7 @@ class Visits:
         :param list data: The data to insert in the DB in the form of:
                           [{'enter_time': <enter_time>,
                             'exit_time': <exit_time>, 'barcode': <barcode>,
-                            'status': <status>}, {...} ...]
+                            'status': <status>}, {...}, ...]
         """
         pre_query = ("INSERT INTO visits "
                      "VALUES (:enter_time, :{}, :barcode, :status);")

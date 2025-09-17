@@ -189,9 +189,7 @@ class TestManage(BaseAsyncTests):
         error message.
         """
         msg0 = "You should now be able to log in as {}, your barcode is {}."
-        err_msg0 = ("Could not create an admin account, check the /home/"
-                    "cnobile/src/GitHub/CheckMeIn/logs/testing.log file "
-                    "for errors.")
+        err_msg0 = "Could not create an admin account, "
         me_date = datetime.datetime.now()
         me_date = me_date.replace(year=me_date.year + 1)
         items = {'username': None, 'barcode': None, 'displayName': None,

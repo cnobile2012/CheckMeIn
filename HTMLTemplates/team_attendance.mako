@@ -11,7 +11,7 @@ ${self.logo()}
             <fieldset>
                 <legend>
                     See who was here during a team meeting. (The date may be
-                    the next day if the time is after midnight.)
+                    the next day for the End Time if it is after midnight.)
                 </legend>
                 <br />
                 <input type="hidden" name="team_id" value="${team_id}">
