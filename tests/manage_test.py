@@ -71,17 +71,83 @@ class TestManage(BaseAsyncTests):
         test_path = os.path.join('data', 'tests', 'testing.db')
         self.assertIn(test_path, self.mng._eng.db_fullpath)
 
-    @unittest.skip("Temporarily skipped")
+    #@unittest.skip("Temporarily skipped")
     def test__create_admin_user(self):
         """
-        Test that the _create_admin_user method 
+        Test that the _create_admin_user method returns the two messages.
+        We only need to test a successful result, all errors were tested for
+        in other tests.
         """
+        msg0 = "All admin users passwords must comply with these criteria."
+        msg1 = "You should now be able to log in as "
+        data = (
+            ('Fred', 'Stone', 'fstone', '[LongPassword1]', 'fake99@email.org',
+             (msg0, msg1)),
+            )
 
-    @unittest.skip("Temporarily skipped")
+        for given_name, surname, username, pw, email, expected in data:
+            inputs = iter((given_name, surname, username, email))
+            passwords = iter((pw, pw))
+
+            def fake_input(prompt=""):
+                return next(inputs)
+
+            def fake_getpass(prompt=""):
+                return next(passwords)
+
+            with (patch("builtins.input", side_effect=fake_input),
+                  patch("manage.getpass", side_effect=fake_getpass),
+                  patch("sys.stdout", new_callable=io.StringIO) as mk_stdout):
+                self.mng._create_admin_user()
+                output = mk_stdout.getvalue()
+                self.assertIn(expected[0], output)
+                self.assertIn(expected[1], output)
+
+    #@unittest.skip("Temporarily skipped")
     def test__update_admin_user(self):
         """
-        Test that the _update_admin_user method 
+        Test that the _update_admin_user method various messages indicating
+        success or failure.
+        We only need to test a successful result, all errors were tested for
+        in other tests.
         """
+        msg0 = "You can update the following information "
+        msg1 = "You can change the following information:"
+        msg2 = "Pressing the Enter key will skip the field."
+        msg3 = "Your information has updated successfully."
+        msg4 = "No information was changed."
+        err_msg0 = "There was an error with updating your information."
+        err_msg1 = "Could not find a user account with the criteria you "
+        data = (
+            ('100091', 'fake99@email.com', 'Fred', 'Stone', 'fstone',
+             'password', '{5thPassword}', (msg0, msg1, msg2, msg3)),
+            ('100091', 'fake99@email.com', 'Fred', 'Stone', 'fstone',
+             'password', '{5thPassword}', (msg0, msg1, msg2, msg4)),
+            ('100090', 'fake100@email.com', 'Joan', 'Slic', 'jslic',
+             '', '[notGoodPW9]', (msg0, err_msg0)),
+            ('100000', 'fake99@email.com', 'Fred', 'Stone', 'fstone',
+             'password', '{5thPassword}', (msg0, err_msg1)),
+            )
+
+        for (barcode, email, given_name,
+             surname, username, org_pw, pw, expected) in data:
+            inputs = iter((barcode, email, given_name, surname, username))
+            passwords = iter((org_pw, pw, pw))
+
+            def fake_input(prompt=""):
+                return next(inputs)
+
+            def fake_getpass(prompt=""):
+                return next(passwords)
+
+            with (patch("builtins.input", side_effect=fake_input),
+                  patch("manage.getpass", side_effect=fake_getpass),
+                  patch("sys.stdout", new_callable=io.StringIO) as mk_stdout):
+                self.mng._update_admin_user()
+                output = mk_stdout.getvalue()
+
+                for msg in expected:
+                    self.assertIn(msg, output)
 
     #@unittest.skip("Temporarily skipped")
     @patch("builtins.input", return_value="Alice")
@@ -137,11 +203,27 @@ class TestManage(BaseAsyncTests):
             self.assertEqual(expected, result, msg.format(
                 expected, username, result))
 
-    @unittest.skip("Temporarily skipped")
+    #@unittest.skip("Temporarily skipped")
     def test__create_db_records(self):
         """
-        Test that the _create_db_records method 
+        Test that the _create_db_records method prints to the screen either
+        a success or error message.
         """
+        msg = "You should now be able to log in as '{}', your barcode is '{}'."
+        err_msg0 = "You already have a user account with username '{}', "
+        data = (
+            ('Sneaky', 'Kid', 'skid', 'password', 'fake100@email.org',
+             msg.format('skid', '999990')),
+            ('Sneaky', 'Kid', 'skid', 'password', 'fake100@email.org',
+             err_msg0.format('skid')),
+            )
+
+        for given_name, surname, username, password, email, expected in data:
+            with patch("sys.stdout", new_callable=io.StringIO) as mock_stdout:
+                self.mng._create_db_records(given_name, surname, username,
+                                            password, email)
+                output = mock_stdout.getvalue()
+                self.assertIn(expected, output)
 
     #@unittest.skip("Temporarily skipped")
     @patch.object(Manage, '_AVAILABLE_BARCODES', new=['999990', '999991'])
@@ -150,7 +232,7 @@ class TestManage(BaseAsyncTests):
         Test that the _get_barcode method returns the next barcode
         assigned for admins or an error message.
         """
-        msg0 = "You should now be able to log in as {}, your barcode is {}."
+        msg = "You should now be able to log in as '{}', your barcode is '{}'."
         err_msg0 = "Sorry, all admin user barcodes have been used."
         me_date = datetime.datetime.now()
         me_date = me_date.replace(year=me_date.year + 1)
@@ -159,9 +241,9 @@ class TestManage(BaseAsyncTests):
                  'email': 'fake@email.com', 'membershipExpires': me_date}
         data = (
             ('fstone', 'Fred', 'Flintstone', 'Fred F', True,
-             ('999990', msg0.format('fstone', '999990'))),
+             ('999990', msg.format('fstone', '999990'))),
             ('yji', 'Yuan', 'Ji', 'Yuan J', True,
-             ('999991', msg0.format('yji', '999991'))),
+             ('999991', msg.format('yji', '999991'))),
             ('jtool', 'Joe', 'TooLate', 'Joe T', False, ('999992', err_msg0)),
             )
 
@@ -188,7 +270,7 @@ class TestManage(BaseAsyncTests):
         Test that the _create_account method returns a success or an
         error message.
         """
-        msg0 = "You should now be able to log in as {}, your barcode is {}."
+        msg = "You should now be able to log in as '{}', your barcode is '{}'."
         err_msg0 = "Could not create an admin account, "
         me_date = datetime.datetime.now()
         me_date = me_date.replace(year=me_date.year + 1)
@@ -197,7 +279,7 @@ class TestManage(BaseAsyncTests):
                  'email': 'fake@email.com', 'membershipExpires': me_date}
         data = (
             ('999990', 'fstone', 'Fred F', 'Fred', 'Flintstone',
-             msg0.format('fstone', '999990')),
+             msg.format('fstone', '999990')),
             ('999990', 'hacker', 'Hack N', 'Hack', 'Nobody', err_msg0),
             )
 
@@ -213,11 +295,24 @@ class TestManage(BaseAsyncTests):
                 output = mock_stdout.getvalue()
                 self.assertIn(expected, output)
 
-    @unittest.skip("Temporarily skipped")
+    #@unittest.skip("Temporarily skipped")
     def test__update_db_records(self):
         """
-        Test that the _update_db_records method 
+        Test that the _update_db_records method returns the row count of
+        the updated records, usually 2.
         """
+        data = (
+            ('100091', 'mwhitehat', 'badPassword', 'Mike', 'WhiteHat',
+             'fake1@email.com', 2),
+            )
+
+        for (barcode, username, password, given_name,
+             surname, email, expected) in data:
+            items = {'barcode': barcode, 'user': username,
+                     'password': password, 'firstName': given_name,
+                     'lastName': surname, 'email': email}
+            result = self.mng._update_db_records(items)
+            self.assertEqual(expected, result)
 
     #@unittest.skip("Temporarily skipped")
     def test__validate_password(self):

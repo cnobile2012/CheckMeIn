@@ -159,6 +159,8 @@ class TestTeams(BaseTeamsTest):
              ('Total: 3', 'Average J', 'Member N', 'Paul F')),
             (1, '2025-09-01', '23:00:00', '01:10:00',
              ('Total: 3', 'Average J', 'Member N', 'Paul F')),
+            (1, '2025-09-17', '23:23:31', '03:23:31',
+             ('Total: 3', 'Average J', 'Member N', 'Paul F')),
             )
 
         for team_id, date, start_time, end_time, expected in data:

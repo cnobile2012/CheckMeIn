@@ -59,7 +59,7 @@ class Manage:
         sections = {'global': ('database.path', 'database.name')}
         items = BaseDatabase.read_config(fullpath, sections)
 
-        if not items:
+        if not items:  # pragma: no cover
             print("Failed to initialize, invalid config file, see log file.")
         else:
             db_path = items['global']['database.path']
@@ -110,23 +110,25 @@ class Manage:
                   f"    2. given name '{given_name}'\n"
                   f"    3. surname '{surname}'\n"
                   f"    4. username '{username}'\n"
-                  f"    5. password")
+                  "    5. password")
             print("Pressing the Enter key will skip the field.")
             info = self._enter_info("email", enter_key_exit=True)
-            email = info if info else email
+            new_email = info if info else email
             info = self._enter_info("given name", enter_key_exit=True)
-            given_name = info if info else given_name
+            new_given_name = info if info else given_name
             info = self._enter_info("surname", enter_key_exit=True)
-            surname = info if info else surname
+            new_surname = info if info else surname
             info = self._enter_info("username", enter_key_exit=True)
-            username = info if info else username
-            password = self._enter_password(username, enter_key_exit=True)
+            new_username = info if info else username
+            new_password = self._enter_password(username, enter_key_exit=True)
+            orig_set = {username, email, given_name, surname}
+            new_set = {new_username, new_email, new_given_name, new_surname}
 
-            if any([True for info in (email, given_name, surname, username,
-                                      password) if info != ""]):
-                data = {'barcode': barcode, 'user': username,
-                        'password': password, 'firstName': given_name,
-                        'lastName': surname, 'email': email}
+            # Were there any changes.
+            if new_set - orig_set or new_password:
+                data = {'barcode': barcode, 'user': new_username,
+                        'password': new_password, 'firstName': new_given_name,
+                        'lastName': new_surname, 'email': new_email}
                 rowcount = self._update_db_records(data)
 
                 if rowcount != 2:
@@ -204,7 +206,7 @@ class Manage:
             role = Role(user_info[-1])
             print("You already have a user account with username "
                   f"'{username}', email '{email}', barcode '{user_info[2]}' "
-                  f"with role {role}.")
+                  f"with role '{role}'.")
         else:
             if (barcode := self._get_barcode()) is not None:
                 display_name = self._make_display_name(given_name, surname)
@@ -224,7 +226,6 @@ class Manage:
         available_bcs = set(self._AVAILABLE_BARCODES) - set(barcodes)
         available_bcs = list(available_bcs)
         available_bcs.sort()
-        print(admins)
 
         if not available_bcs:
             self._log.warning("All admin user barcodes have been used.")
@@ -247,7 +248,7 @@ class Manage:
 
             if rowcount > 0:
                 print("You should now be able to log in as "
-                      f"{username}, your barcode is {barcode}.")
+                      f"'{username}', your barcode is '{barcode}'.")
                 return
 
         print("Could not create an admin account, check the "
@@ -308,7 +309,7 @@ class Color:
     RESET = "\033[0m"
 
     @staticmethod
-    def wrap(text, color):
+    def wrap(text, color):  # pragma: no cover
         return f"{color}{text}{Color.RESET}"
 
 
