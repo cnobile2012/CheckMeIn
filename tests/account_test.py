@@ -9,7 +9,6 @@ import unittest
 import aiosqlite
 from passlib.apps import custom_app_context as pwd_context
 
-from src import BASE_DIR
 from src.accounts import Status, Role
 from src.base_database import BaseDatabase
 from src.engine import Engine
@@ -293,7 +292,7 @@ class TestAccounts(BaseAsyncTests):
         current_members view.
         """
         self.bd = BaseDatabase()
-        path = os.path.join(BASE_DIR, 'data', 'tests')
+        path = os.path.join('data', 'tests')
         self.bd.db_fullpath = (path, self.TEST_DB, False)
         # Create tables and views.
         self.tables_and_views = {

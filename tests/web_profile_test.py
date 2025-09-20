@@ -11,7 +11,6 @@ import cherrypy
 from cherrypy.lib import sessions
 from mako.lookup import TemplateLookup
 
-from src import BASE_DIR
 from src.accounts import Role
 from src.assets import TOOLS
 from src.base_database import BaseDatabase
@@ -31,7 +30,7 @@ class BaseProfileTest(BaseAsyncTests):
     async def asyncSetUp(self):
         cherrypy.session = sessions.RamSession()
         self.bd = BaseDatabase()
-        path = os.path.join(BASE_DIR, 'data', 'tests')
+        path = os.path.join('data', 'tests')
         self.bd.db_fullpath = (path, self.TEST_DB, False)
         # Create tables and views.
         tables_and_views = {

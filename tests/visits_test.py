@@ -6,7 +6,6 @@
 import os
 import unittest
 
-from src import BASE_DIR
 from src.base_database import BaseDatabase
 from src.engine import Engine
 
@@ -21,7 +20,7 @@ class TestVisits(BaseAsyncTests):
 
     async def asyncSetUp(self):
         self.bd = BaseDatabase()
-        path = os.path.join(BASE_DIR, 'data', 'tests')
+        path = os.path.join('data', 'tests')
         self.bd.db_fullpath = (path, self.TEST_DB, False)
         # Create tables and views.
         self.tables_and_views = {

@@ -80,16 +80,16 @@ class TestCustomReports(BaseAsyncTests):
         Test that the custom_report method returns the correct data for the
         custom report query.
         """
-        err_msg0 = "Invalid SQL: no such table: invalid_table"
+        query = 'SELECT * FROM invalid_table;'
+        err_msg0 = f"Invalid SQL: {query}."
         err_msg1 = "Could not find report with report_id '{}'."
         rows = await self.get_data('members')
         data = (
             (1, 'Get All Members', 'SELECT * FROM members;',
              ['barcode', 'displayName', 'firstName', 'lastName', 'email',
               'membershipExpires'], rows, ''),
-            (2, 'Invalid SQL', 'SELECT * FROM invalid_table;', None, None,
-             err_msg0),
-            (9, '', '', None, None, err_msg1.format(9)),
+            (2, 'Invalid SQL', query, [], [], err_msg0),
+            (9, '', '', [], [], err_msg1.format(9)),
             )
         msg = "Expected {}, report_id {}, found {}."
 

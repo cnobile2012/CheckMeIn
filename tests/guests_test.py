@@ -6,7 +6,6 @@
 import os
 import datetime
 
-from src import BASE_DIR
 from src.base_database import BaseDatabase
 from src.engine import Engine
 from src.guests import Guest
@@ -27,7 +26,7 @@ class TestGuests(BaseAsyncTests):
         current_members view.
         """
         self.bd = BaseDatabase()
-        path = os.path.join(BASE_DIR, 'data', 'tests')
+        path = os.path.join('data', 'tests')
         self.bd.db_fullpath = (path, self.TEST_DB, False)
         # Create tables and views.
         self.tables_and_views = {

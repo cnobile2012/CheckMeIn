@@ -7,7 +7,6 @@ import os
 import datetime
 import unittest
 
-from src import BASE_DIR
 from src.base_database import BaseDatabase
 from src.log_events import LogEvents
 
@@ -22,7 +21,7 @@ class TestLogEvents(BaseAsyncTests):
 
     async def asyncSetUp(self):
         self.bd = BaseDatabase()
-        self.bd.db_fullpath = (os.path.join(BASE_DIR, 'data', 'tests'),
+        self.bd.db_fullpath = (os.path.join('data', 'tests'),
                                self.TEST_DB, False)
         # Create tables and views.
         self.tables_and_views = {'tables': (self.bd._T_LOG_EVENTS,)}

@@ -3,8 +3,6 @@
 # src/custom_reports.py
 #
 
-import aiosqlite
-
 from . import AppConfig
 from .base_database import BaseDatabase
 
@@ -17,19 +15,14 @@ class CustomReports:
         self._log = AppConfig().log
 
     async def custom_sql(self, sql):
-        try:
-            rows, description = await self.BD._do_select_read_only(sql)
-        except aiosqlite.OperationalError as e:
-            error = "Invalid SQL: "
-            self._log.error(error + "%s, %s", sql, e)
-            error += str(e)
-            rows = None
-            header = None
-        else:
-            error = ''
-            header = [column[0] for column in description]
+        rows, columns = await self.BD._do_select_read_only(sql)
 
-        return header, rows, error
+        if rows and columns:
+            error = ''
+        else:
+            error = f"Invalid SQL: {sql}."
+
+        return columns, rows, error
 
     async def custom_report(self, report_id):
         error = ""
@@ -46,12 +39,12 @@ class CustomReports:
             # Probably don't need to test all three, but it gives me the
             # warm fuzzies.
             if header is None or rows is None or error:
-                ret = (name, sql, None, None, error)
+                ret = (name, sql, [], [], error)
             else:
                 ret = (name, sql, header, rows, error)
         else:
             error = f"Could not find report with report_id '{report_id}'."
-            ret = ("", "", None, None, error)
+            ret = ("", "", [], [], error)
 
         return ret
 

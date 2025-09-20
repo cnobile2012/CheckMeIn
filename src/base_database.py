@@ -24,7 +24,10 @@ def custom_converter(value):
     """
     Converter: ISO string → datetime
     """
-    return datetime.datetime.fromisoformat(value.decode("utf-8"))
+    if isinstance(value, bytes):
+        value = value.decode("utf-8")
+
+    return datetime.datetime.fromisoformat(value)
 
 
 aiosqlite.register_adapter(datetime.datetime, adapt_datetime)
@@ -150,7 +153,6 @@ class BaseDatabase(Borg):
          'ON visits(barcode);'),
         )
     _DETECT_TYPES = sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES
-    _log = AppConfig().log
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -159,6 +161,7 @@ class BaseDatabase(Borg):
                         if var.startswith('_T_')]
         self._VIEWS = [getattr(self, var) for var in dir(self)
                        if var.startswith('_V_')]
+        self._log = AppConfig().log
 
     @classmethod
     def read_config(cls, fullpath: str, section_key: dict):
@@ -175,21 +178,21 @@ class BaseDatabase(Borg):
                   {<section0>: {<key0>: <value0>, <key1>: <value1>, ...),
                    <section1>: {<key0>: <value0>, <key1>: <value1>, ...)}
         """
+        log = AppConfig().log
         items = {}
         config = ConfigParser()
         result = config.read(fullpath)
 
         if result == []:
-            cls._log.error("An invalid config file or path, found %s",
-                           fullpath)
+            log.error("An invalid config file or path, found %s", fullpath)
 
         for section, keys in section_key.items():
             for key in keys:
                 try:
                     value = eval(config[section][key])
                 except KeyError:
-                    cls._log.error("Invalid section and/or key, section: "
-                                   "%s, key: %s", section, key)
+                    log.error("Invalid section and/or key, section: "
+                              "%s, key: %s", section, key)
                 else:
                     values = items.setdefault(section, {})
                     values[key] = value
@@ -231,7 +234,7 @@ class BaseDatabase(Borg):
             fullpath = os.path.join(BASE_DIR, path)
 
             if not prod_or_dev and not os.path.exists(path):
-                os.mkdir(fullpath, mode=0o775)
+                os.mkdir(fullpath, mode=0o775)  # pragma: no cover
 
             fullpath = os.path.join(fullpath, filename)
 
@@ -253,7 +256,7 @@ class BaseDatabase(Borg):
 
         if not check:
             msg = ("Database table count or names are wrong it should be "
-                   f"{table_names} found {tables_views}")
+                   f"{tables_views} found {table_names}")
             self._log.error(msg)
 
         return check
@@ -331,21 +334,26 @@ class BaseDatabase(Borg):
 
         return value
 
-    async def _do_select_read_only(self, query, params: tuple=(),
+    async def _do_select_read_only(self, query: str, params: tuple=(),
                                    fetchone=False) -> tuple:
         path = f"file:{self.db_fullpath}?mode=ro"
 
         async with aiosqlite.connect(path, detect_types=self._DETECT_TYPES,
                                      uri=True) as db:
-            async with db.execute(query, params) as cursor:
-                description = cursor.description
+            try:
+                async with db.execute(query, params) as cursor:
+                    columns = [row[0] for row in cursor.description]
 
-                if fetchone:
-                    data = await cursor.fetchone()
-                else:
-                    data = await cursor.fetchall()
+                    if fetchone:
+                        data = await cursor.fetchone()
+                    else:
+                        data = await cursor.fetchall()
+            except aiosqlite.OperationalError as e:
+                self._log.error("Invalid query %s, %s", query, e)
+                data = []
+                columns = []
 
-        return data, description
+        return data, columns
 
     async def _do_insert_query(self, query: str, data: list) -> int:
         """
@@ -390,11 +398,11 @@ class BaseDatabase(Borg):
         :param str query: The SQL query to do.
         :param list or tuple data: Data used to insert, update, or delete
                                    items from a table.
-        :returns: Number of rows affected by the query or 'None' of an
+        :returns: Number of rows affected by the query or '0' if an
                   exception was raised.
         :rtype: int or None
         """
-        assert ';' in query, "The query {query} does not end with a ';'"
+        assert ';' in query, f"The query {query} does not end with a ';'."
 
         # Normalize: single row -> list of one row
         if data and (isinstance(data, dict) or
@@ -413,7 +421,7 @@ class BaseDatabase(Borg):
                     await db.execute("BEGIN;")
 
                 for stmt in queries:
-                    if not stmt:
+                    if not stmt:  # pragma: no cover
                         continue
 
                     cursor = await db.executemany(stmt, data)
@@ -424,6 +432,5 @@ class BaseDatabase(Borg):
                 await db.rollback()
                 self._log.error("Error with data %s, %s", data, e,
                                 exc_info=True)
-                rowcount = 0
 
         return rowcount

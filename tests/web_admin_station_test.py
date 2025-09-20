@@ -32,7 +32,7 @@ class BaseTestAdmin(BaseAsyncTests):
     async def asyncSetUp(self):
         cherrypy.session = sessions.RamSession()
         self.bd = BaseDatabase()
-        path = os.path.join(BASE_DIR, 'data', 'tests')
+        path = os.path.join('data', 'tests')
         self.bd.db_fullpath = (path, self.TEST_DB, False)
         # Create tables and views.
         tables_and_views = {

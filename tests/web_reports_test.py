@@ -11,7 +11,6 @@ import cherrypy
 from cherrypy.lib import sessions
 from mako.lookup import TemplateLookup
 
-from src import BASE_DIR
 from src.accounts import Role
 from src.assets import TOOLS
 from src.base_database import BaseDatabase
@@ -31,7 +30,7 @@ class BaseReportsTest(BaseAsyncTests):
     async def asyncSetUp(self):
         cherrypy.session = sessions.RamSession()
         self.bd = BaseDatabase()
-        path = os.path.join(BASE_DIR, 'data', 'tests')
+        path = os.path.join('data', 'tests')
         self.bd.db_fullpath = (path, self.TEST_DB, False)
         # Create tables and views.
         tables_and_views = {
@@ -211,11 +210,12 @@ class TestReports(BaseReportsTest):
         Test that the saved_custom method will generate the SQL report and
         renderes HTML from the custom_sql.mako template.
         """
-        msg_err0 = "Invalid SQL: no such table: invalid_table"
+        query = 'SELECT * FROM invalid_table;'
+        msg_err0 = f"Invalid SQL: {query}."
         msg_err1 = "Could not find report with report_id "
         data = (
             (1, 'Get All Members', "SELECT * FROM members;", 'Num results: 5'),
-            (2, 'Invalid SQL', 'SELECT * FROM invalid_table;', msg_err0),
+            (2, 'Invalid SQL', query, msg_err0),
             (9, '', '', msg_err1),
             )
 
@@ -232,10 +232,11 @@ class TestReports(BaseReportsTest):
         the database then returns a rendered HTML from the custom_sql.mako
         template.
         """
-        err_msg0 = "Invalid SQL: no such table: invalid_table"
+        query = "SELECT * FROM invalid_table;"
+        err_msg0 = f"Invalid SQL: {query}."
         data = (
             ("SELECT * FROM members;", ''),
-            ("SELECT * FROM invalid_table;", err_msg0),
+            (query, err_msg0),
             )
 
         for sql, expected in data:

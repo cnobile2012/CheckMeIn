@@ -12,7 +12,6 @@ from unittest.mock import patch
 
 from manage import Manage
 
-from src import BASE_DIR
 from src.accounts import Role
 from src.base_database import BaseDatabase
 from src.engine import Engine
@@ -32,12 +31,12 @@ class TestManage(BaseAsyncTests):
         current_members view.
         """
         self.bd = BaseDatabase()
-        path = os.path.join(BASE_DIR, 'data', 'tests')
+        path = os.path.join('data', 'tests')
         self.bd.db_fullpath = (path, self.TEST_DB, False)
         # Create tables and views.
         self.tables_and_views = {
-            'tables': (self.bd._T_ACCOUNTS, self.bd._T_MEMBERS,
-                       self.bd._T_CONFIG,
+            'tables': (self.bd._T_ACCOUNTS, self.bd._T_CONFIG,
+                       self.bd._T_MEMBERS,
                        ),
             'views': (self.bd._V_CURRENT_MEMBERS,)
             }
