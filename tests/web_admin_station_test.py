@@ -5,9 +5,9 @@
 
 import os
 import json
+import datetime
 import unittest
 import cherrypy
-import datetime
 
 from cherrypy.lib import sessions
 from mako.lookup import TemplateLookup
