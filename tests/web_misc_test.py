@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 #
-# tests/misc_tests.py
+# tests/misc_test.py
 #
 
 import unittest
 
-from .base_cp_test import CPTest
+from .base_test import BaseAsyncTests
 
 
-class MiscTest(CPTest):
+class TestMisc(BaseAsyncTests):
 
     @unittest.skip("Temporarily disabled")
     def test_whoishere(self):

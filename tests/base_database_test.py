@@ -139,7 +139,7 @@ class TestBaseDatabase(BaseAsyncTests):
         err_msg0 = "An invalid config file or path, found"
         err_msg1 = "Invalid section and/or key, section: "
         data = (
-            (fullpath, sections, True, ('data/tests', 'checkmein.db')),
+            (fullpath, sections, True, ('data', 'checkmein.db')),
             ('', {}, False, (err_msg0, '')),
             (fullpath, {'junk': ('nothing', 'everything')}, False,
              (err_msg1, '')),

@@ -63,7 +63,6 @@ class WebMainStation(WebBase):
 
                 if error:
                     self._log.error(error)
-                    # cherrypy.log(error)
 
         raise cherrypy.HTTPRedirect("/station")
 
@@ -80,8 +79,8 @@ class WebMainStation(WebBase):
     @cherrypy.expose
     def checkout(self, barcode, called=False):
         barcodes = [bc.strip() for bc in barcode.split()]
-        current_keyholder_bc, _ = self.engine.run_async(
-            self.engine.accounts.get_active_key_holder())
+        current_keyholder_bc = self.engine.run_async(
+            self.engine.accounts.get_active_key_holder())[0]
         leaving_keyholder_bc = self.engine.run_async(
             self.engine.checkout(current_keyholder_bc, barcodes))
 

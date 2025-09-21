@@ -88,7 +88,7 @@ ${self.logo()}
             <ul>
     % for team in active_teams_coached:
                 <li><a href="/teams?team_id=${team.team_id}">
-                    ${team.program_id()} - ${team.name}</a>
+                    ${team.program_id} - ${team.name}</a>
                 </li>
     % endfor
             </ul>

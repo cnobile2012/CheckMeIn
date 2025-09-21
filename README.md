@@ -1,9 +1,15 @@
 
 [comment]: # (-*-coding: utf-8-*-)
 # CheckMeIn
-[![License](https://img.shields.io/badge/license-MIT-green)](https://en.wikipedia.org/wiki/MIT_License)
-[![Build Status](https://github.com/cnobile2012/CheckMeIn/actions/workflows/main.yml/badge.svg?branch=development)](https://github.com/cnobile2012/CheckMeIn/actions/workflows/main.yml)
-[![Coverage Status](https://coveralls.io/repos/github/cnobile2012/CheckMeIn/badge.svg?branch=development&dummy=987654321)](https://coveralls.io/github/cnobile2012/CheckMeIn?branch=development)
+
+[![License](https://img.shields.io/badge/license-MIT-green)]
+(https://en.wikipedia.org/wiki/MIT_License)
+
+[![Build Status](https://github.com/cnobile2012/CheckMeIn/actions/workflows/main.yml/badge.svg?branch=development)]
+(https://github.com/cnobile2012/CheckMeIn/actions/workflows/main.yml)
+
+[![Coverage Status](https://coveralls.io/repos/github/cnobile2012/CheckMeIn/badge.svg?branch=development&dummy=987654321)]
+(https://coveralls.io/github/cnobile2012/CheckMeIn?branch=development)
 
 A system for checking into and out of a building
 

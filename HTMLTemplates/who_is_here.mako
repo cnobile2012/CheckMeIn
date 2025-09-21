@@ -30,7 +30,7 @@
                                value="out"/>
                     </td>
                     <td>${member.display_name}</td>
-                    <td>${member.start.strftime("%I:%M %p")}</td>
+                    <td>${member.enter_time.strftime("%I:%M %p")}</td>
                 </tr>
 % endfor
             </table>

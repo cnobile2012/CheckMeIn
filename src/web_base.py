@@ -7,6 +7,8 @@ import re
 import datetime
 import cherrypy
 
+from mako import exceptions
+
 from . import AppConfig
 from .accounts import Role
 
@@ -50,11 +52,18 @@ class WebBase:
     def _get_barcode_no_login(self):
         return Cookie('barcode').get(None)
 
-    def template(self, name, **kwargs):
+    def template(self, template, **kwargs):
         barcode = self._get_barcode_no_login()
         logo_link = f'/links/?barcode={barcode}' if barcode else '/links/'
-        return self.lookup.get_template(name).render(
-            logo_link=logo_link, **kwargs)
+
+        try:
+            return self.lookup.get_template(template).render(
+                logo_link=logo_link, **kwargs)
+        except Exception:
+            # Print the nice traceback to console (or logs)
+            self._log.error(exceptions.text_error_template().render())
+            # Re-raise so CherryPy still returns an error
+            raise
 
     def has_permissions_no_login(self, role_check):
         role = Role(Cookie('role').get(0))

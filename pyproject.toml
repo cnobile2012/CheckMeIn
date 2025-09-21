@@ -20,7 +20,7 @@ license = {file = "LICENSE"}
 #Repository = "https://github.com/"
 
 [tool.coverage.run]
-include = ['src/**', 'manage.py']  # , 'checkMeIn.py'
+include = ['src/**', 'checkMeIn.py', 'manage.py']
 omit = ['*/tests/*', '*/HTMLTemplates/*']
 
 [tool.coverage.report]

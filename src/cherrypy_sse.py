@@ -19,8 +19,12 @@ class Portier(threading.Thread):
         super().__init__(*args, **kwargs)
         self._channel = channel
         self._e = threading.Event()
-        # self.name = f"Portier-{self.name}"
         cherrypy.engine.subscribe(channel, self._msgs)
+        self._subscribed = True
+
+    @property
+    def is_subscribed(self):
+        return self._subscribed
 
     @property
     def message(self):
@@ -39,13 +43,22 @@ class Portier(threading.Thread):
 
     def messages(self):
         """
-        The Doorman's door, yields the messages as they appear on
+        The Doorman's door yields the messages as they appear on
         the bus channel.
         """
-        while True:
-            self._e.wait()
-            yield self._message
-            self._e.clear()  # pragma: no cover
+        try:
+            while True:
+                self._e.wait()
+                yield self._message
+                self._e.clear()  # pragma: no cover
+        except GeneratorExit:
+            # Client disconnected or generator closed
+            self.unsubscribe()
+            raise
+        finally:
+            # Extra safety net
+            if self.is_subscribed:  # pragma: no cover
+                self.unsubscribe()
 
     def _msgs(self, message):
         """
@@ -56,6 +69,7 @@ class Portier(threading.Thread):
     def unsubscribe(self):
         """
         Unsubscribe from the message stream, signals to remove the thread
-        from the heartbet stream
+        from the heartbeat stream.
         """
         cherrypy.engine.unsubscribe(self._channel, self._msgs)
+        self._subscribed = False

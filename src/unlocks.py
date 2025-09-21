@@ -5,6 +5,7 @@
 
 import datetime
 
+from . import AppConfig
 from .base_database import BaseDatabase
 
 
@@ -13,6 +14,7 @@ class Unlocks:
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._log = AppConfig().log
 
     async def add_unlocks(self, data: list) -> int:
         query = ("INSERT INTO unlocks (time, location, barcode) "

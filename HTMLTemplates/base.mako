@@ -33,7 +33,7 @@ $(document).ready(function() {
     });
 });
 
-var entityMap = {
+var entity_map = {
   "&": "&amp;",
   "<": "&lt;",
   ">": "&gt;",
@@ -44,7 +44,7 @@ var entityMap = {
 
 function escapeHTML(string) {
     return String(string).replace(/[&<>"'\/]/g, function(s) {
-        return entityMap[s];
+        return entity_map[s];
     });
 }
 </script>
