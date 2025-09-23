@@ -20,7 +20,7 @@ from .base_test import BaseAsyncTests
 from .sample_data import timeAgo, TEST_DATA
 
 
-class BaseTestGuestStation(BaseAsyncTests):
+class TestGuestStation(BaseAsyncTests):
 
     def __init__(self, name, *args, **kwargs):
         super().__init__(name, *args, **kwargs)
@@ -70,12 +70,6 @@ class BaseTestGuestStation(BaseAsyncTests):
                     }
 
         return result
-
-
-class TestGuestStation(BaseTestGuestStation):
-
-    def __init__(self, name, *args, **kwargs):
-        super().__init__(name, *args, **kwargs)
 
     #@unittest.skip("Temporarily skipped")
     def test_index(self):
@@ -167,84 +161,3 @@ class TestGuestStation(BaseTestGuestStation):
             html = self._wgs.return_guest(guest_id)
             #print(html)
             self.assertIn(expected, html)
-
-
-class GuestTest(BaseTestGuestStation):
-
-    def __init__(self, name, *args, **kwargs):
-        super().__init__(name, *args, **kwargs)
-
-    @unittest.skip("Temporarily skipped")
-    def test_guests(self):
-        with self.patch_session():
-            self.getPage("/guests/")
-
-        self.assertStatus('200 OK')
-
-    @unittest.skip("Temporarily skipped")
-    def test_add_guest(self):
-        with self.patch_session():
-            self.getPage("/guests/add_guest?first=Fred&last=Guest&email="
-                         "&reason=Tour&other_reason=&newsletter=1")
-
-        self.assertStatus('200 OK')
-
-    @unittest.skip("Temporarily skipped")
-    def test_add_guest_2(self):
-        with self.patch_session():
-            self.getPage("/guests/add_guest?first=Anne&last=Guest&email="
-                         "&reason=Tour&other_reason=&newsletter=1")
-
-        self.assertStatus('200 OK')
-
-    @unittest.skip("Temporarily skipped")
-    def test_add_guest_blankname(self):
-        with self.patch_session():
-            self.getPage("/guests/add_guest?first=&last=Guest&email="
-                         "&reason=Tour&other_reason=&newsletter=1")
-
-        self.assertStatus('200 OK')
-
-    @unittest.skip("Temporarily skipped")
-    def test_add_guest_other_reason(self):
-        with self.patch_session():
-            self.getPage("/guests/add_guest?first=First&last=Guest&email="
-                         "&reason=&other_reason=Random&newsletter=1")
-
-        self.assertStatus('200 OK')
-
-    @unittest.skip("Temporarily skipped")
-    def test_leave_guest_no_comments(self):
-        with self.patch_session():
-            self.getPage("/guests/leave_guest?guest_id=202107310001")
-
-        self.assertStatus('200 OK')
-
-    @unittest.skip("Temporarily skipped")
-    def test_leave_guest_with_comments(self):
-        with self.patch_session():
-            self.getPage("/guests/leave_guest?guest_id=202107310001"
-                         "&comments=Interested%20in%20donating")
-
-        self.assertStatus('200 OK')
-
-    @unittest.skip("Temporarily skipped")
-    def test_leave_guest_error(self):
-        with self.patch_session():
-            self.getPage("/guests/leave_guest?guest_id=error")
-
-        self.assertStatus('200 OK')
-
-    @unittest.skip("Temporarily skipped")
-    def test_return_guest(self):
-        with self.patch_session():
-            self.getPage("/guests/return_guest?guest_id=202107310001")
-
-        self.assertStatus('200 OK')
-
-    @unittest.skip("Temporarily skipped")
-    def test_return_guest_error(self):
-        with self.patch_session():
-            self.getPage("/guests/return_guest?guest_id=error")
-
-        self.assertStatus('200 OK')

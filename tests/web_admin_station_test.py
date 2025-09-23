@@ -20,11 +20,11 @@ from src.engine import Engine
 from src.web_admin_station import WebAdminStation
 from src.web_base import Cookie
 
-from .base_test import BaseAsyncTests, run_server, exit_server
+from .base_test import BaseAsyncTests
 from .sample_data import timeAgo, TEST_DATA
 
 
-class BaseTestAdmin(BaseAsyncTests):
+class TestAdmin(BaseAsyncTests):
 
     def __init__(self, name, *args, **kwargs):
         super().__init__(name, *args, **kwargs)
@@ -98,12 +98,6 @@ class BaseTestAdmin(BaseAsyncTests):
                     }
 
         return result
-
-
-class TestAdmin(BaseTestAdmin):
-
-    def __init__(self, name, *args, **kwargs):
-        super().__init__(name, *args, **kwargs)
 
     #@unittest.skip("Temporarily disabled")
     def test_check_permissions(self):
@@ -452,186 +446,3 @@ class TestAdmin(BaseTestAdmin):
             for device in devices:
                 self.assertEqual(name, device['name'])
                 self.assertEqual(mac, device['mac'])
-
-
-#def setUpModule():
-#    run_server()
-
-
-#def tearDownModule():
-#    exit_server()
-
-
-class TestPageAccess(BaseTestAdmin):
-
-    @unittest.skip("Temporarily disabled")
-    def test_admin(self):
-        resp = self.get("/admin/")
-        self.assertEqual(resp.status_code, 200)
-
-    @unittest.skip("Temporarily disabled")
-    def test_empty_building(self):
-        """
-        This is done at 2am.
-        """
-        resp = self.get("/admin/empty_building")
-        self.assertEqual(resp.status_code, 200)
-
-    @unittest.skip("Temporarily disabled")
-    def test_change_grace_period(self):
-        resp = self.get("/admin/set_grace_period?grace=30")
-        self.assertEqual(resp.status_code, 200)
-
-    @unittest.skip("Temporarily disabled")
-    async def test_bulk_add_members(self):
-        filecontents = (
-            '"First Name","Last Name","TFI Barcode for Button",'
-            '"TFI Barcode AUTO","TFI Barcode AUTONUM",'
-            '"TFI Display Name for Button","Membership End Date"\n'
-            '"Sasha","Mellendorf","101337","","101337","Sasha M","6/30/2020"\n'
-            '"Linda","Whipker","100063","","101387","","6/30/2020"\n'
-            '"Random","Joe","100032","","101387","","6/30/2020"\n'
-            '"Test","User","","","101387","",""\n')
-        filesize = len(filecontents)
-        h = [('Content-type', 'multipart/form-data; boundary=x'),
-             ('Content-Length', str(108 + filesize))]
-        b = ('--x\n'
-             'Content-Disposition: form-data; name="csvfile"; '
-             'filename="bulkadd.csv"\r\n'
-             'Content-Type: text/plain\r\n'
-             '\r\n')
-        b += filecontents + '\n--x--\n'
-
-        with self.patch_session():
-            self.getPage('/admin/bulk_add_members', h, 'POST', b)
-            self.assertStatus('200 OK')
-
-    @unittest.skip("Temporarily disabled")
-    async def test_fix_data(self):
-        with self.patch_session():
-            self.getPage("/admin/fix_data?date=2018-06-28")
-            self.assertStatus('200 OK')
-
-    @unittest.skip("Temporarily disabled")
-    async def test_fixed_data(self):
-        with self.patch_session():
-            self.getPage("/admin/fixed_data?output=3%212018-06-28+2%3A25PM%21"
-                         "2018-06-28+3%3A25PM%2C18%212018-06-28+7%3A9PM%21"
-                         "2018-06-28+11%3A3PM%2C")
-            self.assertStatus('200 OK')
-
-    @unittest.skip("Temporarily disabled")
-    async def test_fix_data_no_output(self):
-        with self.patch_session():
-            self.getPage("/admin/fixed_data?output=")
-            self.assertStatus('200 OK')
-
-    @unittest.skip("Temporarily disabled")
-    async def test_update_present(self):
-        with self.patch_session():
-            self.getPage("/admin/update_present")
-            self.assertStatus('200 OK')
-
-    @unittest.skip("Temporarily disabled")
-    async def test_admin_teams(self):
-        with self.patch_session():
-            self.getPage("/admin/teams")
-            self.assertStatus("200 OK")
-
-    @unittest.skip("Temporarily disabled")
-    async def test_add_team(self):
-        with self.patch_session():
-            self.getPage("/admin/add_team?program_name=TFI"
-                         "&program_number=123&team_name=Building%20Garbage"
-                         "&start_date=2021-07-31&coach1=100091&coach2=100090")
-            self.assertStatus("200 OK")
-
-    @unittest.skip("Temporarily disabled")
-    async def test_add_team_duplicate(self):
-        with self.patch_session():
-            self.getPage("/admin/add_team?program_name=TFI"
-                         "&program_number=123&team_name=Building%20Garbage"
-                         "&start_date=2021-07-31&coach1=100091&coach2=100090")
-            self.assertStatus("200 OK")
-
-    @unittest.skip("Temporarily disabled")
-    async def test_deactivate_team(self):
-        with self.patch_session():
-            self.getPage("/admin/deactivate_team?team_id=1")
-            self.assertStatus("303 See Other")
-
-    @unittest.skip("Temporarily disabled")
-    async def test_activate_team(self):
-        with self.patch_session():
-            self.getPage("/admin/activate_team?team_id=1")
-            self.assertStatus("303 See Other")
-
-    @unittest.skip("Temporarily disabled")
-    async def test_delete_team(self):
-        with self.patch_session():
-            self.getPage("/admin/delete_team?team_id=100")
-            self.assertStatus("303 See Other")
-
-    @unittest.skip("Temporarily disabled")
-    async def test_edit_team(self):
-        with self.patch_session():
-            self.getPage("/admin/edit_team?team_id=100&program_name=FRC"
-                         "&program_number=3459&start_date=2021-07-31")
-            self.assertStatus("303 See Other")
-
-    @unittest.skip("Temporarily disabled")
-    async def test_users(self):
-        with self.patch_session():
-            self.getPage("/admin/users")
-            self.assertStatus('200 OK')
-
-    @unittest.skip("Temporarily disabled")
-    async def test_add_user(self):
-        with self.patch_session():
-            self.getPage("/admin/add_user?user=Fred&barcode=100093")
-            self.assertStatus("200 OK")
-
-    @unittest.skip("Temporarily disabled")
-    async def test_add_user_no_name(self):
-        with self.patch_session():
-            self.getPage("/admin/add_user?user=&barcode=100042")
-            self.assertStatus("200 OK")
-
-    @unittest.skip("Temporarily disabled")
-    async def test_add_user_duplicate(self):
-        with self.patch_session():
-            self.getPage("/admin/add_user?user=Fred&barcode=100093")
-            self.assertStatus('200 OK')
-
-    @unittest.skip("Temporarily disabled")
-    async def test_delete_user(self):
-        with self.patch_session():
-            self.getPage("/admin/delete_user?barcode=100093")
-            self.assertStatus("303 See Other")
-
-    @unittest.skip("Temporarily disabled")
-    async def test_change_access(self):
-        with self.patch_session():
-            self.getPage(
-                "/admin/change_access?barcode=100091&admin=1&keyholder=1")
-            self.assertStatus('303 See Other')
-
-    @unittest.skip("Temporarily disabled")
-    async def test_not_logged_in(self):
-        with self.patch_session_none():
-            self.getPage("/admin/")
-            self.assertStatus('303 See Other')
-
-    @unittest.skip("Temporarily disabled")
-    async def test_get_keyholder_json(self):
-        with self.patch_session():
-            self.getPage("/admin/get_keyholder_json")
-            self.assertStatus('200 OK')
-
-    # This is an odd ball test that shouldn't be in this test module.
-    # Also, just passing the barcode=barcode will never work properly.
-    # @unittest.skip("Temporarily disabled")
-    # async def test_remove_from_who_is_here(self):
-    #     with self.patch_session():
-    #         self.getPage("/checkout_who_is_here?100091=100091")
-    #         self.assertStatus("200 OK")

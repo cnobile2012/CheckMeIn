@@ -22,7 +22,8 @@ from .base_test import BaseAsyncTests
 from .sample_data import TEST_DATA
 
 
-class BaseProfileTest(BaseAsyncTests):
+class TestProfile(BaseAsyncTests):
+    TOKEN_REGEX = r'^.*&token=(?P<token>.+) to reset.*$'
 
     def __init__(self, name, *args, **kwargs):
         super().__init__(name, *args, **kwargs)
@@ -85,13 +86,6 @@ class BaseProfileTest(BaseAsyncTests):
                     }
 
         return result
-
-
-class TestProfile(BaseProfileTest):
-    TOKEN_REGEX = r'^.*&token=(?P<token>.+) to reset.*$'
-
-    def __init__(self, name, *args, **kwargs):
-        super().__init__(name, *args, **kwargs)
 
     #@unittest.skip("Temporarily disabled")
     def test_logout(self):
@@ -251,114 +245,3 @@ class TestProfile(BaseProfileTest):
         """
         with self.assertRaises(cherrypy.HTTPRedirect):
             self._wp.del_device('87:65:43:21:00:54')
-
-
-class TestWebProfile(BaseProfileTest):
-
-    def __init__(self, name, *args, **kwargs):
-        super().__init__(name, *args, **kwargs)
-
-    @unittest.skip("Temporarily disabled")
-    def test_login(self):
-        with self.patch_session():
-            self.getPage("/profile/login")
-
-        self.assertStatus('200 OK')
-
-    @unittest.skip("Temporarily skipped")
-    def test_login_attempt_good(self):
-        with self.patch_session():
-            self.getPage(
-                "/profile/login_attempt?username=admin&password=password")
-
-        self.assertStatus('303 See Other')
-
-    @unittest.skip("Temporarily disabled")
-    def test_login_attempt_bad(self):
-        with self.patch_session():
-            self.getPage("/profile/login_attempt?username=alan&password=wrong")
-
-        self.assertStatus('200 OK')
-
-    @unittest.skip("Temporarily disabled")
-    def test_profile(self):
-        with self.patch_session():
-            self.getPage("/profile/")
-            self.assertStatus('200 OK')
-
-    @unittest.skip("Temporarily disabled")
-    def test_logout(self):
-        with self.patch_session():
-            self.getPage("/profile/logout")
-            self.assertStatus('303 See Other')
-
-    @unittest.skip("Temporarily disabled")
-    def test_forgot_password(self):
-        with self.patch_session():
-            self.getPage("/profile/forgot_password?user=admin")
-
-    @unittest.skip("Temporarily disabled")
-    def test_forgot_password_repeat(self):
-        with self.patch_session():
-            self.getPage("/profile/forgot_password?user=admin")
-
-    @unittest.skip("Temporarily disabled")
-    def test_forgot_password_noaccount(self):
-        with self.patch_session():
-            self.getPage("/profile/forgot_password?user=noaccount")
-
-    @unittest.skip("Temporarily disabled")
-    def test_forgot_password_email(self):
-        with self.patch_session():
-            self.getPage("/profile/forgot_password?user=fake%40email.com")
-
-    @unittest.skip("Temporarily disabled")
-    def test_reset_password_token(self):
-        with self.patch_session():
-            self.getPage("/profile/reset_password_token"
-                         "?user=admin&token=123456")
-            self.assertStatus("200 OK")
-
-    @unittest.skip("Temporarily disabled")
-    def test_change_password(self):
-        with self.patch_session():
-            self.getPage("/profile/change_password?old_pass=password"
-                         "&new_pass1=password&new_pass2=password")
-
-    @unittest.skip("Temporarily disabled")
-    def test_change_password_wrong(self):
-        with self.patch_session():
-            self.getPage("/profile/change_password?old_pass=wrong"
-                         "&new_pass1=password&new_pass2=password")
-
-    @unittest.skip("Temporarily disabled")
-    def test_change_password_mimatch(self):
-        with self.patch_session():
-            self.getPage("/profile/change_password?old_pass=password"
-                         "&new_pass1=pass&new_pass2=password")
-
-    @unittest.skip("Temporarily disabled")
-    def test_new_password(self):
-        with self.patch_session():
-            self.getPage("/profile/new_password?user=admin"
-                         "&token=123456&new_pass1=password&new_pass2=password")
-
-    @unittest.skip("Temporarily disabled")
-    def test_new_password_mismatch(self):
-        with self.patch_session():
-            self.getPage("/profile/new_password?user=admin"
-                         "&token=123456&new_pass1=password&new_pass2=pass")
-
-    @unittest.skip("Temporarily disabled")
-    def test_add_device(self):  # Has warnings
-        with self.patch_session():
-            self.getPage("/profile/add_device?mac=12:34:56:78&name=dummy")
-            self.assertStatus("303 See Other")
-            self.getPage("/profile/")
-            self.assertStatus("200 OK")
-
-    @unittest.skip("Temporarily disabled")
-    def test_del_device(self):
-        with self.patch_session():
-            self.getPage("/profile/del_device?mac=12:34:56:78")
-            self.assertStatus("303 See Other")

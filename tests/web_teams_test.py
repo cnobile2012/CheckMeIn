@@ -23,7 +23,7 @@ from .base_test import BaseAsyncTests
 from .sample_data import TEST_DATA
 
 
-class BaseTeamsTest(BaseAsyncTests):
+class TestTeams(BaseAsyncTests):
 
     def __init__(self, name, *args, **kwargs):
         super().__init__(name, *args, **kwargs)
@@ -98,16 +98,11 @@ class BaseTeamsTest(BaseAsyncTests):
 
         return result
 
-
-class TestTeams(BaseTeamsTest):
-
-    def __init__(self, name, *args, **kwargs):
-        super().__init__(name, *args, **kwargs)
-
     #@unittest.skip("Temporarily disabled")
     def test_check_permissions(self):
         """
-        Test that the check_permissions method 
+        Test that the check_permissions method only lets in users that
+        have the correct roles.
         ADMIN = 0xFF
         COACH = 0x04
         SHOP_CERTIFIER = 0x08
@@ -284,113 +279,3 @@ class TestTeams(BaseTeamsTest):
 
                 with self.assertRaises(cherrypy.HTTPRedirect):
                     self._wt.update(team_id, **params)
-
-
-class TeasWebTeam(BaseTeamsTest):
-
-    def __init__(self, name, *args, **kwargs):
-        super().__init__(name, *args, **kwargs)
-
-    @unittest.skip("Temporarily disabled")
-    def patch_session_coach_alan(self):
-        return self.patch_session('alan', '100091', 0x04)
-
-    @unittest.skip("Temporarily disabled")
-    def patch_session_coach_abigail(self):
-        return self.patch_session('abigail', '100090', 0x04)
-
-    @unittest.skip("Temporarily disabled")
-    def patch_session_noncoach(self):
-        return self.patch_session('john', '100089', 0x01)
-
-    @unittest.skip("Temporarily disabled")
-    def test_blank_index(self):
-        with self.patch_session():
-            self.getPage("/teams/")
-            self.assertStatus('303 See Other')
-
-    @unittest.skip("Temporarily skipped")
-    def test_index(self):
-        with self.patch_session():
-            self.getPage("/teams/?team_id=1")
-            self.assertStatus('200 OK')
-
-    @unittest.skip("Temporarily disabled")
-    def test_index_coach_good(self):
-        with self.patch_session_coach_alan():
-            self.getPage("/teams/?team_id=1")
-            self.assertStatus('200 OK')
-
-    @unittest.skip("Temporarily disabled")
-    def test_index_coach_bad(self):
-        with self.patch_session_coach_abigail():
-            self.getPage("/teams/?team_id=1")
-            self.assertStatus('303 See Other')
-
-    @unittest.skip("Temporarily disabled")
-    def test_index_noncoach(self):
-        with self.patch_session_noncoach():
-            self.getPage("/teams/?team_id=1")
-            self.assertStatus('303 See Other')
-
-    @unittest.skip("Temporarily disabled")
-    def test_index_bad(self):
-        with self.patch_session_none():
-            self.getPage("/teams/?team_id=35")
-            self.assertStatus('303 See Other')
-
-    @unittest.skip("Temporarily disabled")
-    def test_attendance(self):
-        with self.patch_session():
-            self.getPage("/teams/attendance?team_id=1&date=2020-12-31"
-                         "&start_time=18%3A00&end_time=20%3A00")
-
-    @unittest.skip("Temporarily disabled")
-    def test_add_member(self):
-        with self.patch_session():
-            self.getPage("/teams/add_member?team_id=1&member=100090&type=1")
-            self.assertStatus('303 See Other')
-
-    @unittest.skip("Temporarily disabled")
-    def test_add_member_duplicate(self):
-        with self.patch_session():
-            self.getPage("/teams/add_member?team_id=1&member=100090&type=1")
-            self.assertStatus('303 See Other')
-
-    @unittest.skip("Temporarily disabled")
-    def test_remove_member(self):
-        with self.patch_session():
-            self.getPage("/teams/remove_member?team_id=1&member=100090")
-            self.assertStatus('303 See Other')
-
-    @unittest.skip("Temporarily disabled")
-    def test_rename_team(self):
-        with self.patch_session():
-            self.getPage("/teams/rename_team?team_id=1&new_name=Fred")
-            self.assertStatus('303 See Other')
-
-    @unittest.skip("Temporarily disabled")
-    def test_new_season(self):
-        with self.patch_session():
-            self.getPage(
-                "/teams/new_season?team_id=1&start_date=2021-08-01&100091=2")
-            self.assertStatus('303 See Other')
-
-    @unittest.skip("Temporarily disabled")
-    def test_update(self):
-        with self.patch_session():
-            self.getPage("/teams/update?team_id=1&100091=in&100090=out")
-            self.assertStatus('303 See Other')
-
-    # *** TODO *** Fix me, I don't pass when just this test class is run.
-    @unittest.skip("Temporarily disabled")
-    def test_update_keyholder_leaving(self):
-        with self.patch_session():
-            self.getPage("/teams/update?team_id=1&100091=out")
-            self.assertStatus('303 See Other')
-
-    @unittest.skip("Temporarily disabled")
-    def test_certification(self):
-        with self.patch_session():
-            self.getPage("/teams/certifications?team_id=1")
-            self.assertStatus('303 See Other')

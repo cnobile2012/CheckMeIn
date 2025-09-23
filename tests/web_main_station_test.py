@@ -20,7 +20,7 @@ from .base_test import BaseAsyncTests
 from .sample_data import timeAgo, TEST_DATA
 
 
-class BaseTestMainStation(BaseAsyncTests):
+class TestMainStation(BaseAsyncTests):
 
     def __init__(self, name, *args, **kwargs):
         super().__init__(name, *args, **kwargs)
@@ -89,12 +89,6 @@ class BaseTestMainStation(BaseAsyncTests):
                     }
 
         return result
-
-
-class TestMainStation(BaseTestMainStation):
-
-    def __init__(self, name, *args, **kwargs):
-        super().__init__(name, *args, **kwargs)
 
     async def activate_key_holder(self, barcode=None):
         params = (Status.active, Status.inactive)
@@ -254,103 +248,3 @@ class TestMainStation(BaseTestMainStation):
             else:
                 html = self._wms.keyholder(barcode)
                 self.assertIn(expected, html, msg.format(expected, barcode))
-
-
-class TestWebMainStation(BaseTestMainStation):
-
-    def __init__(self, name, *args, **kwargs):
-        super().__init__(name, *args, **kwargs)
-
-    @unittest.skip("Temporarily disabled")
-    def test_station(self):
-        with self.patch_session():
-            self.getPage("/station/")
-            self.assertStatus('200 OK')
-
-    @unittest.skip("Temporarily disabled")
-    def test_scanned_success(self):
-        with self.patch_session():
-            self.getPage("/station/scanned?barcode=100090")
-            self.assertStatus('303 See Other')
-
-    @unittest.skip("Temporarily disabled")
-    def test_scanned_success2(self):  # if before made in, this should make out
-        with self.patch_session():
-            self.getPage("/station/scanned?barcode=100090")
-            self.assertStatus('303 See Other')
-
-    @unittest.skip("Temporarily disabled")
-    def test_checkin(self):
-        with self.patch_session():
-            self.getPage("/station/checkin?barcode=100091")
-            self.assertStatus('303 See Other')
-
-    @unittest.skip("Temporarily disabled")
-    def test_checkout(self):
-        with self.patch_session():
-            self.getPage("/station/checkout?barcode=100090")
-            self.assertStatus('303 See Other')
-
-    @unittest.skip("Temporarily disabled")
-    def test_docs(self):
-        with self.patch_session():
-            self.getPage("/docs")
-        self.assertStatus('200 OK')
-
-    @unittest.skip("Temporarily disabled")
-    def test_bulk_update(self):
-        with self.patch_session():
-            self.getPage(
-                "/station/bulkUpdate?inBarcodes=100090+100091&outBarcodes=")
-
-    @unittest.skip("Temporarily disabled")
-    def test_bulkUpdateAllOut(self):
-        with self.patch_session():
-            self.getPage("/admin/empty_building")
-            self.getPage("/station/make_keyholder?barcode=100091")
-            self.getPage(
-                "/station/bulkUpdate?inBarcodes=100090+100091&outBarcodes=")
-            self.getPage(
-                "/station/bulkUpdate?inBarcodes=&outBarcodes=100090+100091")
-
-    @unittest.skip("Temporarily disabled")
-    def test_scanned_bogus(self):
-        with self.patch_session():
-            self.getPage("/station/scanned?barcode=0090")
-            self.assertStatus('303 See Other')
-
-    @unittest.skip("Temporarily disabled")
-    def test_scanned_keyholder_from_station(self):
-        with self.patch_session():
-            self.getPage("/station/scanned?barcode=999901")
-            self.assertStatus('200 OK')
-
-    @unittest.skip("Temporarily disabled")
-    def test_make_keyholder(self):
-        with self.patch_session():
-            self.getPage("/station/make_keyholder?barcode=100091")
-            self.assertStatus('200 OK')
-
-    @unittest.skip("Temporarily disabled")
-    def test_make_keyholder_invalid(self):
-        with self.patch_session():
-            self.getPage("/station/make_keyholder?barcode=100090")
-            self.assertStatus('200 OK')
-
-    @unittest.skip("Temporarily disabled")
-    def test_scanned_keyholder_from_keyholder(self):
-        with self.patch_session():
-            self.getPage("/station/keyholder?barcode=999901")
-            self.assertStatus('303 See Other')
-
-    @unittest.skip("Temporarily disabled")
-    def test_scanned_from_keyholder(self):
-        with self.patch_session():
-            self.getPage("/station/keyholder?barcode=100091")
-            self.assertStatus('303 See Other')
-
-    @unittest.skip("Temporarily disabled")
-    def test_scanned_failure(self):
-        with self.patch_session():
-            self.getPage("/station/scanned?barcode=fail")
-            self.assertStatus('303 See Other')

@@ -22,7 +22,7 @@ from .base_test import BaseAsyncTests
 from .sample_data import TEST_DATA
 
 
-class BaseReportsTest(BaseAsyncTests):
+class TestReports(BaseAsyncTests):
 
     def __init__(self, name, *args, **kwargs):
         super().__init__(name, *args, **kwargs)
@@ -94,12 +94,6 @@ class BaseReportsTest(BaseAsyncTests):
                     }
 
         return result
-
-
-class TestReports(BaseReportsTest):
-
-    def __init__(self, name, *args, **kwargs):
-        super().__init__(name, *args, **kwargs)
 
     #@unittest.skip("Temporarily disabled")
     def test_check_permissions(self):
@@ -254,91 +248,3 @@ class TestReports(BaseReportsTest):
         self.assertIn('Member N (Coach)', html)
         self.assertIn('Paul F (Coach)', html)
         self.assertIn('Average J', html)
-
-
-class TestWebReports(BaseReportsTest):
-
-    def __init__(self, name, *args, **kwargs):
-        super().__init__(name, *args, **kwargs)
-
-    @unittest.skip("Temporarily disabled")
-    def test_report_page(self):
-        with self.patch_session():
-            self.getPage("/reports/")
-            self.assertStatus('200 OK')
-
-    @unittest.skip("Temporarily disabled")
-    def test_reports(self):
-        with self.patch_session():
-            self.getPage("/reports/standard?startDate=2018-09-03"
-                         "&endDate=2023-09-03")
-            self.assertStatus('200 OK')
-
-    @unittest.skip("Temporarily disabled")
-    def test_reports_nodata(self):
-        with self.patch_session():
-            self.getPage("/reports/standard?startDate=2018-09-03"
-                         "&endDate=2018-09-03")
-            self.assertStatus('200 OK')
-
-    @unittest.skip("Temporarily disabled")
-    def tests_save_custom(self):
-        with self.patch_session():
-            self.getPage("/reports/save_custom?sql=SELECT+*+FROM+"
-                         "members%3B%0D%0A+++++&report_name=all_members")
-            self.assertStatus('200 OK')
-
-    @unittest.skip("Temporarily disabled")
-    def tests_save_custom_duplicate(self):
-        with self.patch_session():
-            self.getPage("/reports/save_custom?sql=SELECT+*"
-                         "+FROM+members%3B%0D%0A+++++&report_name=all_members")
-            self.assertStatus('200 OK')
-
-    @unittest.skip("Temporarily disabled")
-    def test_saved_custom_report_good(self):
-        with self.patch_session():
-            self.getPage("/reports/saved_custom?report_id=1")
-            self.assertStatus('200 OK')
-
-    @unittest.skip("Temporarily disabled")
-    def test_saved_custom_report_bad(self):
-        with self.patch_session():
-            self.getPage("/reports/saved_custom?report_id=100")
-            self.assertStatus('200 OK')
-
-    @unittest.skip("Temporarily disabled")
-    def test_building_graph(self):
-        with self.patch_session():
-            self.getPage("/reports/graph?startDate=2019-12-01"
-                         "&endDate=2022-12-30")
-            self.assertStatus('200 OK')
-
-    @unittest.skip("Temporarily disabled")
-    def test_tracing(self):
-        with self.patch_session():
-            self.getPage("/reports/tracing?barcode=100091&numDays=14")
-
-    @unittest.skip("Temporarily disabled")
-    def test_tracing_no_barcode(self):
-        with self.patch_session():
-            self.getPage("/reports/tracing?barcode=&numDays=14")
-
-    @unittest.skip("Temporarily disabled")
-    def test_team_list(self):
-        with self.patch_session():
-            self.getPage("/reports/team_list")
-
-    @unittest.skip("Temporarily disabled")
-    def test_sql(self):
-        with self.patch_session():
-            self.getPage("/reports/custom_sql_report"
-                         "?sql=SELECT+*+FROM+members%3B%0D%0A+++++")
-            self.assertStatus('200 OK')
-
-    @unittest.skip("Temporarily disabled")
-    def test_bad_sql(self):
-        with self.patch_session():
-            self.getPage("/reports/custom_sql_report"
-                         "?sql=SELECT+FROM+members%3B%0D%0A+++++")
-            self.assertStatus('200 OK')
