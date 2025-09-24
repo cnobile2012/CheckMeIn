@@ -59,8 +59,7 @@ class WebBase:
         try:
             return self.lookup.get_template(template).render(
                 logo_link=logo_link, **kwargs)
-        except Exception:
-            # Print the nice traceback to console (or logs)
+        except Exception:  # pragma: no cover
             self._log.error(exceptions.text_error_template().render())
             # Re-raise so CherryPy still returns an error
             raise

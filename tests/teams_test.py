@@ -176,6 +176,31 @@ class TestTeamInfo(unittest.TestCase):
         self.assertEqual(data[4], result)
 
     #@unittest.skip("Temporarily skipped")
+    def test_members_setter_getter(self):
+        """
+        Test that the members setter and getter properties work correctly.
+        """
+        err_msg = "The member setter must be called before the getter."
+        data = (
+            (None, err_msg),
+            ('Person Name', 'Person Name'),
+            )
+
+        for member, expected in data:
+            ti = TeamInfo(1, 'TFI', 100, 'Crazy Contraptions',
+                          datetime.datetime(year=2021, month=5, day=1))
+
+            if member:
+                ti.members = member
+                result = ti.members
+                self.assertEqual(expected, result)
+            else:
+                with self.assertRaises(AssertionError) as cm:
+                    ti.members
+
+                self.assertEqual(expected, str(cm.exception))
+
+    #@unittest.skip("Temporarily skipped")
     def test_program_id(self):
         """
         Test that the program_id property returns the program ID.
@@ -456,10 +481,17 @@ class TestTeams(BaseAsyncTests):
         Test that the rename_team method changes the team name of a team.
         """
         # team_id, team_name
-        data = (1, "Contraptions that never work.", 1)
+        data = (
+            (1, "Contraptions that never work.", 1),
+            (100, "Non-existant team name.", 0),
+            )
+
         msg = "Expected {}, found {}."
-        rowcount = await self._engine.teams.rename_team(data[0], data[1])
-        self.assertEqual(data[2], rowcount, msg.format(data[2], rowcount))
+
+        for team_id, team_name, expected in data:
+            rowcount = await self._engine.teams.rename_team(team_id, team_name)
+            self.assertEqual(expected, rowcount, msg.format(
+                expected, rowcount))
 
     #@unittest.skip("Temporarily skipped")
     async def test_get_team_members(self):

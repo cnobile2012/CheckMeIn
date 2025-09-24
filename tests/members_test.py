@@ -70,7 +70,8 @@ class TestMembers(BaseAsyncTests):
             with open(os.path.join(BASE_DIR, 'tests', fo.filename), 'rb') as f:
                 fo.file = f
                 msg = await self._engine.members.bulk_add(fo)
-                # *** TODO *** We need to test the msg variable.
+                self.assertEqual("Imported 6 member(s) from bulk_data.csv",
+                                 msg)
 
         class File:
             file = None

@@ -123,37 +123,34 @@ class TestMainStation(BaseAsyncTests):
         """
         start = "Start test_scanned"
         self._log.info(start)
+        err_msg0 = "Found more than one active key holder "
+        err_msg1 = "Invalid barcode: '{}'."
         data = (
-            ('100091', True, ()),
-            #('100091', True, ('100032', '202107310001')),
-            ('100032', False, ()),
-            ('100015', False, ()),
+            ('100091', True, (), ''),
+            ('100091', False, ('100032', '202107310001'), ''),
+            ('100032', False, (), ''),
+            ('100015', False, (), err_msg0),
+            ('999999', False, (), err_msg1.format('999999')),
             )
         await self.activate_key_holder()
 
-        for barcode, verify, remove in data:
+        for barcode, verify, remove_bc, expected in data:
             if verify:
-                if remove:
-                    for bc in remove:
+                html = self._wms.scanned(barcode)
+                self.assertIn('Average J', html)
+                self.assertIn('Member N(Keyholder)', html)
+                self.assertIn('Random G', html)
+            else:
+                if len(remove_bc) > 0:
+                    for bc in remove_bc:
                         await self._eng.visits.checkout_member(bc)
 
-                    html = self._wms.scanned(barcode)
-                    self.assertNotIn('Average J', html)
-                    self.assertNotIn('Member N(Keyholder)', html)
-                    self.assertNotIn('Random G', html)
-                else:
-                    html = self._wms.scanned(barcode)
-                    self.assertIn('Average J', html)
-                    self.assertIn('Member N(Keyholder)', html)
-                    self.assertIn('Random G', html)
-            else:
                 with self.assertRaises(cherrypy.HTTPRedirect):
                     self._wms.scanned(barcode)
 
-        err_msg = "Found more than one active key holder"
-        full_log = self.read_text_file(self.full_log_path, mode='rb')
-        sub_log = self.find_text_span(full_log, start, 2)
-        self.assertIn(err_msg, sub_log[1])
+                full_log = self.read_text_file(self.full_log_path, mode='rb')
+                sub_log = self.find_text_span(full_log, start, 5)
+                self.assertTrue([True for msg in sub_log if expected in msg])
 
     #@unittest.skip("Temporarily disabled")
     async def test_checkin(self):

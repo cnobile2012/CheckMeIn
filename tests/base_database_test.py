@@ -5,6 +5,8 @@
 
 import os
 import datetime
+import random
+import string
 import unittest
 
 from src import BASE_DIR
@@ -126,6 +128,10 @@ class TestBaseDatabase(BaseAsyncTests):
         self.bd.clear_state()
         self.bd = None
 
+    def random_text(self, length=10):
+        chars = string.ascii_letters + string.digits
+        return ''.join(random.choice(chars) for _ in range(length))
+
     #@unittest.skip("Temporarily skipped")
     def test_read_config(self):
         """
@@ -174,7 +180,8 @@ class TestBaseDatabase(BaseAsyncTests):
 
         for delete, expected in data:
             if delete:
-                self.bd.db_fullpath = self._path, 'non-existent.db', False
+                random_db_name = f"{self.random_text()}.db"
+                self.bd.db_fullpath = self._path, random_db_name, False
 
             result = await self.bd.has_schema
             self.assertEqual(expected[0], result, msg.format(
@@ -199,7 +206,8 @@ class TestBaseDatabase(BaseAsyncTests):
 
         for delete, expected in data:
             if delete:
-                self.bd.db_fullpath = self._path, 'non-existent.db', False
+                random_db_name = f"{self.random_text()}.db"
+                self.bd.db_fullpath = self._path, random_db_name, False
                 expected = os.path.exists(self.bd.db_fullpath)
 
             await self.bd.create_schema()

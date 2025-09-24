@@ -2,8 +2,8 @@ In order to inject data, you pass in a dictionary.
 Each area (if present) contains a list of data to inject
 
 * visits
-  * start (python datetime object)
-  * leave (python datetime ojbect) - (optional for "In" and "Forgot")
+  * enter_time (python datetime object)
+  * exit_time (python datetime ojbect) - (optional for "In" and "Forgot")
   * barcode
   * status (One of: "In", "Out", "Forgot")
 * members
@@ -44,9 +44,9 @@ Each area (if present) contains a list of data to inject
   * certifier (barcode of certifier)
 * accounts
   * user
-  * password (before salting and hashing)        
+  * password (before salting and hashing)
   * barcode
-  * role (bitwise combination of 0x04: COACH, 0x08: SHOP_CERTIFIER, 0x10: KEYHOLDER, 0x20: ADMIN, 0x40: SHOP_STEWARD)
+  * role (bitwise combination of 0x04: COACH, 0x08: SHOP_CERTIFIER, 0x10: KEYHOLDER, 0xFF: ADMIN, 0x40: SHOP_STEWARD)
 * devices
   * mac
   * name

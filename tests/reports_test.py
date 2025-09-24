@@ -167,30 +167,34 @@ class TestStatistics(BaseAsyncTests):
         now = datetime.now()
         begin_date0 = now - timedelta(days=35)
         end_date0 = now + timedelta(days=1)
-        begin_date1 = now
-        end_date1 = now
+        begin_date1 = now - timedelta(days=25)
+        end_date1 = now + timedelta(days=1)
+        begin_date2 = now
+        end_date2 = now
         # b_date, e_date, unique_visitors, avg_time, median_time, sorted_list
         data = (
             (begin_date0, end_date0, 6, 2.0, 2.0,
              ['Artie N', 'Random G', 'Member N', 'Average J', 'Paul F',
               'Daughter N']),
-            (begin_date1, end_date1, 0, 0.0, 0.0, []),
+            (begin_date1, end_date1, 5, 1.6, 2.0,
+             ['Random G', 'Member N', 'Average J', 'Paul F', 'Daughter N']),
+            (begin_date2, end_date2, 0, 0.0, 0.0, []),
             )
-        msg = "Expected {}, found {}."
+        msg = "Expected {}, with b_date {} and e_date {}, found {}."
 
         for (b_date, e_date, unique_visitors, avg_time,
              median_time, sorted_list) in data:
             s = Statistics(b_date, e_date)
             building_usage = await s.get_member_visits()
             self.assertEqual(unique_visitors, s.unique_visitors, msg.format(
-                unique_visitors, s.unique_visitors))
+                unique_visitors, b_date, e_date, s.unique_visitors))
             self.assertEqual(avg_time, s.avg_time, msg.format(
-                avg_time, s.avg_time))
+                avg_time, b_date, e_date, s.avg_time))
             self.assertEqual(median_time, s.median_time, msg.format(
-                median_time, s.median_time))
+                median_time, b_date, e_date, s.median_time))
             sorted_d_names = [person.name for person in s.sorted_list]
             self.assertEqual(sorted_list, sorted_d_names, msg.format(
-                sorted_list, sorted_d_names))
+                sorted_list, b_date, e_date, sorted_d_names))
             self.assertTrue(hasattr(building_usage, 'add_visit'))
             self.assertTrue(hasattr(building_usage, 'in_range'))
 

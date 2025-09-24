@@ -164,6 +164,11 @@ class Visits:
         return [(row[0], row[1]) for row in rows]
 
     async def fix(self, fix_data):
+        """
+        I cannot figure out what this method is supposed to do. It looks
+        like it's used on for debugging something.
+        See WebAdminStation.fixed_data()
+        """
         entries = fix_data.split(',')
         rowcount = 0
 

@@ -159,9 +159,8 @@ class Teams:
         query = ("SELECT team_id, program_name, program_number, team_name, "
                  "start_date FROM teams WHERE team_id = ? "
                  "ORDER BY program_name, program_number;")
-        data = await self.BD._do_select_one_query(query, (team_id,))
-        return (TeamInfo(data[0], data[1], data[2], data[3], data[4])
-                if data else None)
+        row = await self.BD._do_select_one_query(query, (team_id,))
+        return TeamInfo(*row) if row else None
 
     async def delete_team(self, team_id):
         rowcounts = []
@@ -206,8 +205,7 @@ class Teams:
                  "start_date FROM teams WHERE active= ? "
                  "ORDER BY program_name, program_number;")
         rows = await self.BD._do_select_all_query(query, (Status.inactive,))
-        return [TeamInfo(row[0], row[1], row[2], row[3], row[4])
-                for row in rows]
+        return [TeamInfo(*row) for row in rows]
 
     async def get_all_seasons(self, team_info):
         query = ("SELECT team_id, program_name, program_number, team_name, "
@@ -216,8 +214,7 @@ class Teams:
                  "ORDER BY start_date DESC;")
         rows = await self.BD._do_select_all_query(
             query, (team_info.program_name, team_info.program_number))
-        return [TeamInfo(row[0], row[1], row[2], row[3], row[4])
-                for row in rows]
+        return [TeamInfo(*row) for row in rows]
 
     async def get_team_from_program_info(self, program_name, program_number):
         query = ("SELECT team_id, program_name, program_number, team_name, "
@@ -226,8 +223,7 @@ class Teams:
                  "ORDER BY start_date DESC LIMIT 1;")
         rows = await self.BD._do_select_all_query(
             query, (Status.active, program_name.upper(), program_number))
-        teams = [TeamInfo(row[0], row[1], row[2], row[3], row[4])
-                 for row in rows]
+        teams = [TeamInfo(*row) for row in rows]
         return teams[0] if teams else None
 
     async def team_name_from_id(self, team_id):

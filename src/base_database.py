@@ -49,7 +49,7 @@ class BaseDatabase(Borg):
     _T_LOG_EVENTS = 'log_events'
     _T_MEMBERS = 'members'
     _T_REPORTS = 'reports'
-    _T_RESTRICTIONS = 'restrictions'
+    _T_RESTRICTIONS = 'restrictions'  # Never used anywhere
     _T_TEAM_MEMBERS = 'team_members'
     _T_TEAMS = 'teams'
     _T_TOOLS = 'tools'
@@ -107,11 +107,6 @@ class BaseDatabase(Borg):
         _T_RESTRICTIONS: (
             'id INTEGER PRIMARY KEY',
             'descr TEXT'),
-        _T_TEAM_MEMBERS: (
-            'team_id INTEGER',
-            'barcode TEXT',
-            'type INTEGER default 0',
-            'CONSTRAINT unq UNIQUE (team_id, barcode)'),
         _T_TEAMS: (
             'team_id INTEGER NOT NULL PRIMARY KEY',
             'program_name TEXT NOT NULL',
@@ -121,8 +116,13 @@ class BaseDatabase(Borg):
             'active INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0, 1))',
             'CONSTRAINT unq UNIQUE (program_name, program_number, start_date)'
             ),
+        _T_TEAM_MEMBERS: (
+            'team_id INTEGER NOT NULL',
+            'barcode TEXT',
+            'type INTEGER default 0',
+            'CONSTRAINT unq UNIQUE (team_id, barcode)'),
         _T_TOOLS: (
-            'pk INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT',
+            'pk INTEGER NOT NULL PRIMARY KEY',
             'name TEXT NOT NULL UNIQUE',
             'restriction INTEGER DEFAULT 0',
             'comment TEXT'),
@@ -221,7 +221,12 @@ class BaseDatabase(Borg):
               If filename is ':memory:' the path may be an empty string.
            3. If 'True' for production or development and 'False' for testing.
 
-        :param tuple path_info: Path, filename, and a boolean.
+        :param tuple path_info: Is a tuple (path, filename, prod_or_dev).
+                                Where `path` is the path to the database file;
+                                `filename` is the name of the database file;
+                                and `prod_or_dev` is a boolean, if `True`
+                                the filename is for production else `False`
+                                the filename is for development.
         """
         assert isinstance(path_info, (tuple, list)) and len(path_info) == 3, (
             "Argument must be a tuple or list of three elements "
@@ -245,18 +250,18 @@ class BaseDatabase(Borg):
         """
         Checks that the schema has been created.
         """
-        query = "SELECT name FROM sqlite_master;"
-        table_names = [table[0]
-                       for table in await self._do_select_all_query(query)
-                       if not table[0].startswith('sqlite_')]
-        table_names.sort()
+        query = ("SELECT name FROM sqlite_master "
+                 "WHERE type IN ('table', 'view') ORDER BY name;")
+        names = [table[0] for table in await self._do_select_all_query(query)
+                 if not table[0].startswith('sqlite_')]
+        names.sort()
         tables_views = self._TABLES + self._VIEWS
         tables_views.sort()
-        check = table_names == tables_views
+        check = names == tables_views
 
         if not check:
             msg = ("Database table count or names are wrong it should be "
-                   f"{tables_views} found {table_names}")
+                   f"{tables_views} found {names}")
             self._log.error(msg)
 
         return check

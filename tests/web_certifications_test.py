@@ -183,8 +183,16 @@ class TestCertifications(BaseAsyncTests):
         Test that the user method renders the certifications.mako correctly
         with a changed message.
         """
-        html = self._wc.user('100091')
-        self.assertIn('Certifications for Member N.', html)
+        msg0 = "Certifications for Member N."
+        msg1 = "There were no certifications for barcode "
+        data = (
+            ('100091', msg0),
+            ('100100', msg1),
+            )
+
+        for barcode, expected in data:
+            html = self._wc.user(barcode)
+            self.assertIn(expected, html)
 
     #@unittest.skip("Temporarily disabled")
     async def test_monitor(self):

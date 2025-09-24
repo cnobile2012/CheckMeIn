@@ -30,7 +30,8 @@ precision = 3
 
 exclude_also = [
     "if __name__ == .__main__.:",
-    # All lines between # no cover: start and # no cover: stop will be excluded.
+    # All lines between # no cover: start and # no cover: stop will
+    # be excluded.
     'no cover: start(?s:.)*?no cover: stop',
     ]
 

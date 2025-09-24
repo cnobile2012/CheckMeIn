@@ -69,7 +69,7 @@ ${self.logo()}
             <legend>Keyholder</legend>
             <ul>
                 <li><a href="${suite_204}">
-                    Suite 205 Door (Works ONLY when at the The Forge)</a>
+                    Front Door (Works ONLY when at the The Forge)</a>
                 </li>
                 <li><a href="/station/make_keyholder?barcode=${barcode}">
                     Make ME Keyholder</a></li>
@@ -130,7 +130,7 @@ ${self.logo()}
   % endif
 % endif
         <fieldset>
-            <legend>The Forge Stations</legend>
+            <legend>Check-in Stations</legend>
             <ul>
                 <li><a href="/station">Main Station</a></li>
                 <li><a href="/guests">Guest Station</a></li>

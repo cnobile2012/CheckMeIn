@@ -99,7 +99,7 @@ class TestCheckMeIn(BaseAsyncTests):
         self.assertIn('Coach', html)
         self.assertIn('Shop Certifier', html)
         self.assertIn('Admin', html)
-        self.assertIn('The Forge Stations', html)
+        self.assertIn('Check-in Stations', html)
 
     #@unittest.skip("Temporarily disabled")
     def test_metrics(self):
@@ -167,7 +167,7 @@ class TestCheckMeIn(BaseAsyncTests):
         data = (
             (None, 'admin', Role.ADMIN, 'Admin'),
             ('100032', 'Joe', Role.SHOP_STEWARD, 'Personal'),
-            ('', '', 0, 'The Forge Stations'),
+            ('', '', 0, 'Check-in Stations'),
             )
 
         for barcode, username, role, expected in data:

@@ -141,47 +141,68 @@ class AppConfig(Borg):
     _LOGGER_NAME = 'checkmein'
     _TEST_LOG_FILENAME = 'testing.log'
     _TEST_LOGGER_NAME = 'testing'
+    _MIGRATE_LOG_FILENAME = 'migration.log'
+    _MIGRATE_LOGGER_NAME = 'migrate'
     _ENVIRONMENT = 'production'
-    _RUN_TIMES = 1
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        root_logger = logging.getLogger()
 
-        if self._RUN_TIMES <= 1:
-            root_logger = logging.getLogger()
+        for handler in root_logger.handlers[:]:
+            root_logger.removeHandler(handler)
 
-            for handler in root_logger.handlers[:]:
-                root_logger.removeHandler(handler)
+        if self._ENVIRONMENT == 'testing':
+            self._fullpath = os.path.join(self._LOGGER_PATH,
+                                          self._TEST_LOG_FILENAME)
+            self._logger = self._TEST_LOGGER_NAME
+            self._level = logging.DEBUG
+            logging.getLogger("cherrypy.error").setLevel(logging.WARNING)
+            logging.getLogger("cherrypy.access").setLevel(logging.WARNING)
+        elif self._ENVIRONMENT == 'migration':
+            self._fullpath = os.path.join(self._LOGGER_PATH,
+                                          self._MIGRATE_LOG_FILENAME)
+            self._logger = self._MIGRATE_LOGGER_NAME
+            self._level = logging.DEBUG
+        else:
+            self._fullpath = os.path.join(self._LOGGER_PATH,
+                                          self._LOG_FILENAME)
+            self._logger = self._LOGGER_NAME
+            self._level = logging.INFO
 
-            if self._ENVIRONMENT == 'testing':
-                self._fullpath = os.path.join(self._LOGGER_PATH,
-                                              self._TEST_LOG_FILENAME)
-                self._logger = self._TEST_LOGGER_NAME
-                self._level = logging.DEBUG
-                logging.getLogger("cherrypy.error").setLevel(logging.WARNING)
-                logging.getLogger("cherrypy.access").setLevel(logging.WARNING)
-            else:
-                self._fullpath = os.path.join(self._LOGGER_PATH,
-                                              self._LOG_FILENAME)
-                self._logger = self._LOGGER_NAME
-                self._level = logging.INFO
-
-            Logger().config(logger_name=self.logger_name,
-                            file_path=self.full_log_path, level=self._level,
-                            initial_msg=False)
-            log = logging.getLogger(self._logger)
-            # Disable asyncio debug messages.
-            logging.getLogger("asyncio").setLevel(logging.ERROR)
-            # Disable CherryPi debug messages.
-            path, filename = os.path.split(self._fullpath)
-            log.info("Logger configured as '%s' with file '%s'.",
-                     self._ENVIRONMENT, filename)
-            self._RUN_TIMES += 1
+        Logger().config(logger_name=self.logger_name,
+                        file_path=self.full_log_path, level=self._level,
+                        initial_msg=False)
+        # Disable asyncio debug messages for all loggers.
+        logging.getLogger("asyncio").setLevel(logging.ERROR)
 
     @classmethod
-    def start_logging(cls, testing=False):
-        cls._ENVIRONMENT = 'testing' if testing else 'production'
-        return logging.getLogger(AppConfig().logger_name)
+    def start_logging(cls, testing=False, migration=False):
+        """
+        Create the logger for the required environment.
+
+        :param bool testing: A true value indicates testing mode else false
+                             (default) for production mode.
+        :param bool migration: A true value overrides the `testing` argument
+                               creating logging files for migration else false
+                               (default) and the `testing` argument value id
+                               used.
+        :returns: The logger object.
+        :rtype: logging.Logger
+        """
+        if testing:
+            cls._ENVIRONMENT = 'testing'
+            filename = cls._TEST_LOG_FILENAME
+        elif migration:
+            cls._ENVIRONMENT = 'migration'
+            filename = cls._MIGRATE_LOG_FILENAME
+        else:
+            filename = cls._LOG_FILENAME
+
+        log = logging.getLogger(AppConfig().logger_name)
+        log.info("Logger configured as '%s' with file '%s'.",
+                 cls._ENVIRONMENT, os.path.join(cls._LOGGER_PATH, filename))
+        return log
 
     @property
     def log(self):

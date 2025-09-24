@@ -37,7 +37,6 @@ class WebMainStation(WebBase):
     @cherrypy.expose
     # later change this to be more ajaxy, but for now...
     def scanned(self, barcodes):
-        error = ''
         barcodes = [barcode.strip() for barcode in barcodes.split()]
         current_keyholder_bc, _ = self.engine.run_async(
             self.engine.accounts.get_active_key_holder())
