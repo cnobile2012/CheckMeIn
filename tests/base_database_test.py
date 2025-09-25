@@ -158,7 +158,7 @@ class TestBaseDatabase(BaseAsyncTests):
                 self.assertEqual(expected[0], items['global']['database.path'])
                 self.assertEqual(expected[1], items['global']['database.name'])
             else:
-                full_log = self.read_text_file(self.full_log_path, mode='rb')
+                full_log = self.read_text_file(self.full_log_path)
                 sub_log = self.find_text_span(full_log, start, 8)
                 self.assertTrue([True for msg in sub_log
                                  if expected[0] in msg])
@@ -188,7 +188,7 @@ class TestBaseDatabase(BaseAsyncTests):
                 expected[0], delete, result))
 
             if delete:
-                full_log = self.read_text_file(self.full_log_path, mode='rb')
+                full_log = self.read_text_file(self.full_log_path)
                 sub_log = self.find_text_span(full_log, start, 2)
                 self.assertTrue([True for msg in sub_log
                                  if expected[1] in msg])
@@ -266,7 +266,7 @@ class TestBaseDatabase(BaseAsyncTests):
                 expected[1], query, params, fetchone, len(columns)))
 
             if expected[0] == 0:
-                full_log = self.read_text_file(self.full_log_path, mode='rb')
+                full_log = self.read_text_file(self.full_log_path)
                 sub_log = self.find_text_span(full_log, start, 2)
                 self.assertTrue([True for msg in sub_log
                                  if expected[2] in msg])

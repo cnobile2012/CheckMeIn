@@ -7,6 +7,8 @@ Definition of the requirement files.
    in a development environment. It inherits the base.txt file.
 3. requirements/production.txt 
    This file contains the frozen packages which would be regenerated after
-   any new or updated packages are added to the base.txt file.
+   any new or updated packages are added to the base.txt file. When generating
+   the requirements/production.txt file be sure you are in a production virtual
+   environment not a development virtual environment.
    Generated from the project base directory as such:
    $ pip freeze > requirements/production.txt 

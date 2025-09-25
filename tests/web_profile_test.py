@@ -152,7 +152,7 @@ class TestProfile(BaseAsyncTests):
         text = self._wp.forgot_password('admin')
         self.assertIn('You have been e-mailed instructions', text)
         msg = "If you did not request a password"
-        full_log = self.read_text_file(self.full_log_path, mode='rb')
+        full_log = self.read_text_file(self.full_log_path)
         sub_log = self.find_text_span(full_log, start, 12)
         self.assertIn(msg, sub_log[9])
 
@@ -185,7 +185,7 @@ class TestProfile(BaseAsyncTests):
         for username, pw0, pw1, valid_pw, valid_tk in data:
             await self._eng.accounts.forgot_password(username)
             # We need to get the token from the log file, bummer.
-            full_log = self.read_text_file(self.full_log_path, mode='rb')
+            full_log = self.read_text_file(self.full_log_path)
             sub_log = self.find_text_span(full_log, start, 12)
             sre = re.search(self.TOKEN_REGEX, sub_log[9])
             token = sre.group('token')

@@ -140,7 +140,7 @@ class TestGuestStation(BaseAsyncTests):
             self.assertIn(expected, html)
 
             if comment and 'ERROR' not in comment:
-                full_log = self.read_text_file(self.full_log_path, mode='rb')
+                full_log = self.read_text_file(self.full_log_path)
                 sub_log = self.find_text_span(full_log, start, 13)
                 self.assertIn(comment, sub_log[-1])
 

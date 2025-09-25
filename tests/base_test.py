@@ -11,7 +11,6 @@ import threading
 import unittest
 import aiosqlite
 import cherrypy
-import requests
 
 from unittest.mock import patch
 from cherrypy.lib import sessions
@@ -132,7 +131,7 @@ class BaseAsyncTests(unittest.IsolatedAsyncioTestCase):
 
                 await db.commit()
 
-    def read_text_file(self, fullpath: str, mode='r') -> str:
+    def read_text_file(self, fullpath: str) -> str:
         with open(fullpath) as f:
             return f.read()
 

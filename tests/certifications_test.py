@@ -434,6 +434,6 @@ class TestCertifications(BaseAsyncTests):
                                                   level_name, cert_name)
         msg = ("Daughter N was just certified as BASIC on the "
                "'Sheet Metal Brake' by Member N.")
-        full_log = self.read_text_file(self.full_log_path, mode='rb')
+        full_log = self.read_text_file(self.full_log_path)
         sub_log = self.find_text_span(full_log, start, 10)
         self.assertIn(msg, [line for line in sub_log])

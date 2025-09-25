@@ -148,7 +148,7 @@ class TestMainStation(BaseAsyncTests):
                 with self.assertRaises(cherrypy.HTTPRedirect):
                     self._wms.scanned(barcode)
 
-                full_log = self.read_text_file(self.full_log_path, mode='rb')
+                full_log = self.read_text_file(self.full_log_path)
                 sub_log = self.find_text_span(full_log, start, 5)
                 self.assertTrue([True for msg in sub_log if expected in msg])
 
