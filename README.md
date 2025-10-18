@@ -91,7 +91,6 @@ run
 setup
 tar
 tests
-test_setup
 ```
 
 Running the server is as simple as typing `make run`, it sets up the

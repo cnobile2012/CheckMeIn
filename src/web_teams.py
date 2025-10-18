@@ -88,7 +88,7 @@ class WebTeams(WebBase):
         first_date = team_info.start_date
         today_date = datetime.date.today().isoformat()
         members = self.engine.run_async(
-            self.engine.teams.get_team_members(team_id))
+            self.engine.teams.team_members(team_id))
         active_members = self.engine.run_async(
             self.engine.members.get_active())
         seasons = self.engine.run_async(

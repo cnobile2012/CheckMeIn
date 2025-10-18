@@ -49,7 +49,7 @@ class TestCertifications(BaseAsyncTests):
         await self._eng.config.add_config(TEST_DATA[self.bd._T_CONFIG])
         await self._eng.members.add_members(TEST_DATA[self.bd._T_MEMBERS])
         await self._eng.teams.add_teams(TEST_DATA[self.bd._T_TEAMS])
-        await self._eng.teams.add_bulk_team_members(TEST_DATA[
+        await self._eng.teams.add_team_members(TEST_DATA[
             self.bd._T_TEAM_MEMBERS])
         await self._eng.certifications.add_tools(TOOLS)
         await self._eng.visits.add_visits(TEST_DATA[self.bd._T_VISITS])
@@ -79,7 +79,7 @@ class TestCertifications(BaseAsyncTests):
             case self.bd._T_TEAMS:
                 result = await self._eng.teams.get_teams()
             case self.bd._T_TEAM_MEMBERS:
-                result = await self._eng.teams.get_bulk_team_members()
+                result = await self._eng.teams.get_team_members()
             case self.bd._T_TOOLS:
                 result = await self._eng.certifications.get_tools()
             case self.bd._T_VISITS:
@@ -92,7 +92,7 @@ class TestCertifications(BaseAsyncTests):
                     self.bd._T_MEMBERS: await self._eng.members.get_members(),
                     self.bd._T_TEAMS: await self._eng.teams.get_teams(),
                     self.bd._T_TEAM_MEMBERS:
-                    await self._eng.teams.get_bulk_team_members(),
+                    await self._eng.teams.get_team_members(),
                     self.bd._T_TOOLS:
                     await self._eng.certifications.get_tools(),
                     self.bd._T_VISITS: await self._eng.visits.get_visits(),

@@ -257,15 +257,15 @@ class TestTeams(BaseAsyncTests):
             }
         await self.create_database(self.tables_and_views)
         # Populate tables
-        self._engine = Engine(path, self.TEST_DB, testing=True)
-        await self._engine.members.add_members(TEST_DATA[self.bd._T_MEMBERS])
-        await self._engine.teams.add_teams(TEST_DATA[self.bd._T_TEAMS])
-        await self._engine.teams.add_bulk_team_members(TEST_DATA[
+        self._eng = Engine(path, self.TEST_DB, testing=True)
+        await self._eng.members.add_members(TEST_DATA[self.bd._T_MEMBERS])
+        await self._eng.teams.add_teams(TEST_DATA[self.bd._T_TEAMS])
+        await self._eng.teams.add_team_members(TEST_DATA[
             self.bd._T_TEAM_MEMBERS])
-        await self._engine.visits.add_visits(TEST_DATA[self.bd._T_VISITS])
+        await self._eng.visits.add_visits(TEST_DATA[self.bd._T_VISITS])
 
     async def asyncTearDown(self):
-        self._engine = None
+        self._eng = None
         await self.truncate_all_tables()
         # Clear the Borg state.
         self.bd.clear_state()
@@ -274,21 +274,21 @@ class TestTeams(BaseAsyncTests):
     async def get_data(self, module='all'):
         match module:
             case self.bd._T_MEMBERS:
-                result = await self._engine.members.get_members()
+                result = await self._eng.members.get_members()
             case self.bd._T_TEAMS:
-                result = await self._engine.teams.get_teams()
+                result = await self._eng.teams.get_teams()
             case self.bd._T_TEAM_MEMBERS:
-                result = await self._engine.teams.get_bulk_team_members()
+                result = await self._eng.teams.get_team_members()
             case self.bd._T_VISITS:
-                result = await self._engine.visits.get_visits()
+                result = await self._eng.visits.get_visits()
             case _:
                 result = {
                     self.bd._T_MEMBERS:
-                    await self._enginemembers.get_members(),
-                    self.bd._T_TEAMS: await self._engine.teams.get_teams(),
+                    await self._engmembers.get_members(),
+                    self.bd._T_TEAMS: await self._eng.teams.get_teams(),
                     self.bd._T_TEAM_MEMBERS:
-                    await self._engine.teams.get_bulk_team_members(),
-                    self.bd._T_VISITS: await self._engine.visits.get_visits()
+                    await self._eng.teams.get_team_members(),
+                    self.bd._T_VISITS: await self._eng.visits.get_visits()
                     }
 
         return result
@@ -310,7 +310,7 @@ class TestTeams(BaseAsyncTests):
 
         for (program_name, program_number,
              team_name, start_date, expected) in data:
-            result = await self._engine.teams.create_team(
+            result = await self._eng.teams.create_team(
                 program_name, program_number, team_name, start_date)
             teams = await self.get_data('teams')
 
@@ -328,7 +328,7 @@ class TestTeams(BaseAsyncTests):
         """
         team_id = 1
         expected = "<1 TFI100 - Crazy Contraptions:2021-05-01 00:00:00>"
-        result = await self._engine.teams.from_team_id(team_id)
+        result = await self._eng.teams.from_team_id(team_id)
         self.assertEqual(expected, str(result))
 
     #@unittest.skip("Temporarily skipped")
@@ -337,7 +337,7 @@ class TestTeams(BaseAsyncTests):
         Test that the delete_team method deletes both the team and its members.
         """
         team_id = 1
-        rowcounts = await self._engine.teams.delete_team(team_id)
+        rowcounts = await self._eng.teams.delete_team(team_id)
         # Test the number of members that got deleted from the team
         # when the team is deleted.
         self.assertEqual(1, rowcounts[0])
@@ -349,7 +349,7 @@ class TestTeams(BaseAsyncTests):
         Test that the edit_team method changes a team record.
         """
         data = ('TFI', 100, datetime.datetime(year=2025, month=5, day=1), 1)
-        rowcount = await self._engine.teams.edit_team(*data)
+        rowcount = await self._eng.teams.edit_team(*data)
         self.assertEqual(1, rowcount)
         teams = await self.get_data('teams')
 
@@ -369,7 +369,7 @@ class TestTeams(BaseAsyncTests):
             )
 
         for team_id, program_id, team_name, start_date in data:
-            teams = await self._engine.teams.get_active_team_list()
+            teams = await self._eng.teams.get_active_team_list()
 
             for team in teams:
                 if team_id == team.team_id:
@@ -389,7 +389,7 @@ class TestTeams(BaseAsyncTests):
             )
 
         for team_id, program_id, team_name, start_date in data:
-            teams = await self._engine.teams.get_inactive_team_list()
+            teams = await self._eng.teams.get_inactive_team_list()
 
             for team in teams:
                 if team_id == team.team_id:
@@ -405,7 +405,7 @@ class TestTeams(BaseAsyncTests):
         """
         sd = datetime.datetime(year=2021, month=5, day=1)
         team_info = TeamInfo(1, 'TFI', 100, 'Crazy Contraptions', sd)
-        teams = await self._engine.teams.get_all_seasons(team_info)
+        teams = await self._eng.teams.get_all_seasons(team_info)
         expected = 2
         self.assertEqual(expected, len(teams))
 
@@ -416,7 +416,7 @@ class TestTeams(BaseAsyncTests):
         None if no team meets the requirements.
         """
         data = ('TFI', 100)
-        team = await self._engine.teams.get_team_from_program_info(*data)
+        team = await self._eng.teams.get_team_from_program_info(*data)
         self.assertEqual(data[0], team.program_name)
         self.assertEqual(data[1], team.program_number)
 
@@ -427,7 +427,7 @@ class TestTeams(BaseAsyncTests):
         using the team ID.
         """
         data = (1, 'Crazy Contraptions')
-        team_name = await self._engine.teams.team_name_from_id(data[0])
+        team_name = await self._eng.teams.team_name_from_id(data[0])
         self.assertEqual(data[1], team_name)
 
     #@unittest.skip("Temporarily skipped")
@@ -445,7 +445,7 @@ class TestTeams(BaseAsyncTests):
         orig_size = len(members)
 
         for team_id, barcode, type in data:
-            await self._engine.teams.add_member(team_id, barcode, type)
+            await self._eng.teams.add_member(team_id, barcode, type)
 
         members = await self.get_data('team_members')
         new_size = len(members)
@@ -467,7 +467,7 @@ class TestTeams(BaseAsyncTests):
         orig_size = len(members)
 
         for team_id, barcode, expected in data:
-            result = await self._engine.teams.remove_member(team_id, barcode)
+            result = await self._eng.teams.remove_member(team_id, barcode)
             self.assertEqual(expected, result, msg.format(expected, result))
 
         members = await self.get_data('team_members')
@@ -489,7 +489,7 @@ class TestTeams(BaseAsyncTests):
         msg = "Expected {}, found {}."
 
         for team_id, team_name, expected in data:
-            rowcount = await self._engine.teams.rename_team(team_id, team_name)
+            rowcount = await self._eng.teams.rename_team(team_id, team_name)
             self.assertEqual(expected, rowcount, msg.format(
                 expected, rowcount))
 
@@ -504,7 +504,7 @@ class TestTeams(BaseAsyncTests):
             )
         msg = "Expected {}, barcode {}, found {}."
         team_id = 1
-        members = await self._engine.teams.get_team_members(team_id)
+        members = await self._eng.teams.team_members(team_id)
 
         for member in members:
             for d_name, barcode, str_type in data:
@@ -520,7 +520,7 @@ class TestTeams(BaseAsyncTests):
         Test that the deactivate_team method does indeed deactivate a team.
         """
         team_id = 1
-        rowcount = await self._engine.teams.deactivate_team(team_id)
+        rowcount = await self._eng.teams.deactivate_team(team_id)
         self.assertEqual(1, rowcount)
 
     #@unittest.skip("Temporarily skipped")
@@ -535,7 +535,7 @@ class TestTeams(BaseAsyncTests):
         msg = "Expected {}, with team_id {}, found {}."
 
         for team_id, expected in data:
-            rowcount = await self._engine.teams.activate_team(team_id)
+            rowcount = await self._eng.teams.activate_team(team_id)
             self.assertEqual(expected, rowcount, msg.format(
                 expected, team_id, rowcount))
 
@@ -552,7 +552,7 @@ class TestTeams(BaseAsyncTests):
         msg = "Expected {}, with barcode {}, found {}."
 
         for team_id, barcode, expected in data:
-            is_coach = await self._engine.teams.is_coach_of_team(
+            is_coach = await self._eng.teams.is_coach_of_team(
                 team_id, barcode)
             self.assertEqual(expected, is_coach, msg.format(
                 expected, barcode, is_coach))
@@ -568,10 +568,10 @@ class TestTeams(BaseAsyncTests):
             (1, 2),
             )
         msg = "Expected {}, with team_id {}, found {}."
-        active_teams = await self._engine.teams.get_active_team_list()
+        active_teams = await self._eng.teams.get_active_team_list()
 
         for team_id, expected in data:
-            coaches = await self._engine.teams.get_coaches(active_teams)
+            coaches = await self._eng.teams.get_coaches(active_teams)
             c_size = len(coaches[team_id])
             self.assertEqual(expected, c_size, msg.format(
                 expected, team_id, c_size))
@@ -589,7 +589,7 @@ class TestTeams(BaseAsyncTests):
             )
 
         for barcode, d_name in data:
-            teams = await self._engine.teams.get_active_teams_coached(barcode)
+            teams = await self._eng.teams.get_active_teams_coached(barcode)
 
             for team in teams:
                 self.assertIn(team.name, data[1])

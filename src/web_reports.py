@@ -121,6 +121,6 @@ class WebReports(WebBase):
 
         for team in teams:
             team.members = self.engine.run_async(
-                self.engine.teams.get_team_members(team.team_id))
+                self.engine.teams.team_members(team.team_id))
 
         return self.template('team_report.mako', teams=teams)

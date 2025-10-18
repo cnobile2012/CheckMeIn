@@ -126,19 +126,20 @@ class Teams:
         self._log = AppConfig().log
 
     async def add_teams(self, data: list):
-        query = ("INSERT INTO teams VALUES (:team_id, :program_name, "
-                 ":program_number, :team_name, :start_date, :active);")
+        query = ("INSERT INTO teams (program_name, program_number, team_name, "
+                 "start_date, active) VALUES (:program_name, :program_number, "
+                 ":team_name, :start_date, :active);")
         return await self.BD._do_insert_query(query, data)
 
     async def get_teams(self):
         query = "SELECT * FROM teams;"
         return await self.BD._do_select_all_query(query)
 
-    async def add_bulk_team_members(self, data: list):
+    async def add_team_members(self, data: list):
         query = "INSERT INTO team_members VALUES (:team_id, :barcode, :type);"
         return await self.BD._do_insert_query(query, data)
 
-    async def get_bulk_team_members(self):
+    async def get_team_members(self):
         query = "SELECT * FROM team_members;"
         return await self.BD._do_select_all_query(query)
 
@@ -262,7 +263,7 @@ class Teams:
 
         return rowcount
 
-    async def get_team_members(self, team_id):
+    async def team_members(self, team_id):
         query = ("SELECT m.displayName, tm.barcode, tm.type, v.status "
                  "FROM team_members tm "
                  "INNER JOIN members m ON m.barcode = tm.barcode "

@@ -53,7 +53,7 @@ class TestTeams(BaseAsyncTests):
         await self._eng.guests.add_guests(TEST_DATA[self.bd._T_GUESTS])
         await self._eng.members.add_members(TEST_DATA[self.bd._T_MEMBERS])
         await self._eng.teams.add_teams(TEST_DATA[self.bd._T_TEAMS])
-        await self._eng.teams.add_bulk_team_members(TEST_DATA[
+        await self._eng.teams.add_team_members(TEST_DATA[
             self.bd._T_TEAM_MEMBERS])
         #await self._eng.reports.add_reports(TEST_DATA[self.bd._T_REPORTS])
         await self._eng.visits.add_visits(TEST_DATA[self.bd._T_VISITS])

@@ -49,9 +49,9 @@ class BaseDatabase(Borg):
     _T_LOG_EVENTS = 'log_events'
     _T_MEMBERS = 'members'
     _T_REPORTS = 'reports'
-    _T_RESTRICTIONS = 'restrictions'  # Never used anywhere
-    _T_TEAM_MEMBERS = 'team_members'
+    _T_RESTRICTIONS = 'restrictions'  # Never used anywhere.
     _T_TEAMS = 'teams'
+    _T_TEAM_MEMBERS = 'team_members'
     _T_TOOLS = 'tools'
     _T_UNLOCKS = 'unlocks'
     _T_VISITS = 'visits'
@@ -236,7 +236,10 @@ class BaseDatabase(Borg):
         if filename == ':memory:':
             fullpath = filename
         else:
-            fullpath = os.path.join(BASE_DIR, path)
+            if path.startswith('/'):  # Is this an absolute path?
+                fullpath = path
+            else:
+                fullpath = os.path.join(BASE_DIR, path)
 
             if not prod_or_dev and not os.path.exists(path):
                 os.mkdir(fullpath, mode=0o775)  # pragma: no cover
@@ -410,10 +413,10 @@ class BaseDatabase(Borg):
         assert ';' in query, f"The query {query} does not end with a ';'."
 
         # Normalize: single row -> list of one row
-        if data and (isinstance(data, dict) or
-                     not isinstance(data, (list, tuple)) or
-                     (isinstance(data, (list, tuple)) and data and
-                      not isinstance(data[0], (list, tuple, dict)))):
+        if data and (isinstance(data, dict) or not
+                     isinstance(data, (list, tuple)) or
+                     (isinstance(data, (list, tuple)) and data and not
+                      isinstance(data[0], (list, tuple, dict)))):
             data = [data]
 
         async with aiosqlite.connect(self.db_fullpath,

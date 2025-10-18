@@ -255,7 +255,7 @@ class TestReports(BaseAsyncTests):
             self.bd._T_ACCOUNTS])
         await self._engine.guests.add_guests(TEST_DATA[self.bd._T_GUESTS])
         await self._engine.members.add_members(TEST_DATA[self.bd._T_MEMBERS])
-        await self._engine.teams.add_bulk_team_members(TEST_DATA[
+        await self._engine.teams.add_team_members(TEST_DATA[
             self.bd._T_TEAM_MEMBERS])
         await self._engine.reports.add_reports(TEST_DATA[self.bd._T_REPORTS])
         await self._engine.visits.add_visits(TEST_DATA[self.bd._T_VISITS])

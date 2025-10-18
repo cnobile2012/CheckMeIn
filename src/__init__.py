@@ -190,6 +190,11 @@ class AppConfig(Borg):
         :returns: The logger object.
         :rtype: logging.Logger
         """
+        assert (not testing and not migration or testing and not migration
+                or not testing and migration), (
+                    "The arguments 'testing' and 'migrations' can both be "
+                    "False or one or the other can be True.")
+
         if testing:
             cls._ENVIRONMENT = 'testing'
             filename = cls._TEST_LOG_FILENAME

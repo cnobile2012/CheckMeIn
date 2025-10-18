@@ -121,29 +121,35 @@ class Accounts(Utilities):
         super().__init__(*args, **kwargs)
         self._log = AppConfig().log
 
-    async def add_accounts(self, data: list) -> None:
+    async def add_accounts(self, data: list, prepare=True) -> None:
         """
         Add one or more users.
 
         :param list data: The data to insert in the DB in the form of:
                           [{'user': <user>, 'password': <password>,
                             'barcode': <barcode>, 'role': <role>}, {...}, ...]
+        :param bool process: If `True` prepare the data for insering into the
+                             database, else if `False` the data is already
+                             prepared and should be inserted directly.
         """
         query = ("INSERT INTO accounts (user, password, barcode, role) "
                  "VALUES (?, ?, ?, ?);")
-        params = []
+        if prepare:
+            params = []
 
-        for items in data:
-            user = items['user']
-            password = pwd_context.hash(items['password'])
-            barcode = items['barcode']
-            role = Role(items['role'])
-            items = (user, password, barcode, role.cookie_value)
-            params.append(items)
-            email = await self._get_email(user)
-            msg = f"User {user} <{email}> added with roles : {role}"
-            await self._send_email('TFI Ops', 'New User', msg,
-                                   email='tfi-ops@googlegroups.com')
+            for items in data:
+                user = items['user']
+                password = pwd_context.hash(items['password'])
+                barcode = items['barcode']
+                role = Role(items['role'])
+                items = (user, password, barcode, role.cookie_value)
+                params.append(items)
+                email = await self._get_email(user)
+                msg = f"User {user} <{email}> added with roles : {role}"
+                await self._send_email('TFI Ops', 'New User', msg,
+                                       email='tfi-ops@googlegroups.com')
+        else:  # Used during migrations only.
+            params = data
 
         return await self.BD._do_insert_query(query, params)
 

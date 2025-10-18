@@ -327,8 +327,8 @@ class TestAccounts(BaseAsyncTests):
                 result = await self._eng.visits.get_visits()
             case _:
                 result = {
-                    self.bd._T_ACCOUNTS:
-                    await self._eng.accounts.get_accounts(),
+                    self.bd._T_ACCOUNTS: (await self._eng.accounts
+                                          .get_accounts()),
                     self.bd._T_CONFIG: await self._eng.config.get_config(),
                     self.bd._T_MEMBERS: await self._eng.members.get_members(),
                     self.bd._T_VISITS: await self._eng.visits.get_visits()
