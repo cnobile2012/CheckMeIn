@@ -325,7 +325,7 @@ class Migrate:
 
         return data
 
-    def _log_migrated_table(self, table, old_data, data)
+    def _log_migrated_table(self, table, old_data, data):
         old_size = len(old_data)
         new_size = len(data)
         self._log.info("Table %s migrated, number of old records %s, "
