@@ -167,7 +167,7 @@ class Migrate:
         # Make any changes to the data here.
         self.bdb.db_fullpath = (self.DB_FILE_DIR, self.NEW_DB_FILE, True)
         await self.accounts.add_accounts(data)
-        self._log_migrated_table(self, self.bdb._T_ACCOUNTS, old_data, data)
+        self._log_migrated_table(self.bdb._T_ACCOUNTS, old_data, data)
 
     async def _migrate_certifications(self):
         self.bdb.db_fullpath = (self._old_path, self.OLD_DB_FILE, True)
@@ -176,8 +176,7 @@ class Migrate:
         # Make any changes to the data here.
         self.bdb.db_fullpath = (self.DB_FILE_DIR, self.NEW_DB_FILE, True)
         await self.certs.add_certifications(data)
-        self._log_migrated_table(self, self.bdb._T_CERTIFICATIONS, old_data,
-                                 data)
+        self._log_migrated_table(self.bdb._T_CERTIFICATIONS, old_data, data)
 
     async def _migrate_config(self):
         self.bdb.db_fullpath = (self._old_path, self.OLD_DB_FILE, True)
@@ -186,7 +185,7 @@ class Migrate:
         # Make any changes to the data here.
         self.bdb.db_fullpath = (self.DB_FILE_DIR, self.NEW_DB_FILE, True)
         await self.config.add_config(data)
-        self._log_migrated_table(self, self.bdb._T_CONFIG, old_data, data)
+        self._log_migrated_table(self.bdb._T_CONFIG, old_data, data)
 
     async def _migrate_devices(self):
         self.bdb.db_fullpath = (self._old_path, self.OLD_DB_FILE, True)
@@ -195,7 +194,7 @@ class Migrate:
         # Make any changes to the data here.
         self.bdb.db_fullpath = (self.DB_FILE_DIR, self.NEW_DB_FILE, True)
         await self.devices.add_bulk_devices(data)
-        self._log_migrated_table(self, self.bdb._T_DEVICES, old_data, data)
+        self._log_migrated_table(self.bdb._T_DEVICES, old_data, data)
 
     async def _migrate_guests(self):
         self.bdb.db_fullpath = (self._old_path, self.OLD_DB_FILE, True)
@@ -204,7 +203,7 @@ class Migrate:
         # Make any changes to the data here.
         self.bdb.db_fullpath = (self.DB_FILE_DIR, self.NEW_DB_FILE, True)
         await self.guests.add_guests(data)
-        self._log_migrated_table(self, self.bdb._T_GUESTS, old_data, data)
+        self._log_migrated_table(self.bdb._T_GUESTS, old_data, data)
 
     async def _migrate_log_events(self):
         self.bdb.db_fullpath = (self._old_path, self.OLD_DB_FILE, True)
@@ -213,7 +212,7 @@ class Migrate:
         # Make any changes to the data here.
         self.bdb.db_fullpath = (self.DB_FILE_DIR, self.NEW_DB_FILE, True)
         await self.log_events.add_log_events(data)
-        self._log_migrated_table(self, self.bdb._T_LOG_EVENTS, old_data, data)
+        self._log_migrated_table(self.bdb._T_LOG_EVENTS, old_data, data)
 
     async def _migrate_members(self):
         self.bdb.db_fullpath = (self._old_path, self.OLD_DB_FILE, True)
@@ -222,7 +221,7 @@ class Migrate:
         # Make any changes to the data here.
         self.bdb.db_fullpath = (self.DB_FILE_DIR, self.NEW_DB_FILE, True)
         await self.members.add_members(data)
-        self._log_migrated_table(self, self.bdb._T_MEMBERS, old_data, data)
+        self._log_migrated_table(self.bdb._T_MEMBERS, old_data, data)
 
     async def _migrate_reports(self):
         self.bdb.db_fullpath = (self._old_path, self.OLD_DB_FILE, True)
@@ -231,7 +230,7 @@ class Migrate:
         # Make any changes to the data here.
         self.bdb.db_fullpath = (self.DB_FILE_DIR, self.NEW_DB_FILE, True)
         await self.reports.add_reports(data)
-        self._log_migrated_table(self, self.bdb._T_REPORTS, old_data, data)
+        self._log_migrated_table(self.bdb._T_REPORTS, old_data, data)
 
     async def _migrate_teams(self):
         self.bdb.db_fullpath = (self._old_path, self.OLD_DB_FILE, True)
@@ -240,7 +239,7 @@ class Migrate:
         # Make any changes to the data here.
         self.bdb.db_fullpath = (self.DB_FILE_DIR, self.NEW_DB_FILE, True)
         await self.teams.add_teams(data)
-        self._log_migrated_table(self, self.bdb._T_REPORTS, old_data, data)
+        self._log_migrated_table(self.bdb._T_REPORTS, old_data, data)
 
     async def _migrate_teams_members(self):
         self.bdb.db_fullpath = (self._old_path, self.OLD_DB_FILE, True)
@@ -259,13 +258,13 @@ class Migrate:
 
         self.bdb.db_fullpath = (self.DB_FILE_DIR, self.NEW_DB_FILE, True)
         await self.teams.add_team_members(unique)
-        self._log_migrated_table(self, self.bdb._T_REPORTS, old_data, unique)
+        self._log_migrated_table(self.bdb._T_REPORTS, old_data, unique)
 
     async def _migrate_tools(self):
         # All tools are in an assets file.
         self.bdb.db_fullpath = (self.DB_FILE_DIR, self.NEW_DB_FILE, True)
         await self.certs.add_tools(TOOLS)
-        self._log_migrated_table(self, self.bdb._T_TOOLS, [], TOOLS)
+        self._log_migrated_table(self.bdb._T_TOOLS, [], TOOLS)
 
     async def _migrate_unlocks(self):
         self.bdb.db_fullpath = (self._old_path, self.OLD_DB_FILE, True)
@@ -274,7 +273,7 @@ class Migrate:
         # Make any changes to the data here.
         self.bdb.db_fullpath = (self.DB_FILE_DIR, self.NEW_DB_FILE, True)
         await self.unlocks.add_unlocks(data)
-        self._log_migrated_table(self, self.bdb._T_UNLOCKS, old_data, data)
+        self._log_migrated_table(self.bdb._T_UNLOCKS, old_data, data)
 
     async def _migrate_visits(self):
         self.bdb.db_fullpath = (self._old_path, self.OLD_DB_FILE, True)
@@ -283,7 +282,7 @@ class Migrate:
         # Make any changes to the data here.
         self.bdb.db_fullpath = (self.DB_FILE_DIR, self.NEW_DB_FILE, True)
         await self.visits.add_visits(data)
-        self._log_migrated_table(self, self.bdb._T_VISITS, old_data, data)
+        self._log_migrated_table(self.bdb._T_VISITS, old_data, data)
 
     MIGRATE_METHODS = (
         _migrate_accounts,

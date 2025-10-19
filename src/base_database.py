@@ -236,7 +236,7 @@ class BaseDatabase(Borg):
         if filename == ':memory:':
             fullpath = filename
         else:
-            if path.startswith('/'):  # Is this an absolute path?
+            if path.startswith(os.sep):  # Is this an absolute path?
                 fullpath = path
             else:
                 fullpath = os.path.join(BASE_DIR, path)

@@ -27,8 +27,9 @@ def module_timer(request):
     yield
     duration = time.time() - start
     mod_name = request.module.__name__
-    print(f"\n[PROFILE] module {mod_name} took {duration:.3f} seconds.")
+    print(f"\n[PROFILE] Module {mod_name} took {duration:.3f} seconds.")
+
 
 def pytest_sessionfinish(session, exitstatus):
     total = time.perf_counter() - start
-    print(f"\n[PROFILE] Total test duration: {total:.2f}s")
+    print(f"\n[PROFILE] Total test duration: {total:.2f} seconds.")

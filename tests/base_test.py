@@ -167,4 +167,4 @@ class BaseAsyncTests(unittest.IsolatedAsyncioTestCase):
         keypath = os.path.join(path, 'checkmein.key')
 
         with open(keypath, "w") as f:
-         f.write("MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTI=")
+            f.write("MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTI=")
