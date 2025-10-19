@@ -20,7 +20,7 @@ from mako.lookup import TemplateLookup
 
 from src import AppConfig
 
-__all__ = ('BaseAsyncTests',)
+__all__ = ('TestFakeServer', 'BaseAsyncTests')
 
 
 class TestFakeServer(unittest.TestCase):
@@ -162,3 +162,9 @@ class BaseAsyncTests(unittest.IsolatedAsyncioTestCase):
                     out.append(line)
 
         return out
+
+    def create_key_file(self, path):
+        keypath = os.path.join(path, 'checkmein.key')
+
+        with open(keypath, "w") as f:
+         f.write("MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTI=")

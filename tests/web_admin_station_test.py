@@ -32,8 +32,8 @@ class TestAdmin(BaseAsyncTests):
     async def asyncSetUp(self):
         cherrypy.session = sessions.RamSession()
         self.bd = BaseDatabase()
-        path = os.path.join('data', 'tests')
-        self.bd.db_fullpath = (path, self.TEST_DB, False)
+        self.path = os.path.join('data', 'tests')
+        self.bd.db_fullpath = (self.path, self.TEST_DB, False)
         # Create tables and views.
         tables_and_views = {
             'tables': (self.bd._T_ACCOUNTS, self.bd._T_CONFIG,
@@ -47,7 +47,7 @@ class TestAdmin(BaseAsyncTests):
         # Populate tables
         lookup = TemplateLookup(directories=['HTMLTemplates'],
                                 default_filters=['h'])
-        self._eng = Engine(path, self.TEST_DB, testing=True)
+        self._eng = Engine(self.path, self.TEST_DB, testing=True)
         self._was = WebAdminStation(lookup, self._eng)
         await self._eng.accounts.add_accounts(TEST_DATA[self.bd._T_ACCOUNTS])
         await self._eng.config.add_config(TEST_DATA[self.bd._T_CONFIG])
@@ -421,6 +421,7 @@ class TestAdmin(BaseAsyncTests):
         Test that the get_keyholder_json method returns an encrypted JSON
         object of user data and devices the user manages.
         """
+        self.create_key_file(self.path)
         data = (
             ('admin', '100091', 'Phone', '87:65:43:21:00:54'),
             ('Paul', '100015', '', ''),

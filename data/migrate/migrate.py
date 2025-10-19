@@ -6,7 +6,6 @@
 
 import os
 import sys
-import sqlite3
 import asyncio
 
 PWD = os.path.dirname(os.path.abspath(__file__))
@@ -333,7 +332,6 @@ class Migrate:
 
 
 if __name__ == '__main__':
-    import time
     import argparse
 
     parser = argparse.ArgumentParser(
