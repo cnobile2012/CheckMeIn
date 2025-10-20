@@ -11,10 +11,12 @@ A system for checking into and out of a building
 # Setup
 You will need to install some basic packages on Linux, these are the packages
 for Ubuntu. This updated version of `CheckMeIn` can work with Python 3.10 -
-3.14 only. I'm assuming python 3.14 throughout this document. `sqlitebrowswer`
-is only needed in development environments.
+3.14 only. I'm assuming python 3.11 throughout this document. (Python 3.12 -
+3.14 have optimization issues and are supposed to be worked out in 3.15 so keep
+with Python3.11 for now.) `sqlitebrowswer` is only needed in development
+environments.
 ```bash
-$ sudo apt install build-essential python3.14 python3-setuptools git virtualenvwrapper libreadline8
+$ sudo apt install build-essential python3.11 python3-setuptools git virtualenvwrapper libreadline8
 $ sudo apt install sqlitebrowswer
 ```
 
@@ -56,13 +58,13 @@ short so that you can remember it. Use whichever Python version you have in the
 commands below.
 ```bash
 $ cd /path/to/your_project
-$ mkvirtualenv -p python3.14 CMI3.14
+$ mkvirtualenv -p python3.11 CMI3.11
 ```
 
 After the initial creation of the VE you can use these commands to activate and
 deactivate a VE.
 ```bash
-$ workon CMI3.14
+$ workon CMI3.11
 $ deactivate
 ```
 

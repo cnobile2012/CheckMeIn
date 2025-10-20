@@ -6,12 +6,14 @@
 # for all tests.
 #
 
+import sys
 import time
 import pytest
 import tracemalloc
 tracemalloc.start()
 
 from src import AppConfig
+
 start = time.perf_counter()
 
 

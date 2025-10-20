@@ -91,4 +91,4 @@ clobber	: clean
 	@rm -rf .pytest_cache
 	@rm -f .coverage
 	@rm -rf data/tests
-	@rm -f logs/testing.log logs/migration.log
+	@rm -f logs/testing.log
