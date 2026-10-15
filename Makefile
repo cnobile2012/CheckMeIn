@@ -49,7 +49,7 @@ tests	: clobber
 	@rm -rf $(DOCS_DIR)/htmlcov
 	@mkdir -p $(LOGS_DIR)
 	@coverage erase
-	@coverage run -m pytest tests --capture=tee-sys $(TEST_PATH)
+	@coverage run -m pytest --capture=tee-sys $(TEST_PATH)
 	@coverage report -m
 	@coverage html
 	@echo $(TODAY)
