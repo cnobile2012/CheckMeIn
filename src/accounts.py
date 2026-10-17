@@ -9,7 +9,11 @@ import datetime
 import urllib
 
 from enum import IntEnum
-from passlib.apps import custom_app_context as pwd_context
+from passlib.context import CryptContext
+
+pwd_context = CryptContext(schemes=["argon2", "sha512_crypt", "sha256_crypt"],
+                           deprecated=["sha512_crypt", "sha256_crypt"],
+                           argon2__type="ID")
 
 from . import AppConfig
 from .base_database import BaseDatabase
@@ -142,8 +146,7 @@ class Accounts(Utilities):
                 password = pwd_context.hash(items['password'])
                 barcode = items['barcode']
                 role = Role(items['role'])
-                items = (user, password, barcode, role.cookie_value)
-                params.append(items)
+                params.append((user, password, barcode, role.cookie_value))
                 email = await self._get_email(user)
                 msg = f"User {user} <{email}> added with roles : {role}"
                 await self._send_email('TFI Ops', 'New User', msg,
@@ -210,16 +213,24 @@ class Accounts(Utilities):
         return rowcount
 
     async def get_barcode_and_role(self, user, password):
+        ret = ('', Role(0))
         query = ("SELECT password, barcode, role FROM accounts "
                  "WHERE user = ?;")
         data = await self.BD._do_select_one_query(query, (user,))
 
-        if data is None:
-            ret = ('', Role(0))
-        elif not pwd_context.verify(password, data[0]):
-            ret = ('', Role(0))
+        if data:
+            verified, replacement_hash = pwd_context.verify_and_update(
+                password, data[0])
         else:
+            verified = False
+            replacement_hash = None
+
+        if verified:
             ret = (data[1], Role(data[2]))
+
+            if replacement_hash is not None:
+                query = "UPDATE accounts SET password = ? WHERE user = ?;"
+                await self.BD._do_update_query(query, (replacement_hash, user))
 
         return ret
 

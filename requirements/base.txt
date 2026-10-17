@@ -8,3 +8,4 @@ matplotlib
 passlib
 python-dateutil
 aiosqlite
+argon2-cffi  # New password hashing algorithm.

@@ -7,9 +7,8 @@ import os
 import datetime
 import unittest
 import aiosqlite
-from passlib.apps import custom_app_context as pwd_context
 
-from src.accounts import Status, Role
+from src.accounts import Status, Role, pwd_context
 from src.base_database import BaseDatabase
 from src.engine import Engine
 
@@ -282,6 +281,13 @@ class TestAccountRole(unittest.TestCase):
 
 
 class TestAccounts(BaseAsyncTests):
+    bd = BaseDatabase()
+    PATH = os.path.join('data', 'tests')
+    TABLES_AND_VIEWS = {
+        'tables': (bd._T_ACCOUNTS, bd._T_MEMBERS,
+                   bd._T_CONFIG, bd._T_VISITS),
+        'views': (bd._V_CURRENT_MEMBERS,)
+        }
 
     def __init__(self, name, *args, **kwargs):
         super().__init__(name, *args, **kwargs)
@@ -291,24 +297,17 @@ class TestAccounts(BaseAsyncTests):
         Create the accounts, config, menbers, and views tables and the
         current_members view.
         """
-        self.bd = BaseDatabase()
-        path = os.path.join('data', 'tests')
-        self.bd.db_fullpath = (path, self.TEST_DB, False)
-        # Create tables and views.
-        self.tables_and_views = {
-            'tables': (self.bd._T_ACCOUNTS, self.bd._T_MEMBERS,
-                       self.bd._T_CONFIG, self.bd._T_VISITS),
-            'views': (self.bd._V_CURRENT_MEMBERS,)
-            }
-        await self.create_database(self.tables_and_views)
+        self.bd.db_fullpath = (self.PATH, self.TEST_DB, False)
+        await self.create_database(self.TABLES_AND_VIEWS)
         # Populate tables
-        self._eng = Engine(path, self.TEST_DB, testing=True)
+        self._eng = Engine(self.PATH, self.TEST_DB, testing=True)
         await self._eng.accounts.add_accounts(TEST_DATA[self.bd._T_ACCOUNTS])
         await self._eng.config.add_config(TEST_DATA[self.bd._T_CONFIG])
         await self._eng.members.add_members(TEST_DATA[self.bd._T_MEMBERS])
         await self._eng.visits.add_visits(TEST_DATA[self.bd._T_VISITS])
 
     async def asyncTearDown(self):
+        self._eng.stop()
         self._eng = None
         await self.truncate_all_tables()
         # Clear the Borg state.
@@ -352,8 +351,8 @@ class TestAccounts(BaseAsyncTests):
         """
         Test that the tables and views exist.
         """
-        tables = self.tables_and_views['tables']
-        views = self.tables_and_views['views']
+        tables = self.TABLES_AND_VIEWS['tables']
+        views = self.TABLES_AND_VIEWS['views']
         tables_views = tables + views
         msg = f"Expected True with {tables_views}, found {{}}"
 

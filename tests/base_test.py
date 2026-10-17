@@ -7,7 +7,6 @@ import os
 import re
 import time
 import logging
-import threading
 import unittest
 import aiosqlite
 import cherrypy

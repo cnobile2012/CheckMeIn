@@ -31,14 +31,15 @@ class TestTracing(BaseAsyncTests):
             }
         await self.create_database(self.tables_and_views)
         # Populate tables
-        self._engine = Engine(path, self.TEST_DB, testing=True)
+        self._eng = Engine(path, self.TEST_DB, testing=True)
         self._tracing = Tracing()
-        await self._engine.guests.add_guests(TEST_DATA[self.bd._T_GUESTS])
-        await self._engine.members.add_members(TEST_DATA[self.bd._T_MEMBERS])
-        await self._engine.visits.add_visits(TEST_DATA[self.bd._T_VISITS])
+        await self._eng.guests.add_guests(TEST_DATA[self.bd._T_GUESTS])
+        await self._eng.members.add_members(TEST_DATA[self.bd._T_MEMBERS])
+        await self._eng.visits.add_visits(TEST_DATA[self.bd._T_VISITS])
 
     async def asyncTearDown(self):
-        self._engine = None
+        self._eng.stop()
+        self._eng = None
         await self.truncate_all_tables()
         # Clear the Borg state.
         self.bd.clear_state()
@@ -47,17 +48,17 @@ class TestTracing(BaseAsyncTests):
     async def get_data(self, module='all'):
         match module:
             case self.bd._T_GUESTS:
-                result = await self._engine.guests.get_guests()
+                result = await self._eng.guests.get_guests()
             case self.bd._T_MEMBERS:
-                result = await self._engine.members.get_members()
+                result = await self._eng.members.get_members()
             case self.bd._T_VISITS:
-                result = await self._engine.visits.get_visits()
+                result = await self._eng.visits.get_visits()
             case _:
                 result = {
-                    self.bd._T_GUESTS: await self._engine.guests.get_guests(),
+                    self.bd._T_GUESTS: await self._eng.guests.get_guests(),
                     self.bd._T_MEMBERS:
-                    await self._engine.members.get_members(),
-                    self.bd._T_VISITS: await self._engine.visits.get_visits()
+                    await self._eng.members.get_members(),
+                    self.bd._T_VISITS: await self._eng.visits.get_visits()
                    }
 
         return result

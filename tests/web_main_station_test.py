@@ -59,6 +59,7 @@ class TestMainStation(BaseAsyncTests):
         Cookie('barcode').set('100091')
 
     async def asyncTearDown(self):
+        self._eng.stop()
         self._eng = None
         self._wms = None
         await self.truncate_all_tables()

@@ -48,6 +48,7 @@ class TestManage(BaseAsyncTests):
         await self._eng.members.add_members(TEST_DATA[self.bd._T_MEMBERS])
 
     async def asyncTearDown(self):
+        self._eng.stop()
         self._eng = None
         await self.truncate_all_tables()
         # Clear the Borg state.

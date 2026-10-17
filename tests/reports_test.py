@@ -125,13 +125,14 @@ class TestStatistics(BaseAsyncTests):
             }
         await self.create_database(self.tables_and_views)
         # Populate tables
-        self._engine = Engine(path, self.TEST_DB, testing=True)
-        await self._engine.guests.add_guests(TEST_DATA[self.bd._T_GUESTS])
-        await self._engine.members.add_members(TEST_DATA[self.bd._T_MEMBERS])
-        await self._engine.visits.add_visits(TEST_DATA[self.bd._T_VISITS])
+        self._eng = Engine(path, self.TEST_DB, testing=True)
+        await self._eng.guests.add_guests(TEST_DATA[self.bd._T_GUESTS])
+        await self._eng.members.add_members(TEST_DATA[self.bd._T_MEMBERS])
+        await self._eng.visits.add_visits(TEST_DATA[self.bd._T_VISITS])
 
     async def asyncTearDown(self):
-        self._engine = None
+        self._eng.stop()
+        self._eng = None
         await self.truncate_all_tables()
         # Clear the Borg state.
         self.bd.clear_state()
@@ -250,18 +251,19 @@ class TestReports(BaseAsyncTests):
         await self.create_database(self.tables_and_views)
         # Populate tables
         self._accounts = Accounts()
-        self._engine = Engine(db_path, self.TEST_DB, testing=True)
-        await self._engine.accounts.add_accounts(TEST_DATA[
+        self._eng = Engine(db_path, self.TEST_DB, testing=True)
+        await self._eng.accounts.add_accounts(TEST_DATA[
             self.bd._T_ACCOUNTS])
-        await self._engine.guests.add_guests(TEST_DATA[self.bd._T_GUESTS])
-        await self._engine.members.add_members(TEST_DATA[self.bd._T_MEMBERS])
-        await self._engine.teams.add_team_members(TEST_DATA[
+        await self._eng.guests.add_guests(TEST_DATA[self.bd._T_GUESTS])
+        await self._eng.members.add_members(TEST_DATA[self.bd._T_MEMBERS])
+        await self._eng.teams.add_team_members(TEST_DATA[
             self.bd._T_TEAM_MEMBERS])
-        await self._engine.reports.add_reports(TEST_DATA[self.bd._T_REPORTS])
-        await self._engine.visits.add_visits(TEST_DATA[self.bd._T_VISITS])
+        await self._eng.reports.add_reports(TEST_DATA[self.bd._T_REPORTS])
+        await self._eng.visits.add_visits(TEST_DATA[self.bd._T_VISITS])
 
     async def asyncTearDown(self):
-        self._engine = None
+        self._eng.stop()
+        self._eng = None
         await self.truncate_all_tables()
         # Clear the Borg state.
         self.bd.clear_state()
@@ -276,7 +278,7 @@ class TestReports(BaseAsyncTests):
         data = (
             (1, 'Get All Members', 'SELECT * FROM members;', '', 1),
             )
-        reports = await self._engine.reports.get_reports()
+        reports = await self._eng.reports.get_reports()
 
         for idx, (report_id, name, sql, parms, active) in enumerate(data):
             report = reports[idx]
@@ -292,7 +294,7 @@ class TestReports(BaseAsyncTests):
         Test that the who_is_here method returns a list of PersonInBuilding
         namedtuples.
         """
-        for person in await self._engine.reports.who_is_here():
+        for person in await self._eng.reports.who_is_here():
             self.assertTrue(isinstance(person, PersonInBuilding))
 
     #@unittest.skip("Temporarily skipped")
@@ -307,7 +309,7 @@ class TestReports(BaseAsyncTests):
         delta = timedelta(hours=2)
         start_time = now - delta
         end_time = now + delta
-        d_names = await self._engine.reports.which_team_members_here(
+        d_names = await self._eng.reports.which_team_members_here(
             team_id, start_time, end_time)
         self.assertEqual(data, d_names)
 
@@ -317,7 +319,7 @@ class TestReports(BaseAsyncTests):
         Test that the number_present method returns the number of people
         present in the building.
         """
-        present = await self._engine.reports.number_present()
+        present = await self._eng.reports.number_present()
         self.assertEqual(3, present)
 
     #@unittest.skip("Temporarily skipped")
@@ -345,7 +347,7 @@ class TestReports(BaseAsyncTests):
         now = datetime.now()
         start_date = now - timedelta(days=32)
         end_date = now + timedelta(days=1)
-        transactions = await self._engine.reports._transactions(
+        transactions = await self._eng.reports._transactions(
             start_date, end_date)
 
         for idx, trans in enumerate(transactions):
@@ -368,7 +370,7 @@ class TestReports(BaseAsyncTests):
             ('Member N(Keyholder)', 'In'),
             )
         msg = "Expected '{}', with name {}, found '{}'."
-        transactions = await self._engine.reports.transactions_today()
+        transactions = await self._eng.reports.transactions_today()
 
         for idx, trans in enumerate(transactions):
             self.assertEqual(data[idx][0], trans.name, msg.format(
@@ -385,7 +387,7 @@ class TestReports(BaseAsyncTests):
         now = datetime.now()
         start_date = now - timedelta(days=33)
         end_date = now + timedelta(days=1)
-        visitors = await self._engine.reports._unique_visitors(
+        visitors = await self._eng.reports._unique_visitors(
             start_date, end_date)
         self.assertEqual(6, visitors)
 
@@ -395,7 +397,7 @@ class TestReports(BaseAsyncTests):
         Test that the unique_visitors_today method returns the number of unique
         visitors for today.
         """
-        visitors = await self._engine.reports.unique_visitors_today()
+        visitors = await self._eng.reports.unique_visitors_today()
         self.assertEqual(4, visitors)
 
     #@unittest.skip("Temporarily skipped")
@@ -406,7 +408,7 @@ class TestReports(BaseAsyncTests):
         now = datetime.now()
         start_date = now - timedelta(days=33)
         end_date = now + timedelta(days=1)
-        stats = self._engine.reports.get_stats(start_date.isoformat(),
+        stats = self._eng.reports.get_stats(start_date.isoformat(),
                                                end_date.isoformat())
         begin_date = start_date.replace(hour=0, minute=0, second=0,
                                         microsecond=0)
@@ -420,7 +422,7 @@ class TestReports(BaseAsyncTests):
         Test that the get_earliest_date method returns a datetime.datetime
         object.
         """
-        data = await self._engine.reports.get_earliest_date()
+        data = await self._eng.reports.get_earliest_date()
         self.assertTrue(isinstance(data, datetime))
 
     #@unittest.skip("Temporarily skipped")
@@ -429,7 +431,7 @@ class TestReports(BaseAsyncTests):
         Test that the get_forgotten_dates method returns a list of date where
         people forgot to check out.
         """
-        dates = await self._engine.reports.get_forgotten_dates()
+        dates = await self._eng.reports.get_forgotten_dates()
 
         for date in dates:
             self.assertTrue(isinstance(date, ddate))
@@ -447,7 +449,7 @@ class TestReports(BaseAsyncTests):
             (7, 'Paul F', 'Out'),
             )
         msg = "Expected {}, with name {},found {}."
-        datum = await self._engine.reports.get_data(date_str)
+        datum = await self._eng.reports.get_data(date_str)
 
         for idx, item in enumerate(datum):
             self.assertEqual(data[idx][0], item.rowid, msg.format(

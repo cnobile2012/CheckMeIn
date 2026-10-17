@@ -26,7 +26,7 @@ class TestEngine(BaseAsyncTests):
     async def asyncSetUp(self):
         self.bd = BaseDatabase()
         self._path = os.path.join(BASE_DIR, 'data', 'tests')
-        self._engine = Engine(self._path, self.TEST_DB, testing=True)
+        self._eng = Engine(self._path, self.TEST_DB, testing=True)
         # Create tables and views.
         self.tables_and_views = {
             'tables': (self.bd._T_ACCOUNTS, self.bd._T_GUESTS,
@@ -50,8 +50,9 @@ class TestEngine(BaseAsyncTests):
         self._db_name = ''
         await self.truncate_all_tables()
         # Clear the Borg state.
-        self._engine.clear_state()
-        self._engine = None
+        self._eng.clear_state()
+        self._eng.stop()
+        self._eng = None
 
     async def get_data(self, module='all'):
         if module == self.bd._T_ACCOUNTS:
@@ -76,7 +77,7 @@ class TestEngine(BaseAsyncTests):
         Test that the data_path property returns the path to the 'data'
         directory.
         """
-        path = self._engine.data_path
+        path = self._eng.data_path
         self.assertEqual(self._path, path)
 
     #@unittest.skip("Temporarily skipped")
@@ -85,7 +86,7 @@ class TestEngine(BaseAsyncTests):
         Test that the checkin method returns the current keyholder.
         """
         data = ('100091', '100032')
-        keyholder = await self._engine.checkin(data)
+        keyholder = await self._eng.checkin(data)
         self.assertEqual(data[0], keyholder)
 
     #@unittest.skip("Temporarily skipped")
@@ -104,7 +105,7 @@ class TestEngine(BaseAsyncTests):
         self.assertEqual(3, ins)
 
         for barcode, check_outs, expected in data:
-            result = await self._engine.checkout(barcode, check_outs)
+            result = await self._eng.checkout(barcode, check_outs)
             self.assertEqual(expected, result, msg.format(
                 expected, barcode, result))
 
@@ -117,7 +118,7 @@ class TestEngine(BaseAsyncTests):
         """
         """
         data = ('100091', '202107310001', '100032', '100015')
-        keyholder = await self._engine.bulk_checkout(data, data)
+        keyholder = await self._eng.bulk_checkout(data, data)
         visits = await self.get_data('visits')
         ins = len([visit[-1] for visit in visits if visit[-1] == 'In'])
         self.assertEqual(data[0], keyholder)
