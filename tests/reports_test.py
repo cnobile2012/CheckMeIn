@@ -409,7 +409,7 @@ class TestReports(BaseAsyncTests):
         start_date = now - timedelta(days=33)
         end_date = now + timedelta(days=1)
         stats = self._eng.reports.get_stats(start_date.isoformat(),
-                                               end_date.isoformat())
+                                            end_date.isoformat())
         begin_date = start_date.replace(hour=0, minute=0, second=0,
                                         microsecond=0)
         end_date = end_date.replace(hour=0, minute=0, second=0, microsecond=0)

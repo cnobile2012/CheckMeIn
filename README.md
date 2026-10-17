@@ -10,13 +10,11 @@ A system for checking into and out of a building
 
 # Setup
 You will need to install some basic packages on Linux, these are the packages
-for Ubuntu. This updated version of `CheckMeIn` can work with Python 3.10 -
-3.14 only. I'm assuming python 3.11 throughout this document. (Python 3.12 -
-3.14 have optimization issues and are supposed to be worked out in 3.15 so keep
-with Python3.11 for now.) `sqlitebrowswer` is only needed in development
-environments.
+for Ubuntu. This updated version of `CheckMeIn` works with Python 3.11 -
+3.15. I'm assuming python 3.14 and `sqlitebrowswer` is only needed in
+development environments.
 ```bash
-$ sudo apt install build-essential python3.11 python3-setuptools git virtualenvwrapper libreadline8
+$ sudo apt install build-essential python3.14 python3-setuptools git virtualenvwrapper libreadline8
 $ sudo apt install sqlitebrowswer
 ```
 
@@ -32,8 +30,8 @@ $ git clone https://github.com/theforgeinitiative/CheckMeIn.git
 
 Setup the VE (Virtual Environment). The virtualenvwrapper package is a wrapper
 around virtualenv that provides easy to use tools for the virtualenv package
-and will install virtualenv for you. I use the `nano` editor but you can use
-the editor of your choice.
+and will install virtualenv for you. I use the `nano` editor in these examples
+but you can use the editor of your choice.
 ```bash
 $ nano .bashrc
 ```
@@ -45,7 +43,7 @@ VIRTUALENVWRAPPER_PYTHON=/usr/bin/python3
 source /etc/profile.d/virtualenvwrapper.sh
 ```
 
-Then resource your `.bashrc` file. Either method below does the same thing.
+Then re-source your `.bashrc` file. Either method below does the same thing.
 ```bash
 $ source ~/.bashrc
 
@@ -58,13 +56,13 @@ short so that you can remember it. Use whichever Python version you have in the
 commands below.
 ```bash
 $ cd /path/to/your_project
-$ mkvirtualenv -p python3.11 CMI3.11
+$ mkvirtualenv -p python3.14 CMI3.14
 ```
 
 After the initial creation of the VE you can use these commands to activate and
 deactivate a VE.
 ```bash
-$ workon CMI3.11
+$ workon CMI3.14
 $ deactivate
 ```
 
