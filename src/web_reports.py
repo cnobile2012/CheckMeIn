@@ -9,6 +9,7 @@ import cherrypy
 from .web_base import WebBase
 from .accounts import Role
 from .tracing import Tracing
+from .teams import TeamMemberType
 
 
 class WebReports(WebBase):
@@ -123,4 +124,8 @@ class WebReports(WebBase):
             team.members = self.engine.run_async(
                 self.engine.teams.team_members(team.team_id))
 
-        return self.template('team_report.mako', teams=teams)
+        team.counts, team.totalPresent = self.engine.teams.get_member_counts(
+            team.members)
+        return self.template('team_report.mako', teams=teams,
+                             TeamMemberType=TeamMemberType)
+        #return self.template('team_report.mako', teams=teams)

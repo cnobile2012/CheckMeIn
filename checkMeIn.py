@@ -3,6 +3,7 @@
 # checkMeIn.py
 #
 
+import os
 import argparse
 import datetime
 
@@ -15,12 +16,13 @@ from src.accounts import Role
 from src.cherrypy_sse import Portier
 from src.docs import get_documentation
 from src.engine import Engine
-from src.web_admin_station import WebAdminStation
 from src.web_base import WebBase, Cookie
 from src.web_main_station import WebMainStation
 from src.web_guest_station import WebGuestStation
+from src.web_admin_station import WebAdminStation
 from src.web_certifications import WebCertifications
 from src.web_profile import WebProfile
+from src.web_sync import WebSync
 from src.web_reports import WebReports
 from src.web_teams import WebTeams
 
@@ -30,8 +32,11 @@ class CheckMeIn(WebBase):
 
     def __init__(self, *args, testing=False, **kwargs):
         AppConfig().start_logging(testing)
-        self._lookup = TemplateLookup(directories=['HTMLTemplates'],
-                                      default_filters=['h'])
+        templates_dir = os.path.join(os.path.dirname(__file__),
+                                     'HTMLTemplates')
+        self._lookup = TemplateLookup(directories=[templates_dir],
+                                      default_filters=['h'],
+                                      filesystem_checks=True)
         self.update_channel = 'updates'
         self._eng = Engine(cherrypy.config["database.path"],
                            cherrypy.config["database.name"],
@@ -44,6 +49,7 @@ class CheckMeIn(WebBase):
         self.admin = WebAdminStation(self._lookup, self._eng)
         self.reports = WebReports(self._lookup, self._eng)
         self.profile = WebProfile(self._lookup, self._eng)
+        self.sync = WebSync(self._lookup, self._eng)
 
     @cherrypy.expose
     def index(self):
@@ -69,6 +75,7 @@ class CheckMeIn(WebBase):
     @cherrypy.expose
     def checkout_who_is_here(self, **params):
         check_outs = []
+
         for param, value in params.items():
             check_outs.append(param)
 

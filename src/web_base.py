@@ -29,16 +29,36 @@ class Cookie:
 
         if not result:
             self.set(default)
-            result = default
 
         return result
 
+    # def get(self, default=''):
+    #     if self._session_exists():
+    #         self._ensure_locked()
+    #         result = cherrypy.session.get(self.name, default)
+    #     else:
+    #         result = default
+
+    #     return result
+
     def set(self, value):
+        self._ensure_locked()
         cherrypy.session[self._name] = value
         return value
 
     def delete(self):
+        self._ensure_locked()
         cherrypy.session.pop(self._name, None)
+
+    def _session_exists(self):
+        session_name = cherrypy.config.get('tools.sessions.name', 'session_id')
+        return session_name in cherrypy.request.cookie
+
+    def _ensure_locked(self):
+        sess = getattr(cherrypy.serving, 'session', None)
+
+        if sess is not None and not sess.locked:
+            sess.acquire_lock()
 
 
 class WebBase:

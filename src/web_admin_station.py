@@ -12,6 +12,7 @@ from cryptography.fernet import Fernet
 
 from .accounts import Role
 from .web_base import WebBase, Cookie
+#from .web_sync import WebSync
 from .teams import TeamMemberType
 
 
@@ -19,6 +20,7 @@ class WebAdminStation(WebBase):
 
     def __init__(self, lookup, engine, *args, **kwargs):
         super().__init__(lookup, engine, *args, **kwargs)
+        #self.sync = WebSync(lookup, engine)
 
     def check_permissions(self, source="/admin"):
         super().check_permissions(Role.ADMIN, source)
@@ -201,6 +203,9 @@ class WebAdminStation(WebBase):
 
         if rowcount < 1:
             error = f"Username {user} already in use."
+
+        #if not error:
+        #    self.engine.run_async(self.sync.sync_roles())
 
         return self.users(error)
 

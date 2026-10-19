@@ -8,4 +8,10 @@ matplotlib
 passlib
 python-dateutil
 aiosqlite
+google-auth
+google-cloud-bigquery
+#google-cloud-storage
+#google-cloud-compute
 argon2-cffi  # New password hashing algorithm.
+tzdata
+tzlocal

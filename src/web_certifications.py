@@ -3,6 +3,8 @@
 # src/web_certifications.py
 #
 
+import os
+import json
 import cherrypy
 
 from .web_base import WebBase
@@ -15,7 +17,7 @@ class WebCertifications(WebBase):
 
     def _show_certifications(self, message, tools, certifications,
                              show_table_header=True, show_left_names=True,
-                             show_right_names=True):
+                             show_right_names=False):
         return self.template('certifications.mako', message=message,
                              tools=tools, show_table_header=show_table_header,
                              show_left_names=show_left_names,
@@ -43,7 +45,7 @@ class WebCertifications(WebBase):
     def add_certification(self, member_id, tool_id, level):
         """
         We don't check here for a valid tool if someone is forging HTML to
-        put an invalid tool in the DB. We'll catch it with the email out...\
+        put an invalid tool in the DB. We'll catch it with the email out.
         """
         certifier_id = self.get_barcode("/certifications/certify")
         self.engine.run_async(self.engine.certifications.add_new_certification(
@@ -131,6 +133,86 @@ class WebCertifications(WebBase):
         certifications = self.engine.run_async(
             self.engine.certifications.get_all_user_list())
         return self._show_certifications("", tools, certifications)
+
+    @cherrypy.expose
+    def v2(self, debug=False):
+        tools = self.engine.run_async(self.engine.certifications.get_tools())
+        users = self.engine.run_async(
+            self.engine.certifications.get_in_building_user_list())
+        # Load curated images mapping if available
+        images_map = {}
+        static_root = os.path.join(os.getcwd(), '..', 'static', 'tools')
+
+        try:
+            with open(os.path.join(static_root, 'images.json'), 'r',
+                      encoding='utf-8') as f:
+                images_map = json.load(f)
+        except Exception:
+            images_map = {}
+
+        tool_map = {}
+
+        for t in tools:
+            tool_id = t[0]
+            tool_name = t[1]
+            # Resolve curated image: by id first, then by lowercased name
+            curated_url = (
+                images_map.get(str(tool_id))
+                or images_map.get(tool_name)
+                or images_map.get(tool_name.lower())
+                or images_map.get(tool_name.replace(' ', '_').lower()))
+            base_static = f"/static/tools/{tool_id}"
+            tool_map[t[0]] = {
+                'id': t[0],
+                'name': tool_name,
+                'group': t[2],
+                'members': [],
+                'image_url': curated_url or f"{base_static}.avif",
+                'img_avif': f"{base_static}.avif",
+                'img_png': f"{base_static}.png",
+                'img_jpg': f"{base_static}.jpg"}
+
+        for user_id, tooluser in users.items():
+            for tid, tl in tooluser.tools.items():
+                level = int(tl[1]) if tl and tl[1] is not None else 0
+                if level > 0:
+                    base_label = self.engine.certifications.getLevelName(level)
+                    # Customize labels per request
+                    if level == 1:
+                        label = 'Basic (Red Dot)'
+                    elif level == 10:
+                        label = 'Certified (Green Dot)'
+                    else:
+                        label = base_label
+                    tool_map.get(tid, {}).get('members', []).append({
+                        'displayName': tooluser.displayName,
+                        'barcode': tooluser.barcode,
+                        'level': level,
+                        'level_name': label
+                    })
+
+        for v in tool_map.values():
+            v['members'] = sorted(v['members'],
+                                  key=lambda m: (m['level'], m['displayName']))
+        tools_data = [tool_map[t[0]] for t in tools]
+        levels = [
+            {'value': 10, 'name': self.engine.certifications.getLevelName(10),
+             'class': 'level-10'},
+            {'value': 20, 'name': self.engine.certifications.getLevelName(20),
+             'class': 'level-20'},
+            {'value': 30, 'name': self.engine.certifications.getLevelName(30),
+             'class': 'level-30'},
+            {'value': 40, 'name': self.engine.certifications.getLevelName(40),
+             'class': 'level-40'},
+        ]
+
+        if debug:
+            ct = 'application/json; charset=utf-8'
+            cherrypy.response.headers['Content-Type'] = ct
+            return json.dumps(tools_data).encode('utf-8')
+
+        return self.template('certifications_v2.mako', tools=tools_data,
+                             levels=levels, tools_json=json.dumps(tools_data))
 
     def _get_boolean(self, term):
         if isinstance(term, int):

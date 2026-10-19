@@ -270,10 +270,46 @@ class Teams:
                  "LEFT JOIN (SELECT barcode, status FROM visits "
                  "ORDER BY enter_time DESC LIMIT 1) v "
                  "ON v.barcode = tm.barcode WHERE tm.team_id = ? "
-                 "ORDER BY tm.type DESC, m.displayName ASC;")
+                 "ORDER BY CASE tm.type WHEN 0 THEN 0 WHEN 2 THEN 1 "
+                 "WHEN 1 THEN 2 ELSE 3 END, m.displayName COLLATE NOCASE ASC;")
         rows = await self.BD._do_select_all_query(query, (team_id,))
         return [TeamMember(row[0], row[1], row[2], row[3] == 'In')
                 for row in rows]
+
+    def group_members_by_type(self, members):
+        """
+        Split members into one (label, members, numPresent) tuple per
+        type, in display order. Empty types are included.
+        """
+        groups = []
+
+        for memberType, label in ((TeamMemberType.student, "Students"),
+                                  (TeamMemberType.coach, "Coaches"),
+                                  (TeamMemberType.mentor, "Mentors"),
+                                  (TeamMemberType.other, "Other")):
+            inGroup = [m for m in members if m.type == memberType]
+            groups.append(
+                (label, inGroup, sum(1 for m in inGroup if m.present)))
+
+        return groups
+
+    def get_member_counts(self, members):
+        """
+        Given a list of TeamMember, return counts of checked-in members
+        by type, plus the total checked in.
+        """
+        counts = {TeamMemberType.student: 0,
+                  TeamMemberType.coach: 0,
+                  TeamMemberType.mentor: 0,
+                  TeamMemberType.other: 0}
+        total = 0
+
+        for member in members:
+            if member.present:
+                counts[member.type] += 1
+                total += 1
+
+        return counts, total
 
     async def deactivate_team(self, team_id):
         query = "UPDATE teams SET active = ? WHERE team_id = ?;"

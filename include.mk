@@ -4,7 +4,7 @@
 
 # The Forge Iniative version info.
 MAJORVERSION	= 1
-MINORVERSION	= 0
+MINORVERSION	= 1
 PATCHLEVEL	= 0
 VERSION		= ${MAJORVERSION}.${MINORVERSION}.${PATCHLEVEL}
 # How mature is this project? Common values are

@@ -29,7 +29,7 @@ class ToolUser:
         self._tools = {}  # {tool_id: (date, level), ...}
         self._display_name = display_name
         # *** TODO*** Remove as it seems to not be used anywhere.
-        self._barcode = barcode
+        #self._barcode = barcode
 
     @property
     def display_name(self):
@@ -64,11 +64,11 @@ class ToolUser:
         else:
             self._tools[tool_id] = (date, level)
 
-    def _get_tool(self, tool_id):
+    def get_tool(self, tool_id):
         return self._tools.get(tool_id, ('', CertificationLevels.NONE))
 
     def get_html_cell_tool(self, tool_id):
-        date_obj, level = self._get_tool(tool_id)
+        date_obj, level = self.get_tool(tool_id)
         date = str(date_obj)[:7]  # Just the year-month as in (2025-08).
         html_details = {
             CertificationLevels.NONE:

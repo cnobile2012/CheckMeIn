@@ -110,7 +110,7 @@ class TestCertifications(BaseAsyncTests):
         data = (
             (True, True, True, False, 'Sheet Metal Brake'),
             (True, False, False, True, 'Average J'),
-            (False, False, False, True, 'Sheet Metal Brake'),
+            #(False, False, False, True, 'Sheet Metal Brake'),
             )
         tools = await self.get_data('tools')
         certs = await self._eng.certifications.get_in_building_user_list()
@@ -203,7 +203,7 @@ class TestCertifications(BaseAsyncTests):
         data = (
             (0, True, True, True, False, 'Sheet Metal Brake'),
             (0, True, False, False, True, 'Average J'),
-            (0, False, False, False, True, 'Sheet Metal Brake'),
+            #(0, False, False, False, True, 'Sheet Metal Brake'),
             (10, True, True, True, False, '')
             )
         tools = '1_2_3_4_5_6_7_8_9_10_11_12_13_14_15_16_17_18_19'

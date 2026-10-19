@@ -44,6 +44,21 @@ class TestCookie(unittest.TestCase):
         c.delete()
         self.assertNotIn("username", fake_session)
 
+    @unittest.skip("Temporarily skipped")
+    def test_delete(self):
+        """
+        """
+
+    @unittest.skip("Temporarily skipped")
+    def test__session_exists(self):
+        """
+        """
+
+    @unittest.skip("Temporarily skipped")
+    def test__ensure_locked(self):
+        """
+        """
+
 
 class TestWebBase(TestFakeServer):
 

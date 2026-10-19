@@ -18,16 +18,19 @@ ${self.logo()}
         <form action="update">
             <fieldset>
                 <legend>Who is in building?</legend>
+% for label, groupMembers, numPresent in member_groups:
                 <br />
+                <h3>${label}: ${numPresent} in building</h3>
+  % if groupMembers:
                 <table class="teamMembers">
                     <tr>
                         <th>Name</th><th></th><th>In</th><th>Out</th>
                     </tr>
-% for member in members:
+    % for member in groupMembers:
                     <tr>
                         <td>${member.name}</td>
                         <td>${member.type_string}</td>
-  % if member.present:
+      % if member.present:
                         <td>
                             <input type="radio" name="${member.barcode}"
                                    checked="checked"value="in"/>
@@ -36,7 +39,7 @@ ${self.logo()}
                             <input type="radio" name="${member.barcode}"
                                    value="out"/>
                         </td>
-  % else:
+      % else:
                         <td>
                             <input type="radio" name="${member.barcode}"
                                    value="in"/>
@@ -45,10 +48,13 @@ ${self.logo()}
                             <input type="radio" name="${member.barcode}"
                                    checked="checked" value="out"/>
                         </td>
-  % endif
+      % endif
                     </tr>
-% endfor
+    % endfor
                 </table>
+  % endif
+% endfor
+                <br />
                 <input type="hidden" name="team_id" value="${team_id}"/>
                 <input type="submit" value="Update"/>
             </fieldset>

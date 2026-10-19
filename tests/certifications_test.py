@@ -57,9 +57,9 @@ class TestToolUser(unittest.TestCase):
         self.assertEqual(expected, result, msg.format(expected, result))
 
     #@unittest.skip("Temporarily skipped")
-    def test__get_tool(self):
+    def test_get_tool(self):
         """
-        Test that the _get_tool method returns a tools data with the tool_id.
+        Test that the get_tool method returns a tools data with the tool_id.
         """
         now = datetime.datetime.now()
 
@@ -73,11 +73,11 @@ class TestToolUser(unittest.TestCase):
             self._tool_user.add_tool(tool_id, date, level)
 
         for tool_id, exp_date, exp_level in data:
-            date, level = self._tool_user._get_tool(tool_id)
+            date, level = self._tool_user.get_tool(tool_id)
             self.assertEqual(exp_date, date)
             self.assertEqual(exp_level, level)
 
-        date, level = self._tool_user._get_tool(3)
+        date, level = self._tool_user.get_tool(3)
         self.assertEqual('', date)
         self.assertEqual(CertificationLevels.NONE, level)
 
@@ -287,7 +287,7 @@ class TestCertifications(BaseAsyncTests):
             tu = users[barcode]
             self.assertEqual(d_name, tu.display_name, msg.format(
                 d_name, barcode, tu.display_name))
-            date, level = tu._get_tool(team_id)
+            date, level = tu.get_tool(team_id)
             self.assertTrue(isinstance(date, date_type), msg.format(
                 date_type, barcode, type(date)))
             self.assertEqual(_level, level, msg.format(_level, barcode, level))
