@@ -33,11 +33,11 @@ ${self.logo()}
             <ul>
   % if in_building:
                 <li><a href="/station/checkout?barcode=${barcode}">
-                    Check out of the Forge</a>
+                    Check out of The Forge</a>
                 </li>
   % else:
                 <li><a href="/station/checkin?barcode=${barcode}">
-                    Check into the Forge</a>
+                    Check into The Forge</a>
                 </li>
   % endif
                 <li><a href="/certifications/user?barcode=${barcode}">
@@ -56,10 +56,13 @@ ${self.logo()}
             <ul>
                 <li><a href="/whoishere">See who is at the The Forge</a></li>
                 <li><a href="https://calendar.google.com/calendar/embed?src=h75eigkfjvngvpff1dq0af74mk%40group.calendar.google.com&ctz=America%2FNew_York">
-                        TFI Calendar</a>
+                    TFI Calendar</a>
                 </li>
                 <li><a href="https://app.theforgeinitiative.org/">
-                        Forge Member App</a>
+                    Forge Member App</a>
+                </li>
+                <li><a href="https://lwhipker.github.io/TFI-Close/">
+                    Checkout List for Investment Blvd</a>
                 </li>
             </ul>
         </fieldset>
