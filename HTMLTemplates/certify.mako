@@ -4,19 +4,40 @@
 </%def>
 <%def name="title()">Tool Certification</%def>
 <%inherit file="base.mako"/>
+<%def name="scripts()">
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const form = document.querySelector("form");
+    const submitBtn = document.getElementById("submit_btn");
+    const requiredFields = form.querySelectorAll("select[required]");
+
+    function validateForm() {
+        submitBtn.disabled = !Array.from(requiredFields).every(
+            field => field.value !== ""
+        );
+    }
+
+    requiredFields.forEach(field => {
+        field.addEventListener("change", validateForm);
+    });
+
+    validateForm();
+});
+</script>
+</%def>
 ${self.logo()}
         <br/>
         <h1>Tool Certification</h1>
         <h2>Certifier: ${certifier} </h2>
         <br/>
-        <form action="add_certification">
+        <form action="add_certification" method="post">
             <fieldset>
                 <legend>Add Tool Certification</legend>
                 <table>
                     <tr>
-                        <td>Who to certify:</td>
+                        <td>Who&nbsp;to&nbsp;certify:</td>
                         <td>
-                            <select name="member_id">
+                            <select name="member_id" required>
                                 <option disabled selected value>
                                     -- select a member --
                                 </option>
@@ -31,7 +52,7 @@ ${self.logo()}
                     <tr>
                         <td><label for="tool_id">Tools:</label></td>
                         <td>
-                            <select name="tool_id">
+                            <select name="tool_id" required>
 % for tool in tools:
                                 <option value="${tool[0]}">${tool[1]}</option>
 % endfor
@@ -40,9 +61,9 @@ ${self.logo()}
                         <br/>
                     </tr>
                     <tr>
-                        <td><label for="level">New Level:</label></td>
+                        <td><label for="level">New&nbsp;Level:</label></td>
                         <td>
-                            <select name="level">
+                            <select name="level" required>
                                 <option value="1">BASIC (Red dot)</option>
                                 <option value="10">CERTIFIED (Green dot)
                                 </option>
@@ -54,7 +75,8 @@ ${self.logo()}
                         </td>
                     </tr>
                     <tr>
-                        <td><input type="submit" value="Add Certification"></td>
+                        <td><input type="submit" id="submit_btn"
+                             value="Add Certification"></td>
                     </tr>
                 </table>
             </fieldset>
