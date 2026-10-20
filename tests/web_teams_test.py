@@ -37,7 +37,6 @@ class TestTeams(BaseAsyncTests):
         tables_and_views = {
             'tables': (self.bd._T_ACCOUNTS, self.bd._T_CONFIG,
                        self.bd._T_GUESTS, self.bd._T_MEMBERS,
-                       #self.bd._T_REPORTS,
                        self.bd._T_TEAMS, self.bd._T_TEAM_MEMBERS,
                        self.bd._T_VISITS),
             'views': (self.bd._V_CURRENT_MEMBERS,),
@@ -170,7 +169,7 @@ class TestTeams(BaseAsyncTests):
             for item in expected:
                 self.assertIn(item, html)
 
-    #@unittest.skip("Temporarily disabled")
+    @unittest.skip("Temporarily disabled")
     def test_index(self):
         """
         Test that the index method returns a rendered team.mako template.

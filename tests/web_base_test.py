@@ -29,8 +29,7 @@ class TestCookie(unittest.TestCase):
         value from the session.
         """
         fake_session = {}
-        cherrypy.session = fake_session
-        c = Cookie("username")
+        c = Cookie("username", session=fake_session)
 
         # Default get should set the value
         self.assertEqual(c.get("guest"), "guest")
@@ -45,14 +44,14 @@ class TestCookie(unittest.TestCase):
         self.assertNotIn("username", fake_session)
 
     @unittest.skip("Temporarily skipped")
-    def test_delete(self):
-        """
-        """
-
-    @unittest.skip("Temporarily skipped")
     def test__session_exists(self):
         """
+        Test that the _session_exists method returns True or False if
+        session name is in a cookie. This indicates that the session
+        exists or not.
         """
+        c = Cookie('username')
+        result = c._session_exists()
 
     @unittest.skip("Temporarily skipped")
     def test__ensure_locked(self):

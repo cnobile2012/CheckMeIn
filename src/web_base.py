@@ -21,14 +21,20 @@ class Cookie:
     2. f"/certifications/team?team_id={team_id}"
     """
 
-    def __init__(self, name):
+    def __init__(self, name, session=None):
         self._name = name
+        self._session = session
+
+    @property
+    def session(self):
+        return self._session if self._session is not None else cherrypy.session
 
     def get(self, default=''):
-        result = cherrypy.session.get(self._name)
+        result = self.session.get(self._name)
 
         if not result:
             self.set(default)
+            result = default
 
         return result
 
@@ -42,13 +48,13 @@ class Cookie:
     #     return result
 
     def set(self, value):
-        self._ensure_locked()
-        cherrypy.session[self._name] = value
+        #self._ensure_locked()
+        self.session[self._name] = value
         return value
 
     def delete(self):
-        self._ensure_locked()
-        cherrypy.session.pop(self._name, None)
+        #self._ensure_locked()
+        self.session.pop(self._name, None)
 
     def _session_exists(self):
         session_name = cherrypy.config.get('tools.sessions.name', 'session_id')

@@ -27,7 +27,6 @@ class TestFakeServer(unittest.TestCase):
     def setUp(self) -> None:
         self._lookup = TemplateLookup(directories=['HTMLTemplates'],
                                       default_filters=['h'])
-        cherrypy.session = {}  # This is a fake session.
         super().setUp()
 
     def fake_config(self):

@@ -278,18 +278,18 @@ class Teams:
 
     def group_members_by_type(self, members):
         """
-        Split members into one (label, members, numPresent) tuple per
+        Split members into one (label, members, num_present) tuple per
         type, in display order. Empty types are included.
         """
         groups = []
 
-        for memberType, label in ((TeamMemberType.student, "Students"),
-                                  (TeamMemberType.coach, "Coaches"),
-                                  (TeamMemberType.mentor, "Mentors"),
-                                  (TeamMemberType.other, "Other")):
-            inGroup = [m for m in members if m.type == memberType]
+        for member_type, label in ((TeamMemberType.student, 'Students'),
+                                   (TeamMemberType.coach, 'Coaches'),
+                                   (TeamMemberType.mentor, 'Mentors'),
+                                   (TeamMemberType.other, 'Other')):
+            in_group = [m for m in members if m.type == member_type]
             groups.append(
-                (label, inGroup, sum(1 for m in inGroup if m.present)))
+                (label, in_group, sum(1 for m in in_group if m.present)))
 
         return groups
 

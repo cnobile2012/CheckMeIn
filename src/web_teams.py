@@ -93,7 +93,7 @@ class WebTeams(WebBase):
             self.engine.members.get_active())
         seasons = self.engine.run_async(
             self.engine.teams.get_all_seasons(team_info))
-        member_groups = self.engine.group_members_by_type(members)
+        member_groups = self.engine.teams.group_members_by_type(members)
         return self.template('team.mako', error=error, first_date=first_date,
                              team_id=team_id, seasons=seasons,
                              username=Cookie('username').get(''),
