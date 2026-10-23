@@ -369,7 +369,6 @@ class TestAccounts(BaseAsyncTests):
                       'barcode': '200000', 'role': 0x20},
                      {'user': 'SomeoneElse', 'password': 'things',
                       'barcode': '200001', 'role': 0x40}]
-
         msg = "Expected {} for table 'accounts', found {}."
         await self._eng.accounts.add_accounts(new_users)
 
@@ -387,6 +386,20 @@ class TestAccounts(BaseAsyncTests):
             # the cookie_value.
             self.assertEqual(expected[1].cookie_value, result[1].cookie_value,
                              msg.format(expected[1], result[1]))
+
+    #@unittest.skip("Temporarily skipped")
+    async def test_add_accounts_prepare_false(self):
+        """
+        Test that the add_accounts method creates the accounts table.
+        """
+        expected = 1
+        user = 'Someone'
+        passwd = pwd_context.hash('things')
+        barcode = '200000'
+        role = Role(0x20)
+        data = [(user, passwd, barcode, role.cookie_value)]
+        rowcount = await self._eng.accounts.add_accounts(data, prepare=False)
+        self.assertEqual(expected, rowcount)
 
     #@unittest.skip("Temporarily skipped")
     async def test_get_accounts(self):

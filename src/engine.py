@@ -90,7 +90,7 @@ class Engine(BaseDatabase):
             tasks = [task for task in asyncio.all_tasks()
                      if task is not current]
 
-            for task in tasks:
+            for task in tasks:  # pragma: no cover
                 task.cancel()
 
             await asyncio.gather(*tasks, return_exceptions=True)

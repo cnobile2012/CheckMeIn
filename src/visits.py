@@ -4,7 +4,7 @@
 #
 
 import datetime
-from dateutil import parser
+# from dateutil import parser
 
 from . import AppConfig
 from .base_database import BaseDatabase
@@ -163,34 +163,34 @@ class Visits:
         rows = await self.BD._do_select_all_query(query)
         return [(row[0], row[1]) for row in rows]
 
-    async def fix(self, fix_data):
-        """
-        I cannot figure out what this method is supposed to do. It looks
-        like it's used on for debugging something.
-        See WebAdminStation.fixed_data()
-        """
-        entries = fix_data.split(',')
-        rowcount = 0
+    # async def fix(self, fix_data):
+    #     """
+    #     I cannot figure out what this method is supposed to do. It looks
+    #     like it's used on for debugging something.
+    #     See WebAdminStation.fixed_data()
+    #     """
+    #     entries = fix_data.split(',')
+    #     rowcount = 0
 
-        for entry in entries:
-            tokens = entry.split('!')
+    #     for entry in entries:
+    #         tokens = entry.split('!')
 
-            if len(tokens) == 3:
-                row_id = tokens[0]
-                new_enter_time = parser.parse(tokens[1])
-                new_exit_time = parser.parse(tokens[2])
+    #         if len(tokens) == 3:
+    #             row_id = tokens[0]
+    #             new_enter_time = parser.parse(tokens[1])
+    #             new_exit_time = parser.parse(tokens[2])
 
-                # If crossed over midnight....
-                if new_exit_time < new_enter_time:
-                    new_exit_time += datetime.timedelta(days=1)
+    #             # If crossed over midnight....
+    #             if new_exit_time < new_enter_time:
+    #                 new_exit_time += datetime.timedelta(days=1)
 
-                query = ("UPDATE visits SET enter_time = ?, exit_time = ?, "
-                         "status = 'Out' WHERE visits.rowid = ?;")
-                rowcount = await self.BD._do_update_query(
-                    query, (new_enter_time, new_exit_time, row_id))
+    #             query = ("UPDATE visits SET enter_time = ?, exit_time = ?, "
+    #                      "status = 'Out' WHERE visits.rowid = ?;")
+    #             rowcount = await self.BD._do_update_query(
+    #                 query, (new_enter_time, new_exit_time, row_id))
 
-                if rowcount < 1:  # pragma: no cover
-                    self._log.warning("Visit row ID %s was not updated.",
-                                      row_id)
+    #             if rowcount < 1:  # pragma: no cover
+    #                 self._log.warning("Visit row ID %s was not updated.",
+    #                                   row_id)
 
-        return rowcount
+    #     return rowcount

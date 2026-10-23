@@ -4,6 +4,36 @@
 </%def>
 <%def name="title()">CheckMeIn Fix Data</%def>
 <%inherit file="base.mako"/>
+<script>
+function itemChanged(item) {
+    $('.updateCheck', item.closest('tr')).prop("checked", true);
+}
+
+function returnTime(el) {
+    return '${date} ' + $('.hour', el).val() + ':' + $('.minute', el).val() +
+           $('.period', el).val();
+}
+
+function submitPressed() {
+    // this: the current, raw DOM element
+    // index: the current element's index in the selection
+    // elem: the current, raw DOM element (same as this)
+    var dataItems = $('.dataRow');
+    var dataString = "";
+
+    $('.dataRow').each(function(index, elem) {
+        var update = $('.updateCheck', this).prop('checked');
+
+        if (update) {
+            dataString += this.id.substring(4) + '!' +
+                          returnTime($('.start', this)) + '!' +
+                          returnTime($('.leave', this)) + ',';
+        }
+    });
+    $('#output').val(dataString);
+    $("form#formID").submit();
+}
+</script>
 ${self.logo()}<br/>
 <h1>Fix Data Page for ${date}</h1>
 <table>
@@ -42,34 +72,3 @@ ${self.logo()}<br/>
     <input id="output" hidden name="output" type="textarea"/><br/>
     <input type="button" value="Submit" onclick="submitPressed()")/>
 </form>
-
-<script>
-function itemChanged(item) {
-    $('.updateCheck', item.closest('tr')).prop("checked", true);
-}
-
-function returnTime(el) {
-    return '${date} ' + $('.hour', el).val() + ':' + $('.minute', el).val() +
-           $('.period', el).val();
-}
-
-function submitPressed() {
-    // this: the current, raw DOM element
-    // index: the current element's index in the selection
-    // elem: the current, raw DOM element (same as this)
-    var dataItems = $('.dataRow');
-    var dataString = "";
-
-    $('.dataRow').each(function(index, elem) {
-        var update = $('.updateCheck', this).prop('checked');
-
-        if (update) {
-            dataString += this.id.substring(4) + '!' +
-                          returnTime($('.start', this)) + '!' +
-                          returnTime($('.leave', this)) + ',';
-        }
-    });
-    $('#output').val(dataString);
-    $("form#formID").submit();
-}
-</script>

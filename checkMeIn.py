@@ -150,11 +150,6 @@ class CheckMeIn(WebBase):
 
     update_sse._cp_config = {'response.stream': True}
 
-    @cherrypy.expose
-    def test(self, str):
-        self.update(str)
-        return f"Posted {str}"
-
     def update(self, msg):
         full_message = f"event: update\ndata: {msg}\n\n"
         cherrypy.engine.publish(self.update_channel, full_message)
