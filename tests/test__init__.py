@@ -166,7 +166,7 @@ class TestLogger(BaseTests, unittest.TestCase):
             log.warning(log_msg)
 
         result = "\n".join(cm.output)
-        self.assertIn(log_msg, result)
+        self.assertIn(log_msg, result, msg.format(log_msg, result))
 
     #@unittest.skip("Temporarily skipped")
     def test_level_setter_and_getter(self):
@@ -217,32 +217,44 @@ class TestAppConfig(BaseTests, unittest.TestCase):
                                  AppConfig._TEST_LOG_FILENAME)
         filepath2 = os.path.join(AppConfig._LOGGER_PATH,
                                  AppConfig._MIGRATE_LOG_FILENAME)
-        msg_err0 = ("The arguments 'testing' and 'migrations' can both be "
-                    "False or one or the other can be True.")
+        msg_err0 = ("The arguments 'testing' and 'migrations' cannot both "
+                    "be True.")
         expect0 = "Logger configured as '{}' with file '{}'."
         data = (
-            (False, False, filepath0, ('production',
-                                       expect0.format('production', filepath0),
-                                       AppConfig._LOG_FILENAME)),
-            (True, False, filepath1, ('testing',
-                                      expect0.format('testing', filepath1),
-                                      AppConfig._TEST_LOG_FILENAME)),
-            (False, True, filepath2, ('migration',
-                                      expect0.format('migration', filepath2),
-                                      AppConfig._MIGRATE_LOG_FILENAME)),
+            (False, False, filepath0, True,
+             ('production', expect0.format('production', filepath0),
+              AppConfig._LOG_FILENAME)),
+            (True, False, filepath1, True,
+             ('testing', expect0.format('testing', filepath1),
+              AppConfig._TEST_LOG_FILENAME)),
+            (False, True, filepath2, True,
+             ('migration', expect0.format('migration', filepath2),
+              AppConfig._MIGRATE_LOG_FILENAME)),
+            (True, True, filepath2, False, msg_err0),
            )
         msg = "Expected '{}', found '{}'."
 
-        for testing, migration, path, expected in data:
-            log = AppConfig.start_logging(testing, migration)
-            self.assertIsInstance(log, logging.Logger, msg.format(
-                type(log), logging.Logger))
-            env = AppConfig._ENVIRONMENT
-            self.assertEqual(expected[0], env, msg.format(expected[0], env))
-            full_log = self.read_text_file(path)
-            result = self.find_text(full_log, expected[1], 3, expected[1])
-            self.assertIn(expected[1], result, msg.format(expected[1], result))
-            self.assertIn(expected[2], result, msg.format(expected[2], result))
+        for testing, migration, path, valid, expected in data:
+            if valid:
+                log = AppConfig.start_logging(testing, migration)
+                self.assertIsInstance(log, logging.Logger, msg.format(
+                    type(log), logging.Logger))
+                env = AppConfig._ENVIRONMENT
+                self.assertEqual(expected[0], env, msg.format(
+                    expected[0], env))
+                full_log = self.read_text_file(path)
+                result = self.find_text(full_log, expected[1], 3, expected[1])
+                self.assertIn(expected[1], result,
+                              msg.format(expected[1], result))
+                self.assertIn(expected[2], result,
+                              msg.format(expected[2], result))
+            else:
+                with self.assertRaises(AssertionError) as cm:
+                    AppConfig.start_logging(testing, migration)
+
+                result = str(cm.exception)
+                self.assertEqual(expected, result, msg.format(
+                    expected, result))
 
     #@unittest.skip("Temporarily skipped")
     def test_log(self):

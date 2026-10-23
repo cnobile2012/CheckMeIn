@@ -199,18 +199,18 @@ class TestAdmin(BaseAsyncTests):
         self.assertIn('Average J', html)
         self.assertIn('Paul F', html)
 
-    @unittest.skip("Temporarily disabled")
-    async def test_fixed_data(self):
-        """
-        Test that the fixed_data method returns the admin HTML page.
-        This method seems to only be used for debugging with input coming
-        from the frontend fix_data.mako file, thus making it difficult to test,
-        because the output variable is hand entered. The code gives no sign
-        as to what to enter except that there are three fields.
-        See async def test_fix() in tests/visits_test.py.
-        """
-        #output = ''
-        #html = self._was.fixed_data()
+    # @unittest.skip("Temporarily disabled")
+    # async def test_fixed_data(self):
+    #     """
+    #     Test that the fixed_data method returns the admin HTML page.
+    #     This method seems to only be used for debugging with input coming
+    #     from the frontend fix_data.mako file, thus making it difficult to
+    #     test, because the output variable is hand entered. The code gives
+    #     no sign as to what to enter except that there are three fields.
+    #     See async def test_fix() in tests/visits_test.py.
+    #     """
+    #     #output = ''
+    #     #html = self._was.fixed_data()
 
     #@unittest.skip("Temporarily disabled")
     async def test_update_present(self):

@@ -75,15 +75,15 @@ class WebAdminStation(WebBase):
         data = self.engine.run_async(self.engine.reports.get_data(date))
         return self.template('fix_data.mako', date=date, data=data)
 
-    @cherrypy.expose
-    def fixed_data(self, output):
-        """
-        I cannot figure out what this method is supposed to do. It looks
-        like it's used only for debugging something. See Visits.fix()
-        """
-        self.check_permissions()
-        self.engine.run_async(self.engine.visits.fix(output))
-        return self.index()
+    # @cherrypy.expose
+    # def fixed_data(self, output):
+    #     """
+    #     I cannot figure out what this method is supposed to do. It looks
+    #     like it's used only for debugging something. See Visits.fix()
+    #     """
+    #     self.check_permissions()
+    #     self.engine.run_async(self.engine.visits.fix(output))
+    #     return self.index()
 
     @cherrypy.expose
     def update_present(self):

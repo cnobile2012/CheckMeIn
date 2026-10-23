@@ -113,7 +113,7 @@ class TestTeams(BaseAsyncTests):
         data = (
             (1, Role.ADMIN, False, None),
             (2, 0, True, cherrypy.HTTPRedirect),
-            # *** TODO *** Needs more tests when I find out what is needed.
+            # *** TODO *** Needs more tests when I figure out what is needed.
             )
 
         for team_id, role, redirect, expected in data:
