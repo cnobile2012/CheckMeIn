@@ -142,8 +142,8 @@ class TestGuestStation(BaseAsyncTests):
 
             if comment and 'ERROR' not in comment:
                 full_log = self.read_text_file(self.full_log_path)
-                sub_log = self.find_text_span(full_log, start, 13)
-                self.assertIn(comment, sub_log[-1])
+                result = self.find_text(full_log, start, 13, comment)
+                self.assertIn(comment, result)
 
     #@unittest.skip("Temporarily skipped")
     def test_return_guest(self):

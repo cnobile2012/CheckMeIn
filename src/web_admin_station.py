@@ -81,7 +81,7 @@ class WebAdminStation(WebBase):
     def fixed_data(self, output):
         """
         I cannot figure out what this method is supposed to do. It looks
-        like it's used on for debugging something. See Visits.fix()
+        like it's used only for debugging something. See Visits.fix()
         """
         self.check_permissions()
         self.engine.run_async(self.engine.visits.fix(output))

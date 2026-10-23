@@ -14,7 +14,7 @@ tracemalloc.start()
 
 start = time.perf_counter()
 _test_times = {}
-SLOW_THRESHOLD = 2.0  # seconds
+SLOW_THRESHOLD = 1.0  # seconds
 
 
 @pytest.fixture(scope="module", autouse=True)
