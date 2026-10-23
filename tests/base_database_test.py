@@ -160,9 +160,8 @@ class TestBaseDatabase(BaseAsyncTests):
                 self.assertEqual(expected[1], items['global']['database.name'])
             else:
                 full_log = self.read_text_file(self.full_log_path)
-                sub_log = self.find_text_span(full_log, start, 8)
-                self.assertTrue([True for msg in sub_log
-                                 if expected[0] in msg])
+                result = self.find_text(full_log, start, 8, expected[0])
+                self.assertIn(expected[0], result)
 
     #@unittest.skip("Temporarily skipped")
     async def test_has_schema(self):
@@ -190,9 +189,8 @@ class TestBaseDatabase(BaseAsyncTests):
 
             if delete:
                 full_log = self.read_text_file(self.full_log_path)
-                sub_log = self.find_text_span(full_log, start, 2)
-                self.assertTrue([True for msg in sub_log
-                                 if expected[1] in msg])
+                result = self.find_text(full_log, start, 2, expected[1])
+                self.assertIn(expected[1], result)
 
     #@unittest.skip("Temporarily skipped")
     async def test_create_schema(self):
@@ -268,9 +266,8 @@ class TestBaseDatabase(BaseAsyncTests):
 
             if expected[0] == 0:
                 full_log = self.read_text_file(self.full_log_path)
-                sub_log = self.find_text_span(full_log, start, 2)
-                self.assertTrue([True for msg in sub_log
-                                 if expected[2] in msg])
+                result = self.find_text(full_log, start, 2, expected[2])
+                self.assertIn(expected[2], result)
 
     #@unittest.skip("Temporarily skipped")
     async def test__do_insert_query(self):

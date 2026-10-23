@@ -64,6 +64,7 @@ class Logger:
     """
     _DEFAULT_FORMAT = ("%(asctime)s %(levelname)s %(name)s %(module)s "
                        "%(funcName)s [line:%(lineno)d] %(message)s")
+    _ASSERT_MSG = "The 'config()' method must be called first."
 
     def __init__(self, format_str=None):
         self._format = format_str if format_str else self._DEFAULT_FORMAT
@@ -74,41 +75,33 @@ class Logger:
         """
         Config the logger.
 
-        :param logger_name: The name of the specific logger needed.
-        :type logger_name: str
-        :param file_path: The path to the logging file. If left as None
-                          logging will be to the screen.
-        :type file_path: str
-        :param level: The lowest level to generate logs for. See the
-                      Python logger docs.
-        :type level: int
-        :param initial_msg: Print the initial log message. The default is True.
-        :type initial_msg: bool
+        :param str logger_name: The name of the specific logger needed.
+        :param str file_path: The path to the logging file. If left as None
+                              logging will be to the screen.
+        :param int level: The lowest level to generate logs for. See the
+                          Python logger docs.
+        :param bool initial_msg: Print the initial log message. The default
+                                 is True.
         """
         if logger_name and file_path:  # Creates a custom file logger.
             self._make_log_dir(file_path)
             self.logger = logging.getLogger(logger_name)
-
-            if not self.logger.handlers:
-                self.logger.setLevel(level)
-                handler = RotatingFileHandler(file_path, maxBytes=max_bytes,
-                                              backupCount=backup_count)
-                formatter = logging.Formatter(self._format)
-                handler.setFormatter(formatter)
-                self.logger.addHandler(handler)
+            self.logger.handlers.clear()
+            self.logger.setLevel(level)
+            handler = RotatingFileHandler(file_path, maxBytes=max_bytes,
+                                          backupCount=backup_count)
+            formatter = logging.Formatter(self._format)
+            handler.setFormatter(formatter)
+            self.logger.addHandler(handler)
         elif file_path:  # Creates a file root logger.
             self.logger = logging.getLogger()
-
-            if not self.logger.handlers:
-                self._make_log_dir(file_path)
-                logging.basicConfig(filename=file_path, format=self._format,
-                                    level=level, force=True)
+            self._make_log_dir(file_path)
+            logging.basicConfig(filename=file_path, format=self._format,
+                                level=level, force=True)
         else:  # Creates a stdout root logger.
             self.logger = logging.getLogger()
-
-            if not self.logger.handlers:
-                logging.basicConfig(stream=sys.stdout, format=self._format,
-                                    level=level, force=True)
+            logging.basicConfig(stream=sys.stdout, format=self._format,
+                                level=level, force=True)
 
         if logger_name:
             log = logging.getLogger(logger_name)
@@ -126,12 +119,12 @@ class Logger:
 
     @property
     def level(self):
-        assert self.logger, "The 'config()' method must be called first."
+        assert self.logger, self._ASSERT_MSG
         return self.logger.getEffectiveLevel()
 
     @level.setter
     def level(self, level):
-        assert self.logger, "The 'config()' method must be called first."
+        assert self.logger, self._ASSERT_MSG
         self.logger.setLevel(level)
 
 
@@ -185,7 +178,7 @@ class AppConfig(Borg):
                              (default) for production mode.
         :param bool migration: A true value overrides the `testing` argument
                                creating logging files for migration else false
-                               (default) and the `testing` argument value id
+                               (default) and the `testing` argument value is
                                used.
         :returns: The logger object.
         :rtype: logging.Logger

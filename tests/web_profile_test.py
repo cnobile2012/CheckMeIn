@@ -154,8 +154,8 @@ class TestProfile(BaseAsyncTests):
         self.assertIn('You have been e-mailed instructions', text)
         msg = "If you did not request a password"
         full_log = self.read_text_file(self.full_log_path)
-        sub_log = self.find_text_span(full_log, start, 12)
-        self.assertIn(msg, sub_log[9])
+        result = self.find_text(full_log, start, 12, msg)
+        self.assertIn(msg, result)
 
     #@unittest.skip("Temporarily disabled")
     def test_reset_password_token(self):
@@ -187,7 +187,7 @@ class TestProfile(BaseAsyncTests):
             await self._eng.accounts.forgot_password(username)
             # We need to get the token from the log file, bummer.
             full_log = self.read_text_file(self.full_log_path)
-            sub_log = self.find_text_span(full_log, start, 12)
+            sub_log = self._find_text_span(full_log, start, 12)
             sre = re.search(self.TOKEN_REGEX, sub_log[9])
             token = sre.group('token')
 

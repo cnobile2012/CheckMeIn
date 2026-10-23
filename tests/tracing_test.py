@@ -76,27 +76,14 @@ class TestTracing(BaseAsyncTests):
         self.assertEqual(data[2], m.email)
         self.assertEqual(data[3], repr(m))
 
-    @unittest.skip("Temporarily skipped")
-    async def test__who_else_was_here(self):
-        """
-        Test that the _who_else_was_here method returns a member based on
-        their barcode and enter and exit times that are in the visits table.
-
-        The start_time and end_time keeps changing in the test data so this
-        method cannot be tested directly. The get_dict_visits method below
-        can test it indirectly however.
-        """
-        # data = (
-        #     ('100091', start_time, end_time),
-        #     )
-
-        # members = await self._tracing._who_else_was_here(barcode, start_time,
-        #                                                  end_time)
-
     #@unittest.skip("Temporarily skipped")
     async def test_get_dict_visits(self):
         """
         Test that the get_dict_visits method returns a Member object.
+
+        The start_time and end_time keeps changing in the test data so the
+        _who_else_was_here method cannot be tested directly. The
+        get_dict_visits method below can test it indirectly however.
         """
         data = (
             ('100091', 30, (('100032', 'Average J', 'fake2@email.com'),

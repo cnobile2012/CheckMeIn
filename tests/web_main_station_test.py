@@ -150,8 +150,8 @@ class TestMainStation(BaseAsyncTests):
                     self._wms.scanned(barcode)
 
                 full_log = self.read_text_file(self.full_log_path)
-                sub_log = self.find_text_span(full_log, start, 5)
-                self.assertTrue([True for msg in sub_log if expected in msg])
+                result = self.find_text(full_log, start, 5, expected)
+                self.assertIn(expected, result)
 
     #@unittest.skip("Temporarily disabled")
     async def test_checkin(self):

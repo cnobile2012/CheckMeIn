@@ -27,7 +27,6 @@ class TestFakeServer(unittest.TestCase):
     def setUp(self) -> None:
         self._lookup = TemplateLookup(directories=['HTMLTemplates'],
                                       default_filters=['h'])
-        cherrypy.session = {}  # This is a fake session.
         super().setUp()
 
     def fake_config(self):
@@ -40,7 +39,67 @@ class TestFakeServer(unittest.TestCase):
         cherrypy.session = sessions.RamSession()
 
 
-class BaseAsyncTests(unittest.IsolatedAsyncioTestCase):
+class BaseTests:
+    _RE_FIRST_LINE = r'^.*{}.*$'
+
+    def read_text_file(self, fullpath: str) -> str:
+        with open(fullpath) as f:
+            return f.read()
+
+    def _find_text_span(self, data_str: str, start: str, num_lines: int):
+        """
+        Finds text in a file. i.e. log files, but could be any file.
+
+        :param str data_str: A string of the file contents.
+        :param str start: A starting string, usually put in by the test.
+        :param int num_lines: The number of line in `data_str` to include in
+                              the sample. This includes the start string.
+        :returns: A list of lines from the target file.
+        :rtype: list
+        """
+        out = []
+        first_line = self._RE_FIRST_LINE.format(re.escape(start))
+        sre = re.search(first_line, data_str, re.MULTILINE)
+
+        if sre:
+            file_list = [line for line in data_str.split('\n')]
+            count = 0
+
+            for line in file_list:
+                if count > 0 and count < num_lines:
+                    out.append(line)
+                    count += 1
+
+                if sre.group() in line:
+                    count += 1
+                    out.append(line)
+
+        return out
+
+    def find_text(self, data_str: str, start: str, num_lines: int, text: str
+                  ) -> str:
+        """
+        Finds the line in the file that contains the queried text or
+        returns an empty string.
+
+        :param str data_str: A string of the file contents.
+        :param str start: A starting string, usually put in by the test.
+        :param int num_lines: The number of line in `data_str` to include in
+                              the sample. This includes the start string.
+        :param str text: The text that is being queried.
+        :returns: The line in the file that contains the queried text.
+        :rtype: str
+        """
+        line = ""
+
+        for line in self._find_text_span(data_str, start, num_lines):
+            if text in line:
+                break
+
+        return line if line else ""
+
+
+class BaseAsyncTests(BaseTests, unittest.IsolatedAsyncioTestCase):
     """
     The base class for all test classes that will be running database access
     code.
@@ -129,38 +188,6 @@ class BaseAsyncTests(unittest.IsolatedAsyncioTestCase):
                     await cursor.execute("DELETE FROM sqlite_sequence;")
 
                 await db.commit()
-
-    def read_text_file(self, fullpath: str) -> str:
-        with open(fullpath) as f:
-            return f.read()
-
-    def find_text_span(self, data_str: str, start: str, num_lines: int):
-        """
-        Finds text in a file. i.e. log files, but could be any file.
-
-        :param str data_str: A string from a file.
-        :param str start: A starting string, usually put in by the test.
-        :param int num_lines: The number of line in `data_str` to include in
-                              the sample. This includeds the start string.
-        """
-        out = []
-        first_line = self._RE_FIRST_LINE.format(re.escape(start))
-        sre = re.search(first_line, data_str, re.MULTILINE)
-
-        if sre:
-            file_list = [line for line in data_str.split('\n')]
-            count = 0
-
-            for line in file_list:
-                if count > 0 and count < num_lines:
-                    out.append(line)
-                    count += 1
-
-                if sre.group() in line:
-                    count += 1
-                    out.append(line)
-
-        return out
 
     def create_key_file(self, path):
         keypath = os.path.join(path, 'checkmein.key')
