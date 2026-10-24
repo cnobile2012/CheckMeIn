@@ -94,8 +94,8 @@ class Logger:
             handler.setFormatter(formatter)
             self.logger.addHandler(handler)
         elif file_path:  # Creates a file root logger.
-            self.logger = logging.getLogger()
             self._make_log_dir(file_path)
+            self.logger = logging.getLogger()
             logging.basicConfig(filename=file_path, format=self._format,
                                 level=level, force=True)
         else:  # Creates a stdout root logger.
